@@ -1,6 +1,6 @@
 {
-  "name": "The Monitor Dashboard",
-  "render_readme": true,
+  "name": "The Monitor",
+  "content_in_root": true,
   "filename": "the-monitor.js",
-  "dashboard": true
+  "render_readme": true
 }

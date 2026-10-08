@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:hacs": "vite build && cp dist/the-monitor.js the-monitor.js",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "deploy:ha": "npm run build && node scripts/upload-via-samba.mjs && node scripts/ha_setup.mjs && node scripts/generate-config.mjs",

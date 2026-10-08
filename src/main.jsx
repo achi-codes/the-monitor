@@ -7,6 +7,7 @@ import { HassProvider } from './context/HassContext.jsx'
 import { ConfigProvider } from './context/ConfigContext.jsx'
 import { mergeInitialConfig, loadDevConfig } from './lib/config.js'
 import { schedulePersistCardConfig } from './lib/haLovelace.js'
+import { ensureHaDashboard } from './lib/ensureHaDashboard.js'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 const ELEMENT_NAME = 'the-monitor-dashboard'
@@ -145,6 +146,8 @@ try {
 } catch (e) {
   console.error('Failed to register The Monitor dashboard:', e)
 }
+
+ensureHaDashboard()
 
 const root = document.getElementById('root')
 if (root) {

@@ -12,11 +12,14 @@ Ein wandbündiges Tablet-Dashboard für Home Assistant im Alexa-Show-Stil.
 
 ## Installation
 
-### HACS (empfohlen)
+### HACS
 
-1. HACS > Frontend > Custom Repositories
-2. Repository hinzufügen, Kategorie **Dashboard**
-3. Installieren
+1. HACS → drei Punkte → **Benutzerdefinierte Repositories**
+2. `https://github.com/achi-codes/the-monitor` eintragen, Kategorie **Dashboard**
+3. Im Store **The Monitor** öffnen und **Herunterladen**
+4. Home Assistant neu laden (als Admin)
+
+Danach steht **The Monitor** in der Seitenleiste. Die Karte legt das Dashboard beim ersten Laden an.
 
 ### Manuell
 

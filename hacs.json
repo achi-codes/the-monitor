@@ -1,0 +1,6 @@
+{
+  "name": "The Monitor Dashboard",
+  "render_readme": true,
+  "filename": "the-monitor.js",
+  "dashboard": true
+}

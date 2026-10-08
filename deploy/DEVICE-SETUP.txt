@@ -1,0 +1,55 @@
+The Monitor – Geräte-Anleitung
+===============================
+
+Dashboard-URL
+-------------
+http://192.168.1.14:8123/the-monitor/0
+
+Konfiguration
+-------------
+Entitäten in den Einstellungen werden automatisch im Home-Assistant-Dashboard
+gespeichert (serverseitig). Gilt auf Mac, iPad und Wanddisplay gleichermaßen.
+
+Einmalig importieren (falls noch leer):
+1. Zahnrad → Einstellungen → Tab „Dashboard konfigurieren“
+2. Entitäten zuweisen — ab dann automatisch gespeichert
+
+Alternativ JSON-Import/Export unten in den Einstellungen.
+
+Betriebsarten
+-------------
+A) Empfohlen: Custom Card in Home Assistant (aktuell)
+   URL: http://192.168.1.14:8123/the-monitor/0
+   Config serverseitig, HA-Login, iPad über Companion App.
+
+B) Optional: Standalone per Docker (eigene URL, ohne HA-Sidebar)
+   Auf einem Rechner/Pi mit Docker:
+   npm run docker:build && npm run docker:up
+   Dann: http://<host>:8080/
+   Einmalig HA-URL + Token in den Einstellungen eintragen.
+   Gut für reines Kiosk-Display; Config dann pro Browser (localStorage).
+
+Updates (nur JS-Bundle, Config bleibt erhalten)
+-----------------------------------------------
+./scripts/deploy-all.sh
+
+Entitäten zurücksetzen (nur bei Bedarf):
+node scripts/ha_setup.mjs --init-config
+
+iPad
+----
+1. Home Assistant Companion App installieren
+2. Mit http://192.168.1.14:8123 verbinden
+3. Sidebar → „The Monitor“
+4. Konfiguration wie oben importieren
+
+Später: Raspberry Pi Kiosk
+--------------------------
+Auf dem Display-Pi ausführen:
+```bash
+curl -fsSL https://raw.githubusercontent.com/.../scripts/setup-pi-kiosk.sh | bash
+```
+Oder lokal kopieren:
+```bash
+HA_URL=http://192.168.1.14:8123/the-monitor/0 ./scripts/setup-pi-kiosk.sh
+```

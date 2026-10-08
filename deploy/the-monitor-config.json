@@ -1,0 +1,63 @@
+{
+  "quickActions": [
+    {
+      "entity_id": "light.couch_links",
+      "label": "Couch links",
+      "icon": ""
+    },
+    {
+      "entity_id": "light.couch_rechts",
+      "label": "Couch rechts",
+      "icon": ""
+    },
+    {
+      "entity_id": "switch.shellypstripg4_d885aceaa49c_switch_0",
+      "label": "Kaffee Mühle",
+      "icon": ""
+    },
+    {
+      "entity_id": "switch.shellypstripg4_d885aceaa49c_switch_2",
+      "label": "Wasserkocher",
+      "icon": ""
+    }
+  ],
+  "scenes": [
+    {
+      "entity_id": "scene.kino",
+      "label": "Kino",
+      "icon": ""
+    },
+    {
+      "entity_id": "scene.wohnzimmer_abend",
+      "label": "Abend",
+      "icon": ""
+    },
+    {
+      "entity_id": "scene.gute_nacht",
+      "label": "Gute Nacht",
+      "icon": ""
+    },
+    {
+      "entity_id": "scene.wohnzimmer_normal",
+      "label": "Normal",
+      "icon": ""
+    }
+  ],
+  "weather": {
+    "entity_id": "weather.openweather"
+  },
+  "mediaPlayer": {
+    "entity_id": "media_player.wohnzimmer"
+  },
+  "camera": {
+    "entity_id": ""
+  },
+  "shoppingList": {
+    "entity_id": "todo.einkaufsliste"
+  },
+  "vacuum": {
+    "entity_id": "vacuum.roborock_qrevo_edge_series"
+  },
+  "presence": [],
+  "backgroundImage": "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=2940&auto=format&fit=crop"
+}

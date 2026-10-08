@@ -1,0 +1,256 @@
+function createState(entityId, state, attributes = {}) {
+  return { entity_id: entityId, state, attributes, last_changed: new Date().toISOString(), last_updated: new Date().toISOString() };
+}
+
+const MOCK_STATES = {
+  'light.wohnzimmer': createState('light.wohnzimmer', 'on', { friendly_name: 'Wohnzimmer Licht', brightness: 200 }),
+  'light.kueche': createState('light.kueche', 'off', { friendly_name: 'Küche Licht' }),
+  'switch.steckdose': createState('switch.steckdose', 'off', { friendly_name: 'Steckdose TV' }),
+  'climate.wohnzimmer': createState('climate.wohnzimmer', 'heat', { friendly_name: 'Wohnzimmer Heizung', current_temperature: 21.5, temperature: 22 }),
+  'lock.haustuer': createState('lock.haustuer', 'locked', { friendly_name: 'Haustür' }),
+  'alarm_control_panel.haus': createState('alarm_control_panel.haus', 'armed_home', { friendly_name: 'Alarmanlage' }),
+  'scene.filmabend': createState('scene.filmabend', 'scening', { friendly_name: 'Filmabend' }),
+  'scene.essen': createState('scene.essen', 'scening', { friendly_name: 'Essen' }),
+  'scene.schlafen': createState('scene.schlafen', 'scening', { friendly_name: 'Schlafen' }),
+  'script.verlassen': createState('script.verlassen', 'off', { friendly_name: 'Haus verlassen' }),
+  'weather.zuhause': createState('weather.zuhause', 'partlycloudy', {
+    friendly_name: 'Zuhause',
+    supported_features: 3,
+    temperature: 18,
+    humidity: 68,
+    pressure: 1013,
+    wind_speed: 12,
+    visibility: 10,
+    forecast: [
+      { datetime: '2026-06-17', condition: 'partlycloudy', temperature: 22, templow: 14, precipitation_probability: 20 },
+      { datetime: '2026-06-18', condition: 'sunny', temperature: 26, templow: 16, precipitation_probability: 5 },
+      { datetime: '2026-06-19', condition: 'cloudy', temperature: 20, templow: 13, precipitation_probability: 30 },
+      { datetime: '2026-06-20', condition: 'rainy', temperature: 17, templow: 12, precipitation_probability: 80 },
+      { datetime: '2026-06-21', condition: 'partlycloudy', temperature: 21, templow: 14, precipitation_probability: 15 },
+      { datetime: '2026-06-22', condition: 'sunny', temperature: 24, templow: 15, precipitation_probability: 0 },
+      { datetime: '2026-06-23', condition: 'cloudy', temperature: 19, templow: 12, precipitation_probability: 40 },
+    ],
+    hourly_forecast: [
+      { datetime: '2026-06-17T20:00:00+02:00', condition: 'partlycloudy', temperature: 21 },
+      { datetime: '2026-06-17T21:00:00+02:00', condition: 'partlycloudy', temperature: 20 },
+      { datetime: '2026-06-17T22:00:00+02:00', condition: 'cloudy', temperature: 19 },
+      { datetime: '2026-06-17T23:00:00+02:00', condition: 'cloudy', temperature: 17 },
+      { datetime: '2026-06-18T00:00:00+02:00', condition: 'partlycloudy', temperature: 15 },
+      { datetime: '2026-06-18T01:00:00+02:00', condition: 'partlycloudy', temperature: 14 },
+      { datetime: '2026-06-18T02:00:00+02:00', condition: 'clear-night', temperature: 13 },
+      { datetime: '2026-06-18T03:00:00+02:00', condition: 'clear-night', temperature: 12 },
+      { datetime: '2026-06-18T04:00:00+02:00', condition: 'clear-night', temperature: 11 },
+      { datetime: '2026-06-18T05:00:00+02:00', condition: 'partlycloudy', temperature: 11 },
+    ],
+  }),
+  'media_player.wohnzimmer': createState('media_player.wohnzimmer', 'playing', {
+    friendly_name: 'Bluetooth Speaker',
+    device_manufacturer: 'Apple',
+    device_model: 'HomePod mini',
+    media_title: 'Hurt Feelings',
+    media_artist: 'Mac Miller',
+    media_album_name: 'Swimming',
+    media_position: 161,
+    media_duration: 204,
+    entity_picture: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/1b/Mac_Miller_-_Swimming.png/220px-Mac_Miller_-_Swimming.png',
+  }),
+  'camera.garten': createState('camera.garten', 'idle', {
+    friendly_name: 'Garten',
+    entity_picture: 'https://images.unsplash.com/photo-1558036117-15dbaf040517?q=80&w=800',
+  }),
+  'camera.haustuer': createState('camera.haustuer', 'idle', {
+    friendly_name: 'Haustür',
+    entity_picture: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800',
+  }),
+  'camera.garage': createState('camera.garage', 'idle', {
+    friendly_name: 'Garage',
+    entity_picture: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=800',
+  }),
+  'todo.einkaufsliste': createState('todo.einkaufsliste', '0', {
+    friendly_name: 'Einkaufsliste',
+  }),
+  'person.papa': createState('person.papa', 'home', { friendly_name: 'Papa' }),
+  'person.mama': createState('person.mama', 'home', { friendly_name: 'Mama' }),
+  'person.max': createState('person.max', 'not_home', { friendly_name: 'Max' }),
+  'vacuum.roborock': createState('vacuum.roborock', 'cleaning', {
+    friendly_name: 'Roborock',
+    battery_level: 78,
+    fan_speed: 'Turbo',
+    status: 'Reinigt Wohnzimmer …',
+  }),
+  'cover.wohnzimmer': createState('cover.wohnzimmer', 'open', { friendly_name: 'Wohnzimmer Rolladen', current_position: 100 }),
+  'cover.schlafzimmer': createState('cover.schlafzimmer', 'closed', { friendly_name: 'Schlafzimmer Rolladen', current_position: 0 }),
+  'cover.kueche': createState('cover.kueche', 'open', { friendly_name: 'Küche Rolladen', current_position: 45 }),
+  'binary_sensor.kueche_fenster': createState('binary_sensor.kueche_fenster', 'on', { friendly_name: 'Küche Fenster' }),
+  'binary_sensor.grandland_charging': createState('binary_sensor.grandland_charging', 'on', {
+    friendly_name: 'Grandland lädt',
+    device_class: 'battery_charging',
+  }),
+  'sensor.grandland_battery': createState('sensor.grandland_battery', '67', {
+    friendly_name: 'Grandland Akku',
+    unit_of_measurement: '%',
+    device_class: 'battery',
+  }),
+  'sensor.grandland_charge_power': createState('sensor.grandland_charge_power', '11', {
+    friendly_name: 'Grandland Ladeleistung',
+    unit_of_measurement: 'kW',
+    device_class: 'power',
+  }),
+};
+
+const serviceLog = [];
+
+export function createMockHass() {
+  const states = { ...MOCK_STATES };
+
+  const hass = {
+    states,
+    hassUrl: 'http://homeassistant.local:8123',
+    callService: async (domain, service, data = {}) => {
+      serviceLog.push({ domain, service, data, time: Date.now() });
+      const entityId = data.entity_id;
+
+      if (domain === 'homeassistant' && service === 'toggle' && entityId) {
+        const s = states[entityId];
+        if (s) s.state = s.state === 'on' ? 'off' : 'on';
+      }
+      if (domain === 'light' && service === 'toggle' && entityId) {
+        const s = states[entityId];
+        if (s) s.state = s.state === 'on' ? 'off' : 'on';
+      }
+      if (domain === 'light' && service === 'turn_on' && entityId) {
+        const s = states[entityId];
+        if (s) {
+          s.state = 'on';
+          if (typeof data.brightness === 'number') {
+            s.attributes = { ...s.attributes, brightness: data.brightness };
+          }
+        }
+      }
+      if (domain === 'light' && service === 'turn_off' && entityId) {
+        const s = states[entityId];
+        if (s) s.state = 'off';
+      }
+      if (domain === 'switch' && service === 'toggle' && entityId) {
+        const s = states[entityId];
+        if (s) s.state = s.state === 'on' ? 'off' : 'on';
+      }
+      if (domain === 'scene' && service === 'turn_on') {
+        console.log('[mock] Scene activated:', entityId);
+      }
+      if (domain === 'media_player') {
+        const s = states[entityId];
+        if (!s) return { context: { id: 'mock' } };
+        if (service === 'media_pause') s.state = 'paused';
+        if (service === 'media_play') s.state = 'playing';
+        if (service === 'turn_off') s.state = 'off';
+        if (service === 'turn_on') s.state = 'idle';
+      }
+      if (domain === 'alarm_control_panel' && entityId) {
+        const s = states[entityId];
+        if (!s) return { context: { id: 'mock' } };
+        if (service === 'alarm_disarm') s.state = 'disarmed';
+        if (service === 'alarm_arm_home') s.state = 'armed_home';
+        if (service === 'alarm_arm_away') s.state = 'armed_away';
+        if (service === 'alarm_arm_night') s.state = 'armed_night';
+      }
+      if (domain === 'vacuum' && entityId) {
+        const s = states[entityId];
+        if (!s) return { context: { id: 'mock' } };
+        if (service === 'pause') {
+          s.state = 'paused';
+          s.attributes = { ...s.attributes, status: 'Pausiert' };
+        }
+        if (service === 'stop') {
+          s.state = 'idle';
+          s.attributes = { ...s.attributes, status: 'Gestoppt' };
+        }
+        if (service === 'return_to_base') {
+          s.state = 'returning';
+          s.attributes = { ...s.attributes, status: 'Fährt zur Basis …' };
+        }
+        if (service === 'start') {
+          s.state = 'cleaning';
+          s.attributes = { ...s.attributes, status: 'Reinigt Wohnzimmer …' };
+        }
+      }
+      if (domain === 'cover' && entityId) {
+        const s = states[entityId];
+        if (!s) return { context: { id: 'mock' } };
+        if (service === 'open_cover') {
+          s.state = 'open';
+          s.attributes = { ...s.attributes, current_position: 100 };
+        }
+        if (service === 'close_cover') {
+          s.state = 'closed';
+          s.attributes = { ...s.attributes, current_position: 0 };
+        }
+        if (service === 'set_cover_position' && typeof data.position === 'number') {
+          const pos = Math.min(100, Math.max(0, data.position));
+          s.attributes = { ...s.attributes, current_position: pos };
+          if (pos === 0) s.state = 'closed';
+          else if (pos === 100) s.state = 'open';
+          else s.state = 'open';
+        }
+      }
+
+      listeners.forEach((fn) => fn(hass));
+      return { context: { id: 'mock' } };
+    },
+  };
+
+  const listeners = [];
+
+  hass.subscribe = (fn) => {
+    listeners.push(fn);
+    return () => {
+      const idx = listeners.indexOf(fn);
+      if (idx >= 0) listeners.splice(idx, 1);
+    };
+  };
+
+  hass.getServiceLog = () => serviceLog;
+
+  hass.__mock = true;
+
+  return hass;
+}
+
+export const MOCK_TODO_ITEMS = [
+  { uid: '1', summary: 'Milch', status: 'needs_action' },
+  { uid: '2', summary: 'Kaffee', status: 'needs_action' },
+  { uid: '3', summary: 'Bananen', status: 'completed' },
+  { uid: '4', summary: 'Brot', status: 'needs_action' },
+];
+
+export const MOCK_DEV_CONFIG = {
+  quickActions: [
+    { entity_id: 'light.wohnzimmer', label: 'Wohnzimmer' },
+    { entity_id: 'light.kueche', label: 'Küche' },
+    { entity_id: 'switch.steckdose', label: 'Steckdose TV' },
+  ],
+  scenes: [
+    { entity_id: 'scene.filmabend', label: 'Filmabend' },
+    { entity_id: 'scene.essen', label: 'Essen' },
+    { entity_id: 'scene.schlafen', label: 'Schlafen' },
+    { entity_id: 'script.verlassen', label: 'Verlassen' },
+  ],
+  weather: { entity_id: 'weather.zuhause' },
+  mediaPlayer: { entity_id: 'media_player.wohnzimmer' },
+  camera: { entity_id: 'camera.garten' },
+  cameras: ['camera.garten', 'camera.haustuer', 'camera.garage'],
+  shoppingList: { entity_id: 'todo.einkaufsliste' },
+  vacuum: { entity_id: 'vacuum.roborock' },
+  ev: {
+    stateEntity: 'binary_sensor.grandland_charging',
+    batteryEntity: 'sensor.grandland_battery',
+    powerEntity: 'sensor.grandland_charge_power',
+    label: 'Grandland',
+  },
+  alarm: { entity_id: 'alarm_control_panel.haus' },
+  presence: [
+    { entity_id: 'person.papa', label: 'Papa' },
+    { entity_id: 'person.mama', label: 'Mama' },
+    { entity_id: 'person.max', label: 'Max' },
+  ],
+};

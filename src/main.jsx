@@ -2,7 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
-import { styles, haShellStyles } from './styles'
+import { styles, haShellStyles, haCardHostStyles } from './styles'
 import { HassProvider } from './context/HassContext.jsx'
 import { ConfigProvider } from './context/ConfigContext.jsx'
 import { mergeInitialConfig, loadDevConfig } from './lib/config.js'
@@ -105,6 +105,7 @@ class TheMonitorDashboard extends HTMLElement {
 
   connectedCallback() {
     injectDocumentStyles('the-monitor-ha-shell', haShellStyles)
+    injectDocumentStyles('the-monitor-card-host', haCardHostStyles)
 
     if (!this._shadow) {
       this._shadow = this.attachShadow({ mode: 'open' })
@@ -129,6 +130,7 @@ class TheMonitorDashboard extends HTMLElement {
   }
 
   disconnectedCallback() {
+    document.getElementById('the-monitor-ha-shell')?.remove()
     this._updateHass = null
     if (this._root) {
       this._root.unmount()
@@ -136,8 +138,6 @@ class TheMonitorDashboard extends HTMLElement {
     }
   }
 }
-
-injectDocumentStyles('the-monitor-styles', styles)
 
 try {
   if (!customElements.get(ELEMENT_NAME)) {

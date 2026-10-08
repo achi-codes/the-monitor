@@ -150,7 +150,9 @@ export default function Settings({ onBack }) {
                   <span className="tm-text-sm tm-opacity-70">
                     {config.appearance.mode === 'colorful'
                       ? 'Wähle eine Farbe – alles wird in abstufenden Tönen dargestellt:'
-                      : 'Farbwahl gilt nur im Bunt-Modus.'}
+                      : config.appearance.mode === 'blackColorful'
+                        ? 'Pastell-Karten auf schwarzem Hintergrund – jede Kachel bekommt eine eigene Farbe.'
+                        : 'Farbwahl gilt nur im Bunt-Modus.'}
                   </span>
                   <div className="tm-color-set-grid">
                     {COLOR_SETS.map((set) => (

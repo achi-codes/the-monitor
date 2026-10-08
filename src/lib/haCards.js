@@ -136,18 +136,217 @@ export function monitorHostFrom(node) {
   return null;
 }
 
-export async function createHaCardElement(card) {
+const CUSTOM_PREFIX = 'custom:';
+
+function collectCustomTags(card, tags = new Set()) {
+  if (!card || typeof card !== 'object') return tags;
+  if (Array.isArray(card)) {
+    card.forEach((entry) => collectCustomTags(entry, tags));
+    return tags;
+  }
+  if (typeof card.type === 'string' && card.type.startsWith(CUSTOM_PREFIX)) {
+    tags.add(card.type.slice(CUSTOM_PREFIX.length));
+  }
+  if (Array.isArray(card.cards)) collectCustomTags(card.cards, tags);
+  if (card.card) collectCustomTags(card.card, tags);
+  return tags;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+async function waitForCustomElements(tags) {
+  const pending = [...tags].filter((tag) => tag.includes('-') && !customElements.get(tag));
+  if (!pending.length) return;
+  await Promise.race([
+    Promise.all(pending.map((tag) => customElements.whenDefined(tag))),
+    sleep(2000),
+  ]);
+}
+
+function missingCard(tag) {
+  return {
+    type: 'markdown',
+    content: `**Nicht installiert:** \`${tag}\`\n\nDiese Lovelace-Karte ist in den Ressourcen nicht geladen.`,
+  };
+}
+
+function replaceMissingCustomCards(card) {
+  if (!card || typeof card !== 'object') return card;
+  if (Array.isArray(card)) return card.map(replaceMissingCustomCards);
+  if (typeof card.type === 'string' && card.type.startsWith(CUSTOM_PREFIX)) {
+    const tag = card.type.slice(CUSTOM_PREFIX.length);
+    if (tag.includes('-') && !customElements.get(tag)) return missingCard(tag);
+  }
+  const next = { ...card };
+  if (Array.isArray(card.cards)) next.cards = card.cards.map(replaceMissingCustomCards);
+  if (card.card && typeof card.card === 'object') next.card = replaceMissingCustomCards(card.card);
+  return next;
+}
+
+function applyVariables(value, variables) {
+  if (typeof value === 'string') {
+    return value.replace(/\[\[([^\]]+)\]\]/g, (match, key) => {
+      const next = variables?.[key.trim()];
+      return next == null ? match : String(next);
+    });
+  }
+  if (Array.isArray(value)) return value.map((entry) => applyVariables(entry, variables));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, applyVariables(entry, variables)]),
+    );
+  }
+  return value;
+}
+
+function mergeTemplate(base, overlay) {
+  const merged = { ...base };
+  Object.entries(overlay || {}).forEach(([key, value]) => {
+    if (
+      value && typeof value === 'object' && !Array.isArray(value)
+      && merged[key] && typeof merged[key] === 'object' && !Array.isArray(merged[key])
+    ) {
+      merged[key] = mergeTemplate(merged[key], value);
+    } else {
+      merged[key] = value;
+    }
+  });
+  return merged;
+}
+
+function expandButtonTemplate(card, templates, seen) {
+  const names = Array.isArray(card.template) ? card.template : [card.template];
+  let merged = {};
+  let found = false;
+  names.forEach((name) => {
+    const key = `b:${name}`;
+    if (!name || seen.has(key) || !templates[name]) return;
+    seen.add(key);
+    found = true;
+    const parent = expandButtonTemplate(
+      { ...templates[name], type: 'custom:button-card' },
+      templates,
+      seen,
+    );
+    const { type, template, ...rest } = parent;
+    merged = mergeTemplate(merged, rest);
+  });
+  if (!found) return card;
+  const { template, ...own } = card;
+  return mergeTemplate(merged, own);
+}
+
+function expandCardTemplates(card, libraries, seen = new Set()) {
+  if (!card || typeof card !== 'object') return card;
+  if (Array.isArray(card)) return card.map((entry) => expandCardTemplates(entry, libraries, seen));
+
+  let current = card;
+  if (current.type === 'custom:streamline-card' && current.template && libraries.streamline?.[current.template]) {
+    const key = `s:${current.template}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      const template = libraries.streamline[current.template];
+      const inner = template?.card?.type ? template.card : (template?.type ? template : null);
+      if (inner) {
+        const defaults = template.default && !Array.isArray(template.default) ? template.default : {};
+        current = applyVariables(structuredClone(inner), { ...defaults, ...(current.variables || {}) });
+      }
+    }
+  }
+  if (current.type === 'custom:button-card' && current.template && libraries.button) {
+    current = expandButtonTemplate(current, libraries.button, seen);
+  }
+
+  const next = { ...current };
+  if (Array.isArray(current.cards)) {
+    next.cards = current.cards.map((entry) => expandCardTemplates(entry, libraries, seen));
+  }
+  if (current.card && typeof current.card === 'object') {
+    next.card = expandCardTemplates(current.card, libraries, seen);
+  }
+  if (current.custom_fields && typeof current.custom_fields === 'object') {
+    next.custom_fields = Object.fromEntries(
+      Object.entries(current.custom_fields).map(([key, value]) => [
+        key,
+        expandCardTemplates(value, libraries, seen),
+      ]),
+    );
+  }
+  return next;
+}
+
+let libraryPromise = null;
+
+async function loadCardLibraries(hass) {
+  if (!hass?.connection?.sendMessagePromise) return { button: {}, streamline: {} };
+  if (!libraryPromise) {
+    libraryPromise = (async () => {
+      const listed = await hass.connection.sendMessagePromise({ type: 'lovelace/dashboards/list' });
+      const paths = [null, ...(Array.isArray(listed) ? listed.map((dashboard) => dashboard.url_path) : [])];
+      const button = {};
+      const streamline = {};
+      for (const urlPath of paths) {
+        try {
+          const config = await hass.connection.sendMessagePromise({
+            type: 'lovelace/config',
+            url_path: urlPath,
+            force: false,
+          });
+          Object.assign(button, config?.button_card_templates || {});
+          Object.assign(streamline, config?.streamline_templates || {});
+        } catch {
+          // Dashboards without a saved config are skipped.
+        }
+      }
+      return { button, streamline };
+    })().catch((error) => {
+      libraryPromise = null;
+      throw error;
+    });
+  }
+  return libraryPromise;
+}
+
+function cardUsesTemplate(card) {
+  return JSON.stringify(card || {}).includes('"template"');
+}
+
+export async function prepareEmbeddedCard(card, hass) {
   const config = sanitizeCardConfig(card);
   if (!config) throw new Error('Ungültige Karten-Konfiguration');
-  if (!canRenderHaCards()) {
-    throw new Error('Home Assistant stellt hier keine Karten bereit');
+  if (canRenderHaCards()) await window.loadCardHelpers();
+  let prepared = config;
+  if (cardUsesTemplate(prepared)) {
+    try {
+      prepared = expandCardTemplates(prepared, await loadCardLibraries(hass));
+    } catch (error) {
+      console.warn('The Monitor: card templates were not expanded', error);
+    }
   }
+  await waitForCustomElements(collectCustomTags(prepared));
+  return replaceMissingCustomCards(prepared);
+}
+
+export async function mountHaCard(parent, card, hass, { preview = false } = {}) {
+  const prepared = await prepareEmbeddedCard(card, hass);
+  if (customElements.get('hui-card')) {
+    const element = document.createElement('hui-card');
+    parent.appendChild(element);
+    if (hass) element.hass = hass;
+    element.preview = preview;
+    element.config = prepared;
+    return element;
+  }
+  if (!canRenderHaCards()) throw new Error('Home Assistant stellt hier keine Karten bereit');
   const helpers = await window.loadCardHelpers();
-  const element = await helpers.createCardElement(config);
+  const element = await helpers.createCardElement(prepared);
   if (!element) throw new Error('Karte konnte nicht erzeugt werden');
-  element.style.display = 'block';
-  element.style.height = '100%';
-  element.style.minHeight = '0';
+  parent.appendChild(element);
+  if (hass) element.hass = hass;
   return element;
 }
 

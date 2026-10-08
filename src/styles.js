@@ -4653,4 +4653,144 @@ hui-card:has(the-monitor-dashboard) {
   height: 100% !important;
   width: 100% !important;
 }
+
+/* —— Schwarz bunt: pastel cards on black —— */
+[data-tm-theme="blackColorful"] .tm-card,
+[data-tm-theme="blackColorful"] .tm-quick-action,
+[data-tm-theme="blackColorful"] .tm-sensor-widget,
+[data-tm-theme="blackColorful"] .tm-alarm-widget,
+[data-tm-theme="blackColorful"] .tm-contact-widget,
+[data-tm-theme="blackColorful"] .tm-brightness-action,
+[data-tm-theme="blackColorful"] .tm-cover-action {
+  background: var(--tm-surface);
+  color: var(--tm-tile-fg);
+  border: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-radius: var(--tm-radius-xl, 2rem);
+}
+
+[data-tm-theme="blackColorful"] .tm-scene-btn {
+  color: var(--tm-tile-fg, #1a1a1a);
+  border: none;
+  border-radius: var(--tm-radius-xl, 2rem);
+}
+
+[data-tm-theme="blackColorful"] .tm-scene-gradient {
+  opacity: 1;
+}
+
+[data-tm-theme="blackColorful"] .tm-scene-btn .tm-scene-icon {
+  background: rgba(0, 0, 0, 0.12);
+  color: inherit;
+}
+
+[data-tm-theme="blackColorful"] .tm-scene-btn--pastel-active {
+  box-shadow: inset 0 0 0 2.5px var(--tm-tile-fg, #1a1a1a);
+}
+
+[data-tm-theme="blackColorful"] .tm-weather-widget,
+[data-tm-theme="blackColorful"] .tm-weather-widget--pastel {
+  color: var(--tm-tile-fg, #1a1a1a);
+  background: var(--tm-surface);
+}
+
+[data-tm-theme="blackColorful"] .tm-media-card {
+  background: var(--tm-surface) !important;
+  color: var(--tm-tile-fg, #1a1a1a);
+}
+
+[data-tm-theme="blackColorful"] .tm-media-device-brand,
+[data-tm-theme="blackColorful"] .tm-media-track-artist {
+  color: var(--tm-tile-fg, #1a1a1a);
+  opacity: 0.5;
+}
+
+[data-tm-theme="blackColorful"] .tm-media-power-btn,
+[data-tm-theme="blackColorful"] .tm-media-control-btn {
+  color: var(--tm-tile-fg, #1a1a1a);
+}
+
+[data-tm-theme="blackColorful"] .tm-media-panel {
+  background: color-mix(in srgb, var(--tm-tile-fg, #1a1a1a) 10%, transparent);
+}
+
+[data-tm-theme="blackColorful"] .tm-brightness-fill {
+  background: linear-gradient(to top, rgba(26, 26, 26, 0.28), rgba(26, 26, 26, 0.06));
+}
+
+[data-tm-theme="blackColorful"] .tm-brightness-header .tm-font-bold,
+[data-tm-theme="blackColorful"] .tm-brightness-header .tm-text-xs {
+  color: var(--tm-tile-fg, #1a1a1a);
+}
+
+[data-tm-theme="blackColorful"] .tm-brightness-action state-icon,
+[data-tm-theme="blackColorful"] .tm-brightness-action ha-icon,
+[data-tm-theme="blackColorful"] .tm-brightness-header state-icon,
+[data-tm-theme="blackColorful"] .tm-brightness-header ha-icon {
+  color: var(--tm-tile-fg, #1a1a1a) !important;
+}
+
+[data-tm-theme="blackColorful"] .tm-cover-fill {
+  background: linear-gradient(to top, rgba(26, 26, 26, 0.28), rgba(26, 26, 26, 0.06));
+}
+
+[data-tm-theme="blackColorful"] .tm-sankey-widget,
+[data-tm-theme="blackColorful"] .tm-energy-device-card {
+  background: var(--tm-surface);
+  color: var(--tm-tile-fg, #1a1a1a);
+  border: none;
+  backdrop-filter: none;
+}
+
+[data-tm-theme="blackColorful"] .tm-btn-round {
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
+[data-tm-theme="blackColorful"] .tm-btn-round:hover {
+  background: #333333;
+}
+
+[data-tm-theme="blackColorful"] .tm-overlay-gradient {
+  display: none;
+}
+
+[data-tm-theme="blackColorful"] .tm-title-xl,
+[data-tm-theme="blackColorful"] .tm-title-lg {
+  text-shadow: none !important;
+}
+`;
+
+export const haCardHostStyles = `
+.tm-ha-card-host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  box-sizing: border-box;
+}
+.tm-ha-card-host.is-editing {
+  pointer-events: none;
+}
+.tm-ha-card-host > * {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.tm-ha-card-host-message {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+  color: white;
+  font: 500 0.875rem/1.4 system-ui, sans-serif;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 1.25rem;
+}
 `;

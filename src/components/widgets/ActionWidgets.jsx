@@ -22,7 +22,13 @@ import LightColorCircles from '../LightColorCircles';
 import { getOverlayRoot, useOverlayLock } from '../../lib/overlayPortal';
 import { useConfig } from '../../context/ConfigContext';
 
-import { getSceneGradients, isLightMode, isColorfulMode, resolveColorTheme } from '../../lib/colorThemes';
+import {
+  getSceneGradients,
+  isLightMode,
+  isColorfulMode,
+  isBlackColorfulMode,
+  resolveColorTheme,
+} from '../../lib/colorThemes';
 
 const LIGHT_ENTITY_COLORS = {
   light: { bg: 'transparent', icon: '#e4e4e7' },
@@ -56,6 +62,12 @@ export function getSceneGradient(index, entityId, appearance) {
 
 export function getEntityColors(domain, appearance) {
   if (isLightMode(appearance)) return LIGHT_ENTITY_COLORS[domain] || LIGHT_ENTITY_COLORS.default;
+  if (isBlackColorfulMode(appearance)) {
+    return {
+      bg: 'var(--tm-surface)',
+      icon: 'var(--tm-tile-fg)',
+    };
+  }
   if (isColorfulMode(appearance)) {
     const { accentRgb } = resolveColorTheme(appearance);
     return {
@@ -125,6 +137,8 @@ export function getCoverPopupSummary(hass, entityIds, slotLabel, getEntity) {
 }
 
 function BrightnessQuickAction({ widget, hass, getEntity, onConfigure, editMode }) {
+  const { config } = useConfig();
+
   if (!widget.entity_id) {
     return (
       <button type="button" className="tm-quick-action tm-brightness-action empty" onClick={onConfigure}>
@@ -199,7 +213,16 @@ function BrightnessQuickAction({ widget, hass, getEntity, onConfigure, editMode 
     >
       <div className="tm-brightness-fill" />
       <div className="tm-brightness-header">
-        <EntityIcon hass={hass} entity={entity} overrideIcon={widget.icon} size={22} style={{ opacity: 0.9, color: '#fef08a' }} />
+        <EntityIcon
+          hass={hass}
+          entity={entity}
+          overrideIcon={widget.icon}
+          size={22}
+          style={{
+            opacity: 0.9,
+            color: isBlackColorfulMode(config.appearance) ? 'var(--tm-tile-fg)' : '#fef08a',
+          }}
+        />
         <div className="tm-flex-col" style={{ minWidth: 0, flex: 1 }}>
           <div className="tm-font-bold" style={{ fontSize: '1rem', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
           <div className="tm-text-xs tm-opacity-70">{value}%</div>
@@ -251,9 +274,15 @@ export function QuickActionWidget({ widget, hass, getEntity, onConfigure, editMo
   const activeStyle = active
     ? (isLightMode(appearance)
       ? { background: 'rgba(255, 255, 255, 0.15)', color: '#ffffff' }
-      : isColorfulMode(appearance)
-        ? { background: `rgba(${resolveColorTheme(appearance).accentRgb}, 0.45)`, color: '#ffffff' }
-        : { background: 'rgba(234, 179, 8, 0.2)', color: '#fef08a' })
+      : isBlackColorfulMode(appearance)
+        ? {
+          background: 'var(--tm-surface)',
+          color: 'var(--tm-tile-fg)',
+          boxShadow: 'inset 0 0 0 2.5px var(--tm-tile-fg)',
+        }
+        : isColorfulMode(appearance)
+          ? { background: `rgba(${resolveColorTheme(appearance).accentRgb}, 0.45)`, color: '#ffffff' }
+          : { background: 'rgba(234, 179, 8, 0.2)', color: '#fef08a' })
     : { background: colors.bg };
 
   return (
@@ -351,22 +380,33 @@ export function SceneWidget({ widget, widgetIndex, hass, getEntity, onConfigure,
     activateScene(hass, widget.entity_id);
   };
 
+  const blackColorful = isBlackColorfulMode(config.appearance);
+
   return (
     <button type="button" className="tm-scene-btn" onClick={handleClick}>
-      <div className="tm-scene-gradient" style={{ background: gradient }} />
+      <div className="tm-scene-gradient" style={{ background: gradient, opacity: blackColorful ? 1 : undefined }} />
       <div className="tm-scene-icon">
-        <EntityIcon hass={hass} entity={entity} overrideIcon={widget.icon} size={18} style={{ color: 'white' }} />
+        <EntityIcon
+          hass={hass}
+          entity={entity}
+          overrideIcon={widget.icon}
+          size={18}
+          style={{ color: blackColorful ? 'currentColor' : 'white' }}
+        />
       </div>
       <div className="tm-scene-label">{label}</div>
     </button>
   );
 }
 
-function PopupTrigger({ variant, summary, gradient, active, slot, primaryEntity, entityCount, hass, onClick }) {
+function PopupTrigger({
+  variant, summary, gradient, active, slot, primaryEntity, entityCount, hass, onClick, appearance,
+}) {
+  const blackColorful = isBlackColorfulMode(appearance);
   return (
     <button
       type="button"
-      className={`tm-scene-btn tm-qa-scene-trigger${active ? ' active' : ''}`}
+      className={`tm-scene-btn tm-qa-scene-trigger${active ? ' active' : ''}${blackColorful && active ? ' tm-scene-btn--pastel-active' : ''}`}
       onClick={onClick}
       aria-label={`${summary.label} ${summary.sub}`}
     >
@@ -374,9 +414,11 @@ function PopupTrigger({ variant, summary, gradient, active, slot, primaryEntity,
         className="tm-scene-gradient"
         style={{
           background: active
-            ? 'linear-gradient(135deg, rgba(234, 179, 8, 0.55), rgba(180, 130, 0, 0.35))'
+            ? (blackColorful
+              ? gradient
+              : 'linear-gradient(135deg, rgba(234, 179, 8, 0.55), rgba(180, 130, 0, 0.35))')
             : gradient,
-          opacity: active ? 1 : 0.55,
+          opacity: blackColorful ? 1 : (active ? 1 : 0.55),
         }}
       />
       {variant === 'status' ? (
@@ -394,7 +436,7 @@ function PopupTrigger({ variant, summary, gradient, active, slot, primaryEntity,
               entity={primaryEntity}
               overrideIcon={slot.icon || (entityCount > 1 ? 'mdi:layers' : '')}
               size={18}
-              style={{ color: 'white' }}
+              style={{ color: blackColorful ? 'currentColor' : 'white' }}
             />
             {entityCount > 1 && <span className="tm-qa-entity-count">{entityCount}</span>}
           </div>
@@ -462,6 +504,7 @@ export function PopupWidget({
         entityCount={entityIds.length}
         hass={hass}
         onClick={openPopup}
+        appearance={config.appearance}
       />
       <PopupTrigger
         variant="status"
@@ -473,6 +516,7 @@ export function PopupWidget({
         entityCount={entityIds.length}
         hass={hass}
         onClick={openPopup}
+        appearance={config.appearance}
       />
     </div>
   );

@@ -8,8 +8,10 @@ import { getHassBaseUrl, isHomeAssistant } from './hass';
 import {
   isLightMode,
   isColorfulMode,
+  isBlackColorfulMode,
   getColorSet,
   buildShadePalette,
+  PASTEL_CARD_COLORS,
 } from './colorThemes';
 
 export const WEATHER_VIDEOS = {
@@ -72,6 +74,15 @@ function getColorfulWeatherGradient(condition, hour, appearance) {
   return `linear-gradient(160deg, ${shades[1]} 0%, ${shades[4]} 100%)`;
 }
 
+function getBlackColorfulWeatherGradient(condition, hour) {
+  const isNight = hour < 6 || hour >= 20;
+  if (condition === 'clear' && isNight) return PASTEL_CARD_COLORS[4].bg; // lavender
+  if (condition === 'sunny' || condition === 'clear') return PASTEL_CARD_COLORS[2].bg; // yellow
+  if (condition === 'rainy' || condition === 'pouring') return PASTEL_CARD_COLORS[3].bg; // sky
+  if (condition === 'snowy' || condition === 'hail') return PASTEL_CARD_COLORS[5].bg; // off-white
+  return PASTEL_CARD_COLORS[3].bg; // sky default
+}
+
 export function getConditionMeta(condition, hour = new Date().getHours(), appearance) {
   const isNight = hour < 6 || hour >= 20;
   if (isLightMode(appearance)) {
@@ -84,6 +95,12 @@ export function getConditionMeta(condition, hour = new Date().getHours(), appear
     return {
       ...(CONDITION_META[condition] || CONDITION_META.cloudy),
       gradient: getColorfulWeatherGradient(condition, hour, appearance),
+    };
+  }
+  if (isBlackColorfulMode(appearance)) {
+    return {
+      ...(CONDITION_META[condition] || CONDITION_META.cloudy),
+      gradient: getBlackColorfulWeatherGradient(condition, hour),
     };
   }
   if (condition === 'clear' && isNight) return CONDITION_META['clear-night'];

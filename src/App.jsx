@@ -14,7 +14,8 @@ function App() {
     () => getThemeAttributes(config.appearance),
     [config.appearance],
   );
-  const showBackgroundImage = config.appearance?.mode !== 'light';
+  const showBackgroundImage = config.appearance?.mode !== 'light'
+    && config.appearance?.mode !== 'blackColorful';
   const [view, setView] = useState('dashboard');
   const [activeProfile] = useState(DEFAULT_PROFILE);
   const [lastActivity, setLastActivity] = useState(Date.now());

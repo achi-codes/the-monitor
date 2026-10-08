@@ -2,7 +2,20 @@ export const COLOR_MODES = {
   dark: { id: 'dark', label: 'Schwarz' },
   light: { id: 'light', label: 'Weiß' },
   colorful: { id: 'colorful', label: 'Bunt' },
+  blackColorful: { id: 'blackColorful', label: 'Schwarz bunt' },
 };
+
+/** Soft pastel card palette for "Schwarz bunt" (black + colorful cards). */
+export const PASTEL_CARD_COLORS = [
+  { bg: '#D0F2E0', fg: '#1a1a1a' }, // mint
+  { bg: '#F7BD9D', fg: '#1a1a1a' }, // peach
+  { bg: '#F9E892', fg: '#1a1a1a' }, // yellow
+  { bg: '#BDE0F7', fg: '#1a1a1a' }, // sky
+  { bg: '#E0C3FC', fg: '#1a1a1a' }, // lavender
+  { bg: '#F0EEE8', fg: '#1a1a1a' }, // off-white
+  { bg: '#F5C6D0', fg: '#1a1a1a' }, // soft pink
+  { bg: '#2C2C2C', fg: '#ffffff' }, // charcoal accent card
+];
 
 export const COLOR_SETS = [
   {
@@ -112,9 +125,32 @@ function buildColorfulSceneGradients(hex) {
 }
 
 function migrateMode(mode) {
-  if (mode === 'light' || mode === 'colorful' || mode === 'dark') return mode;
+  if (mode === 'light' || mode === 'colorful' || mode === 'dark' || mode === 'blackColorful') return mode;
   if (mode === 'monochrome') return 'dark';
   return DEFAULT_APPEARANCE.mode;
+}
+
+function hashKey(key) {
+  const value = String(key || '0');
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = value.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash);
+}
+
+export function getPastelCardColor(key = '0') {
+  return PASTEL_CARD_COLORS[hashKey(key) % PASTEL_CARD_COLORS.length];
+}
+
+export function getPastelCardVars(key = '0') {
+  const { bg, fg } = getPastelCardColor(key);
+  return {
+    '--tm-surface': bg,
+    '--tm-surface-2': bg,
+    '--tm-surface-border': 'transparent',
+    '--tm-tile-fg': fg,
+  };
 }
 
 export function normalizeAppearance(raw = {}) {
@@ -142,6 +178,14 @@ export function resolveColorTheme(appearance = DEFAULT_APPEARANCE) {
   if (normalized.mode === 'colorful') {
     const set = getColorSet(normalized.colorSet);
     return { mode: 'colorful', colorSet: set.id, accent: set.accent, accentRgb: set.accentRgb };
+  }
+  if (normalized.mode === 'blackColorful') {
+    return {
+      mode: 'blackColorful',
+      colorSet: normalized.colorSet,
+      accent: '#1a1a1a',
+      accentRgb: '26, 26, 26',
+    };
   }
   return {
     mode: 'dark',
@@ -216,10 +260,34 @@ function buildColorfulThemeVars(accent, accentRgb) {
   };
 }
 
+function buildBlackColorfulThemeVars() {
+  const mint = PASTEL_CARD_COLORS[0];
+  return {
+    '--tm-bg': '#000000',
+    '--tm-fg': '#ffffff',
+    '--tm-surface': mint.bg,
+    '--tm-surface-2': '#F0EEE8',
+    '--tm-surface-border': 'transparent',
+    '--tm-tile-fg': mint.fg,
+    '--tm-overlay': 'none',
+    '--tm-screensaver-gradient': 'linear-gradient(135deg, #D0F2E0 0%, #000 40%, #E0C3FC 100%)',
+    '--tm-bg-image-opacity': '0',
+    '--tm-settings-bg': 'rgba(0, 0, 0, 0.92)',
+    '--tm-settings-surface': 'rgba(255, 255, 255, 0.06)',
+    '--tm-settings-surface-border': 'rgba(255, 255, 255, 0.08)',
+    '--tm-accent': '#1a1a1a',
+    '--tm-accent-rgb': '26, 26, 26',
+    '--tm-vi-accent': '#1a1a1a',
+    '--tm-vi-track': 'rgba(0, 0, 0, 0.12)',
+    '--tm-radius-xl': '2rem',
+  };
+}
+
 export function getThemeCssVars(appearance = DEFAULT_APPEARANCE) {
   const theme = resolveColorTheme(appearance);
   if (theme.mode === 'light') return buildLightThemeVars();
   if (theme.mode === 'colorful') return buildColorfulThemeVars(theme.accent, theme.accentRgb);
+  if (theme.mode === 'blackColorful') return buildBlackColorfulThemeVars();
   return buildDarkThemeVars();
 }
 
@@ -231,10 +299,13 @@ export function getThemeAttributes(appearance = DEFAULT_APPEARANCE) {
   };
 }
 
+const BLACK_COLORFUL_SCENE_GRADIENTS = PASTEL_CARD_COLORS.map(({ bg }) => bg);
+
 export function getSceneGradients(appearance = DEFAULT_APPEARANCE) {
   const { mode, colorSet } = normalizeAppearance(appearance);
   if (mode === 'light') return LIGHT_SCENE_GRADIENTS;
   if (mode === 'colorful') return buildColorfulSceneGradients(getColorSet(colorSet).accent);
+  if (mode === 'blackColorful') return BLACK_COLORFUL_SCENE_GRADIENTS;
   return DARK_SCENE_GRADIENTS;
 }
 
@@ -248,4 +319,8 @@ export function isLightMode(appearance = DEFAULT_APPEARANCE) {
 
 export function isColorfulMode(appearance = DEFAULT_APPEARANCE) {
   return normalizeAppearance(appearance).mode === 'colorful';
+}
+
+export function isBlackColorfulMode(appearance = DEFAULT_APPEARANCE) {
+  return normalizeAppearance(appearance).mode === 'blackColorful';
 }

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   canRenderHaCards,
-  createHaCardElement,
   describeCard,
   monitorHostFrom,
+  mountHaCard,
 } from '../lib/haCards';
 
 function hostMessage(text) {
@@ -21,10 +21,9 @@ export default function HaCardWidget({ widget, hass, editMode = false }) {
   const hassRef = useRef(hass);
   const editModeRef = useRef(editMode);
   const cardConfigRef = useRef(widget.card);
-  const rebuilds = useRef(0);
-  const [rebuildToken, setRebuildToken] = useState(0);
   const [live, setLive] = useState(() => canRenderHaCards());
   const configKey = JSON.stringify(widget.card || null);
+  const hassReady = Boolean(hass?.connection);
 
   hassRef.current = hass;
   editModeRef.current = editMode;
@@ -33,10 +32,6 @@ export default function HaCardWidget({ widget, hass, editMode = false }) {
   useEffect(() => {
     setLive(Boolean(monitorHostFrom(slotRef.current)) && canRenderHaCards());
   }, [hass]);
-
-  useEffect(() => {
-    rebuilds.current = 0;
-  }, [configKey]);
 
   useEffect(() => {
     const slot = slotRef.current;
@@ -54,20 +49,13 @@ export default function HaCardWidget({ widget, hass, editMode = false }) {
     const mount = async () => {
       wrapper.replaceChildren();
       try {
-        const element = await createHaCardElement(card);
+        const element = await mountHaCard(wrapper, card, hassRef.current, {
+          preview: editModeRef.current,
+        });
         if (cancelled) {
           element.remove();
           return;
         }
-        if (hassRef.current) element.hass = hassRef.current;
-        const onRebuild = (event) => {
-          event.stopPropagation();
-          if (cancelled || rebuilds.current >= 3) return;
-          rebuilds.current += 1;
-          setRebuildToken((token) => token + 1);
-        };
-        element.addEventListener('ll-rebuild', onRebuild);
-        wrapper.appendChild(element);
         cardRef.current = element;
       } catch (error) {
         if (cancelled) return;
@@ -84,7 +72,7 @@ export default function HaCardWidget({ widget, hass, editMode = false }) {
       hostRef.current = null;
       wrapper.remove();
     };
-  }, [configKey, rebuildToken, slotName]);
+  }, [configKey, hassReady, slotName]);
 
   useEffect(() => {
     const element = cardRef.current;
@@ -93,6 +81,8 @@ export default function HaCardWidget({ widget, hass, editMode = false }) {
 
   useEffect(() => {
     hostRef.current?.classList.toggle('is-editing', Boolean(editMode));
+    const element = cardRef.current;
+    if (element) element.preview = Boolean(editMode);
   }, [editMode]);
 
   const summary = widget.card ? describeCard(widget.card) : 'Keine Karte gewählt';

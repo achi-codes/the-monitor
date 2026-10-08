@@ -25,8 +25,8 @@ function syncVideoTime(from, to) {
   }
 }
 
-function WeatherBackground({ condition, meta, hass }) {
-  const videoSrc = getWeatherVideoSrc(hass, condition);
+function WeatherBackground({ condition, meta, hass, flat = false }) {
+  const videoSrc = flat ? null : getWeatherVideoSrc(hass, condition);
   const fastRef = useRef(null);
   const slowRef = useRef(null);
   const [mode, setMode] = useState('fast');
@@ -114,12 +114,14 @@ function WeatherBackground({ condition, meta, hass }) {
           opacity: videoSrc ? 0.45 : 1,
         }}
       />
-      <div
-        className="tm-weather-bg"
-        style={{
-          background: 'linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 60%)',
-        }}
-      />
+      {!flat && (
+        <div
+          className="tm-weather-bg"
+          style={{
+            background: 'linear-gradient(to top, rgba(0,0,0,0.45) 0%, transparent 60%)',
+          }}
+        />
+      )}
     </>
   );
 }
@@ -280,12 +282,13 @@ export default function WeatherWidget({ entityId: entityIdProp, compact = false,
 
   if (!entityId || !data) return <WeatherPlaceholder onConfigure={onConfigure} />;
   const meta = getConditionMeta(data.condition, new Date().getHours(), config.appearance);
+  const flatPastel = config.appearance?.mode === 'blackColorful';
 
   return (
     <>
       <button
         type="button"
-        className={`tm-card tm-weather-widget${compact ? ' tm-weather-compact' : ''}`}
+        className={`tm-card tm-weather-widget${compact ? ' tm-weather-compact' : ''}${flatPastel ? ' tm-weather-widget--pastel' : ''}`}
         onClick={() => {
           if (editMode) {
             onConfigure?.();
@@ -295,7 +298,7 @@ export default function WeatherWidget({ entityId: entityIdProp, compact = false,
         }}
         aria-label="Wetterdetails öffnen"
       >
-        <WeatherBackground condition={data.condition} meta={meta} hass={hass} />
+        <WeatherBackground condition={data.condition} meta={meta} hass={hass} flat={flatPastel} />
 
         <div className="tm-weather-content">
           <div className="tm-weather-main">

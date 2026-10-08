@@ -13,6 +13,8 @@ import {
   resizeEdgeDelta,
   isGridCellOccupied,
 } from '../lib/layout';
+import { getPastelCardVars, isBlackColorfulMode } from '../lib/colorThemes';
+import { useConfig } from '../context/ConfigContext';
 import { renderDashboardWidget } from './widgets/WidgetRenderer';
 import SlotWidgetPickerPopup from './SlotWidgetPickerPopup';
 
@@ -71,6 +73,8 @@ export default function DashboardGrid({
   onAddWidgetAt,
   onSlotPickerOpenChange,
 }) {
+  const { config } = useConfig();
+  const blackColorful = isBlackColorfulMode(config.appearance);
   const gridRef = useRef(null);
   const [gridSize, setGridSize] = useState(null);
   const [gap, setGap] = useState(24);
@@ -275,10 +279,13 @@ export default function DashboardGrid({
   }, [onAddWidgetAt, onSelectWidget, page.widgets, pageIndex, slotPicker]);
 
   const getItemStyle = (widget) => {
+    const pastelVars = blackColorful ? getPastelCardVars(widget.id) : null;
+
     if (!editMode) {
       return {
         gridColumn: `${widget.x + 1} / span ${widget.w}`,
         gridRow: `${widget.y + 1} / span ${widget.h}`,
+        ...pastelVars,
       };
     }
 
@@ -287,6 +294,7 @@ export default function DashboardGrid({
         gridColumn: `${widget.x + 1} / span ${widget.w}`,
         gridRow: `${widget.y + 1} / span ${widget.h}`,
         visibility: 'hidden',
+        ...pastelVars,
       };
     }
 
@@ -298,6 +306,7 @@ export default function DashboardGrid({
       top: `${rect.top}px`,
       width: `${rect.width}px`,
       height: `${rect.height}px`,
+      ...pastelVars,
     };
 
     if (isActive) {

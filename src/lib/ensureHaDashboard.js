@@ -33,13 +33,22 @@ async function waitForHass() {
   return null;
 }
 
+function isMissingConfig(error) {
+  const message = `${error?.message || error}`;
+  return /config_not_found|No config found/i.test(message);
+}
+
 async function ensureDashboardView(hass) {
-  const config = await callWS(hass, {
-    type: 'lovelace/config',
-    url_path: DASHBOARD_PATH,
-    force: false,
-  });
-  if (config?.views?.length) return;
+  try {
+    const config = await callWS(hass, {
+      type: 'lovelace/config',
+      url_path: DASHBOARD_PATH,
+      force: false,
+    });
+    if (config?.views?.length) return;
+  } catch (error) {
+    if (!isMissingConfig(error)) throw error;
+  }
   await callWS(hass, {
     type: 'lovelace/config/save',
     url_path: DASHBOARD_PATH,

@@ -1,13 +1,49 @@
 import { useState } from 'react';
-import { Check, LayoutGrid, Plus, X } from 'lucide-react';
+import {
+  Activity,
+  Camera,
+  Check,
+  CloudSun,
+  DoorOpen,
+  Gauge,
+  LayoutGrid,
+  LayoutTemplate,
+  Layers,
+  Palette,
+  PlayCircle,
+  Plus,
+  Shield,
+  ShoppingCart,
+  Sparkles,
+  Blinds,
+  Zap,
+  X,
+} from 'lucide-react';
 import { LAYOUT_PRESETS } from '../lib/layoutPresets';
 import { WIDGET_TYPES } from '../lib/layout';
 import WidgetInspector from './WidgetInspector';
 
+const WIDGET_ICONS = {
+  weather: CloudSun,
+  media: PlayCircle,
+  camera: Camera,
+  shopping: ShoppingCart,
+  quickAction: Zap,
+  alarm: Shield,
+  cover: Blinds,
+  coverPopup: Blinds,
+  popup: Layers,
+  scene: Palette,
+  sensor: Gauge,
+  sensorStatus: DoorOpen,
+  sankey: Activity,
+  energyTile: Sparkles,
+  haCard: LayoutTemplate,
+};
+
 export default function DashboardEditor({
   activePageIndex,
   selectedWidget,
-  onSelectWidget,
   onDone,
   onApplyPreset,
   onAddWidget,
@@ -24,19 +60,37 @@ export default function DashboardEditor({
     setShowPalette(false);
   };
 
+  const togglePresets = () => {
+    setShowPresets((v) => !v);
+    setShowPalette(false);
+  };
+
+  const togglePalette = () => {
+    setShowPalette((v) => !v);
+    setShowPresets(false);
+  };
+
   return (
     <div className="tm-dashboard-editor">
       <div className="tm-dashboard-editor-toolbar">
-        <button type="button" className="tm-dashboard-editor-btn" onClick={() => setShowPresets((v) => !v)}>
-          <LayoutGrid size={18} />
+        <button
+          type="button"
+          className={`tm-dashboard-editor-btn${showPresets ? ' active' : ''}`}
+          onClick={togglePresets}
+        >
+          <LayoutGrid size={16} />
           Vorlagen
         </button>
-        <button type="button" className="tm-dashboard-editor-btn" onClick={() => setShowPalette((v) => !v)}>
-          <Plus size={18} />
+        <button
+          type="button"
+          className={`tm-dashboard-editor-btn${showPalette ? ' active' : ''}`}
+          onClick={togglePalette}
+        >
+          <Plus size={16} />
           Widget
         </button>
         <button type="button" className="tm-dashboard-editor-done" onClick={onDone}>
-          <Check size={18} />
+          <Check size={16} />
           Fertig
         </button>
       </div>
@@ -46,10 +100,10 @@ export default function DashboardEditor({
           <div className="tm-dashboard-editor-panel-header">
             <strong>Layout-Vorlagen</strong>
             <button type="button" className="tm-dashboard-editor-close" onClick={() => setShowPresets(false)} aria-label="Schließen">
-              <X size={16} />
+              <X size={14} />
             </button>
           </div>
-          <p className="tm-text-sm tm-opacity-70">Entitäten bleiben erhalten — nur Anordnung und Größen ändern sich.</p>
+          <p className="tm-widget-inspector-hint">Entitäten bleiben erhalten — nur Anordnung und Größen ändern sich.</p>
           <div className="tm-preset-grid">
             {LAYOUT_PRESETS.map((preset) => (
               <button
@@ -79,16 +133,21 @@ export default function DashboardEditor({
           <div className="tm-dashboard-editor-panel-header">
             <strong>Widget hinzufügen</strong>
             <button type="button" className="tm-dashboard-editor-close" onClick={() => setShowPalette(false)} aria-label="Schließen">
-              <X size={16} />
+              <X size={14} />
             </button>
           </div>
           <div className="tm-palette-grid">
-            {Object.entries(WIDGET_TYPES).map(([type, meta]) => (
-              <button key={type} type="button" className="tm-palette-item" onClick={() => handleAddType(type)}>
-                <span className="tm-palette-icon">{meta.label[0]}</span>
-                <span>{meta.label}</span>
-              </button>
-            ))}
+            {Object.entries(WIDGET_TYPES).map(([type, meta]) => {
+              const Icon = WIDGET_ICONS[type] || Plus;
+              return (
+                <button key={type} type="button" className="tm-palette-item" onClick={() => handleAddType(type)}>
+                  <span className="tm-palette-icon">
+                    <Icon size={14} />
+                  </span>
+                  <span>{meta.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

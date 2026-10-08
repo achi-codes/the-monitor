@@ -35,38 +35,38 @@ export default function HaCardConfig({ widget, pageIndex, onUpdate, hass }) {
   return (
     <div className="tm-widget-inspector-section">
       <div className="tm-widget-inspector-label">Home-Assistant-Karte</div>
-      <p className="tm-text-xs tm-opacity-60" style={{ lineHeight: 1.45, marginBottom: '0.5rem' }}>
+      <p className="tm-widget-inspector-hint">
         {widget.card
           ? describeCard(widget.card)
           : 'Tile, Entitäten, Thermostat, Diagramm oder eine Custom Card.'}
       </p>
       <button
         type="button"
-        className="tm-btn-secondary"
-        style={{ width: '100%', marginBottom: '0.5rem' }}
+        className="tm-btn-secondary tm-btn-block"
         onClick={() => setPickerOpen(true)}
       >
         Aus Dashboard wählen
       </button>
-      <label className="tm-text-xs tm-opacity-70" htmlFor={`ha-card-yaml-${widget.id}`}>Karten-YAML</label>
-      <textarea
-        id={`ha-card-yaml-${widget.id}`}
-        className="tm-input tm-ha-card-yaml"
-        value={draft}
-        onChange={(event) => {
-          setDraft(event.target.value);
-          setYamlError('');
-        }}
-        placeholder={'type: tile\nentity: light.wohnzimmer'}
-        spellCheck={false}
-      />
+      <div className="tm-widget-inspector-field">
+        <label className="tm-widget-inspector-field-label" htmlFor={`ha-card-yaml-${widget.id}`}>Karten-YAML</label>
+        <textarea
+          id={`ha-card-yaml-${widget.id}`}
+          className="tm-input tm-ha-card-yaml"
+          value={draft}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            setYamlError('');
+          }}
+          placeholder={'type: tile\nentity: light.wohnzimmer'}
+          spellCheck={false}
+        />
+      </div>
       {yamlError ? (
         <div className="tm-ha-card-error">{yamlError}</div>
       ) : null}
       <button
         type="button"
-        className="tm-btn-secondary"
-        style={{ width: '100%', marginTop: '0.5rem' }}
+        className="tm-btn-secondary tm-btn-block"
         onClick={applyDraft}
       >
         YAML übernehmen

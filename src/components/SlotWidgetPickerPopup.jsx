@@ -1,8 +1,43 @@
 import { useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import {
+  Activity,
+  Camera,
+  CloudSun,
+  DoorOpen,
+  Gauge,
+  LayoutTemplate,
+  Layers,
+  Palette,
+  PlayCircle,
+  Plus,
+  Shield,
+  ShoppingCart,
+  Sparkles,
+  Blinds,
+  Zap,
+  X,
+} from 'lucide-react';
 import { getOverlayRoot, useOverlayLock } from '../lib/overlayPortal';
 import { WIDGET_TYPES } from '../lib/layout';
+
+const WIDGET_ICONS = {
+  weather: CloudSun,
+  media: PlayCircle,
+  camera: Camera,
+  shopping: ShoppingCart,
+  quickAction: Zap,
+  alarm: Shield,
+  cover: Blinds,
+  coverPopup: Blinds,
+  popup: Layers,
+  scene: Palette,
+  sensor: Gauge,
+  sensorStatus: DoorOpen,
+  sankey: Activity,
+  energyTile: Sparkles,
+  haCard: LayoutTemplate,
+};
 
 const PANEL_WIDTH = 17.5;
 const PANEL_MAX_HEIGHT = 22;
@@ -63,17 +98,22 @@ export default function SlotWidgetPickerPopup({ anchorRect, slotLabel, onClose, 
           </button>
         </div>
         <div className="tm-slot-picker-grid">
-          {Object.entries(WIDGET_TYPES).map(([type, meta]) => (
-            <button
-              key={type}
-              type="button"
-              className="tm-slot-picker-item"
-              onClick={() => onPick(type)}
-            >
-              <span className="tm-slot-picker-icon">{meta.label[0]}</span>
-              <span>{meta.label}</span>
-            </button>
-          ))}
+          {Object.entries(WIDGET_TYPES).map(([type, meta]) => {
+            const Icon = WIDGET_ICONS[type] || Plus;
+            return (
+              <button
+                key={type}
+                type="button"
+                className="tm-slot-picker-item"
+                onClick={() => onPick(type)}
+              >
+                <span className="tm-slot-picker-icon">
+                  <Icon size={14} />
+                </span>
+                <span>{meta.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>,

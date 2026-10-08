@@ -214,7 +214,6 @@ export default function Dashboard({ user, onSettings, onScreensaver }) {
           <DashboardEditor
             activePageIndex={activePageIndex}
             selectedWidget={selectedWidget}
-            onSelectWidget={setSelectedWidgetId}
             onDone={exitEditMode}
             onApplyPreset={applyLayoutPreset}
             onAddWidget={addWidget}

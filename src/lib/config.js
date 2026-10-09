@@ -40,6 +40,7 @@ export const DEFAULT_CONFIG = {
     idleMinutes: 1,
     showDate: true,
     showWeather: true,
+    style: 'classic',
   },
   appearance: { ...DEFAULT_APPEARANCE },
   hideHaSidebar: false,
@@ -103,6 +104,7 @@ export function normalizeConfig(raw = {}) {
         : DEFAULT_CONFIG.screensaver.idleMinutes,
       showDate: raw.screensaver.showDate !== false,
       showWeather: raw.screensaver.showWeather !== false,
+      style: raw.screensaver.style === 'sexy' ? 'sexy' : 'classic',
     };
   }
 

@@ -211,6 +211,26 @@ export default function Settings({ onBack }) {
                   </div>
                 )}
 
+                <div className="tm-flex-col tm-gap-3">
+                  <span>Stil</span>
+                  <div className="tm-color-mode-row">
+                    <button
+                      type="button"
+                      className={`tm-color-mode-btn${config.screensaver.style !== 'sexy' ? ' active' : ''}`}
+                      onClick={() => updateScreensaver({ style: 'classic' })}
+                    >
+                      Klassisch
+                    </button>
+                    <button
+                      type="button"
+                      className={`tm-color-mode-btn${config.screensaver.style === 'sexy' ? ' active' : ''}`}
+                      onClick={() => updateScreensaver({ style: 'sexy' })}
+                    >
+                      Sexy
+                    </button>
+                  </div>
+                </div>
+
                 <label className="tm-setting-toggle">
                   <input
                     type="checkbox"
@@ -230,7 +250,9 @@ export default function Settings({ onBack }) {
                 </label>
 
                 <p className="tm-text-sm tm-opacity-70">
-                  Der Bildschirmschoner lässt sich jederzeit manuell über das Monitor-Symbol im Dashboard starten.
+                  {config.screensaver.style === 'sexy'
+                    ? 'Sexy zeigt ein großes Foto mit Uhrzeit und darunter eine schmale Leiste mit Wetter, Musik und Status.'
+                    : 'Der Bildschirmschoner lässt sich jederzeit manuell über das Monitor-Symbol im Dashboard starten.'}
                 </p>
               </div>
             </div>

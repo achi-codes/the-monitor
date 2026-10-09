@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { useHass } from '../context/HassContext';
 import { useConfig } from '../context/ConfigContext';
+import SexyScreensaver from './SexyScreensaver';
 
 export default function Screensaver() {
   const [time, setTime] = useState(new Date());
@@ -20,6 +21,10 @@ export default function Screensaver() {
 
   const temp = weather?.attributes?.temperature;
   const condition = weather?.state;
+
+  if (config.screensaver.style === 'sexy') {
+    return <SexyScreensaver time={time} />;
+  }
 
   return (
     <div className="tm-absolute-fill tm-z-50 tm-flex-col tm-flex-center tm-animate-fade" style={{ background: 'black' }}>

@@ -4597,8 +4597,12 @@ export const styles = `
   text-transform: uppercase;
   opacity: 0.5;
   margin-bottom: 0.35rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .tm-ha-picker-item {
+  display: block;
   width: 100%;
   text-align: left;
   border: none;
@@ -4609,6 +4613,9 @@ export const styles = `
   margin-bottom: 0.35rem;
   font-size: 0.875rem;
   cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .tm-ha-picker-item:hover {
   background: rgba(67, 56, 202, 0.08);

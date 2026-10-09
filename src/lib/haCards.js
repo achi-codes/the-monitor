@@ -72,12 +72,21 @@ export function sanitizeCardConfig(card) {
   return clone;
 }
 
+function plainCardText(value) {
+  if (typeof value !== 'string') return '';
+  const text = value.replace(/\s+/g, ' ').trim();
+  if (!text || text.includes('[[[') || text.includes('{{') || text.includes('<%')) return '';
+  if (text.length > 72) return `${text.slice(0, 69)}…`;
+  return text;
+}
+
 export function describeCard(card) {
   if (!card?.type) return 'Karte';
   const type = String(card.type).replace(/^custom:/, '');
   const name = [card.name, card.title, card.heading, card.entity, card.entity_id]
-    .find((value) => typeof value === 'string' && value.trim());
-  if (name) return `${type} · ${name.trim()}`;
+    .map(plainCardText)
+    .find(Boolean);
+  if (name) return `${type} · ${name}`;
   if (Array.isArray(card.entities) && card.entities.length) {
     return `${type} · ${card.entities.length}`;
   }
@@ -408,9 +417,9 @@ export function collectCards(config, dashboardTitle = 'Dashboard') {
           config: clean,
         });
       }
-      if (Array.isArray(card.cards)) walk(card.cards, `${path} · ${label}`, depth + 1);
+      if (Array.isArray(card.cards)) walk(card.cards, path, depth + 1);
       if (card.card && typeof card.card === 'object') {
-        walk([card.card], `${path} · ${label}`, depth + 1);
+        walk([card.card], path, depth + 1);
       }
     });
   };

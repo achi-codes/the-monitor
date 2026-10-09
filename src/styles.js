@@ -4523,8 +4523,10 @@ export const styles = `
   border-radius: var(--tm-radius-xl);
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: #f2f2f7;
-  color: #1d1d1f;
-  -webkit-text-fill-color: #1d1d1f;
+  color: #111111;
+  -webkit-text-fill-color: #111111;
+  color-scheme: only light;
+  forced-color-adjust: none;
   box-shadow: 0 20px 56px rgba(0, 0, 0, 0.22);
   overflow: hidden;
 }
@@ -4654,12 +4656,15 @@ export const styles = `
 }
 .tm-ha-picker-item {
   display: block;
+  box-sizing: border-box;
   width: 100%;
   text-align: left;
   border: none;
   background: #ffffff;
-  color: #1d1d1f;
-  -webkit-text-fill-color: #1d1d1f;
+  color: #111111 !important;
+  -webkit-text-fill-color: #111111 !important;
+  color-scheme: only light;
+  forced-color-adjust: none;
   border-radius: 0.75rem;
   padding: 0.7rem 0.85rem;
   font-size: 0.875rem;

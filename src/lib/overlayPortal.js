@@ -1,6 +1,25 @@
 import { useEffect } from 'react';
 
-export function getOverlayRoot() {
+let registeredRoot = null;
+
+export function registerOverlayRoot(node) {
+  if (node) {
+    registeredRoot = node;
+    return;
+  }
+  registeredRoot = null;
+}
+
+export function unregisterOverlayRoot(node) {
+  if (!node || registeredRoot === node) registeredRoot = null;
+}
+
+export function getOverlayRoot(fromNode) {
+  const root = fromNode?.getRootNode?.();
+  if (root instanceof ShadowRoot && root.host?.localName === 'the-monitor-dashboard') {
+    return root;
+  }
+  if (registeredRoot?.isConnected) return registeredRoot;
   const host = document.querySelector('the-monitor-dashboard');
   if (host?.shadowRoot) return host.shadowRoot;
   return document.body;
@@ -10,8 +29,8 @@ export function useOverlayLock(active) {
   useEffect(() => {
     if (!active) return undefined;
 
-    const host = document.querySelector('the-monitor-dashboard');
-    const scrollTarget = host?.shadowRoot?.querySelector('.tm-page-pager')
+    const overlayRoot = getOverlayRoot();
+    const scrollTarget = overlayRoot?.querySelector?.('.tm-page-pager')
       || document.querySelector('.tm-page-pager');
 
     const prevBodyOverflow = document.body.style.overflow;

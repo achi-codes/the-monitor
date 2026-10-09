@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
 import { styles, haShellStyles, haCardHostStyles } from './styles'
+import { registerOverlayRoot, unregisterOverlayRoot } from './lib/overlayPortal'
 import { HassProvider } from './context/HassContext.jsx'
 import { ConfigProvider } from './context/ConfigContext.jsx'
 import { mergeInitialConfig, loadDevConfig } from './lib/config.js'
@@ -120,6 +121,7 @@ class TheMonitorDashboard extends HTMLElement {
       this._mountPoint.style.display = 'block'
       this._mountPoint.style.boxSizing = 'border-box'
       this._shadow.appendChild(this._mountPoint)
+      registerOverlayRoot(this._shadow)
     }
 
     if (!this._root) {
@@ -131,6 +133,7 @@ class TheMonitorDashboard extends HTMLElement {
 
   disconnectedCallback() {
     document.getElementById('the-monitor-ha-shell')?.remove()
+    unregisterOverlayRoot(this._shadow)
     this._updateHass = null
     if (this._root) {
       this._root.unmount()

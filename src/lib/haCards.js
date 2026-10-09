@@ -452,11 +452,35 @@ const LAYOUT_CARD_TYPES = new Set([
   'grid',
   'stack-in-card',
   'layout-card',
+  'swipe-card',
+  'strip-card',
 ]);
 
 function isLayoutCardType(type) {
   const normalized = String(type || '').replace(/^custom:/, '');
   return LAYOUT_CARD_TYPES.has(normalized);
+}
+
+function cardHasType(card) {
+  return Boolean(card && typeof card === 'object' && typeof card.type === 'string' && card.type.trim());
+}
+
+function nestedCardEntries(card) {
+  const nested = [];
+  if (Array.isArray(card?.cards)) nested.push(...card.cards);
+  if (card?.card && typeof card.card === 'object') nested.push(card.card);
+  if (Array.isArray(card?.elements)) {
+    card.elements.forEach((element) => {
+      if (element?.type) nested.push(element);
+      if (element?.card) nested.push(element.card);
+    });
+  }
+  if (card?.custom_fields && typeof card.custom_fields === 'object') {
+    Object.values(card.custom_fields).forEach((value) => {
+      if (value && typeof value === 'object' && value.type) nested.push(value);
+    });
+  }
+  return nested;
 }
 
 export function listDashboardViews(config) {
@@ -468,27 +492,25 @@ export function listDashboardViews(config) {
 
 export function collectCards(config, dashboardTitle = 'Dashboard', viewIndex = null) {
   const cards = [];
+  let seq = 0;
 
   const walk = (entries, path, depth) => {
     (entries || []).forEach((card, index) => {
-      if (!card || typeof card !== 'object') return;
-      const clean = sanitizeCardConfig(card);
-      const label = clean ? describeCard(clean) : (card.type || 'Karte');
-      const hasChildren = (Array.isArray(card.cards) && card.cards.length > 0) || Boolean(card.card);
-      const skipRow = Boolean(clean && isLayoutCardType(clean.type) && hasChildren);
-      if (clean && !skipRow) {
+      if (!cardHasType(card) || containsMonitorCard(card)) return;
+      const nested = nestedCardEntries(card);
+      const skipRow = isLayoutCardType(card.type) && nested.length > 0;
+      if (!skipRow) {
+        seq += 1;
         cards.push({
-          id: `${path}:${index}:${clean.type}`,
-          label,
+          id: `${path}:${index}:${seq}:${card.type}`,
+          label: describeCard(card),
           path,
           depth,
-          config: clean,
+          // Keep the original config reference; clone only when selecting.
+          config: card,
         });
       }
-      if (Array.isArray(card.cards)) walk(card.cards, path, depth + 1);
-      if (card.card && typeof card.card === 'object') {
-        walk([card.card], path, depth + 1);
-      }
+      if (nested.length) walk(nested, path, depth + 1);
     });
   };
 
@@ -501,6 +523,12 @@ export function collectCards(config, dashboardTitle = 'Dashboard', viewIndex = n
       const sectionTitle = section.title || `Bereich ${sectionIndex + 1}`;
       const sectionPath = viewIndex != null ? sectionTitle : `${trail} · ${sectionTitle}`;
       walk(section.cards, sectionPath, 0);
+      if (Array.isArray(section.sections)) {
+        section.sections.forEach((inner, innerIndex) => {
+          const innerTitle = inner.title || `Bereich ${sectionIndex + 1}.${innerIndex + 1}`;
+          walk(inner.cards, viewIndex != null ? innerTitle : `${sectionPath} · ${innerTitle}`, 0);
+        });
+      }
     });
   });
 

@@ -38,7 +38,7 @@ export default function HaCardConfig({ widget, pageIndex, onUpdate, hass }) {
       <p className="tm-widget-inspector-hint">
         {widget.card
           ? describeCard(widget.card)
-          : 'Karte aus Mobile, Übersicht oder einem anderen Dashboard übernehmen.'}
+          : 'Entität, Kartenart oder eine vorhandene Dashboard-Karte wählen.'}
       </p>
       <button
         type="button"

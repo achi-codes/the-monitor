@@ -4555,6 +4555,29 @@ export const styles = `
   justify-content: center;
   cursor: pointer;
 }
+.tm-ha-picker-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.3rem;
+  flex-shrink: 0;
+  padding: 0.2rem;
+  border-radius: 0.85rem;
+  background: rgba(0, 0, 0, 0.05);
+}
+.tm-ha-picker-tab {
+  border: none;
+  background: transparent;
+  color: #1d1d1f;
+  border-radius: 0.7rem;
+  padding: 0.55rem 0.4rem;
+  font-weight: 650;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.tm-ha-picker-tab.active {
+  background: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
 .tm-ha-picker-search {
   width: 100%;
   padding: 0.7rem 0.85rem;
@@ -4636,9 +4659,43 @@ export const styles = `
   text-overflow: ellipsis;
   white-space: nowrap;
   contain: layout paint;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 3rem;
+}
+.tm-ha-picker-item-rich {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  white-space: normal;
+}
+.tm-ha-picker-item-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.tm-ha-picker-item-meta {
+  font-size: 0.7rem;
+  opacity: 0.55;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 .tm-ha-picker-item:hover {
   background: rgba(67, 56, 202, 0.08);
+}
+.tm-ha-picker-more {
+  border: none;
+  background: rgba(0, 0, 0, 0.06);
+  color: #1d1d1f;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  font-weight: 650;
+  font-size: 0.8rem;
+  cursor: pointer;
 }
 .tm-ha-picker-empty {
   font-size: 0.875rem;

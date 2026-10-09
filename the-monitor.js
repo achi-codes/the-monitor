@@ -482,6 +482,7 @@ Diese Lovelace-Karte ist in den Ressourcen nicht geladen.`}}function qa(e){if(!e
   transform: translateZ(0);
 }
 
+:host,
 :root {
   --tm-font: system-ui, -apple-system, sans-serif;
   --tm-accent: #6366f1;

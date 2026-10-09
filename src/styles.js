@@ -13,6 +13,7 @@ export const styles = `
   transform: translateZ(0);
 }
 
+:host,
 :root {
   --tm-font: system-ui, -apple-system, sans-serif;
   --tm-accent: #6366f1;

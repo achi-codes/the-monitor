@@ -1,35 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import HaCardPicker from './HaCardPicker';
-import {
-  cardSelectionPatch,
-  cardToYaml,
-  describeCard,
-  parseCardYaml,
-} from '../lib/haCards';
+import HaCardEditorDialog from './HaCardEditorDialog';
+import { cardSelectionPatch, describeCard } from '../lib/haCards';
 
 export default function HaCardConfig({ widget, pageIndex, onUpdate, hass }) {
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [draft, setDraft] = useState(() => cardToYaml(widget.card));
-  const [yamlError, setYamlError] = useState('');
-  const cardKey = JSON.stringify(widget.card || null);
-
-  useEffect(() => {
-    const card = cardKey === 'null' ? null : JSON.parse(cardKey);
-    setDraft(cardToYaml(card));
-    setYamlError('');
-  }, [cardKey]);
+  const [editingCard, setEditingCard] = useState(null);
 
   const applyCard = (card) => {
     onUpdate(pageIndex, widget.id, card ? cardSelectionPatch(widget, card) : { card: null });
-  };
-
-  const applyDraft = () => {
-    try {
-      applyCard(parseCardYaml(draft));
-      setYamlError('');
-    } catch (error) {
-      setYamlError(error.message);
-    }
   };
 
   return (
@@ -40,44 +19,40 @@ export default function HaCardConfig({ widget, pageIndex, onUpdate, hass }) {
           ? describeCard(widget.card)
           : 'Entität, Kartenart oder eine vorhandene Dashboard-Karte wählen.'}
       </p>
+      {widget.card ? (
+        <button
+          type="button"
+          className="tm-btn-primary tm-btn-block"
+          onClick={() => setEditingCard(widget.card)}
+        >
+          Karte bearbeiten
+        </button>
+      ) : null}
       <button
         type="button"
         className="tm-btn-secondary tm-btn-block"
         onClick={() => setPickerOpen(true)}
       >
-        Karte wählen
-      </button>
-      <div className="tm-widget-inspector-field">
-        <label className="tm-widget-inspector-field-label" htmlFor={`ha-card-yaml-${widget.id}`}>Karten-YAML</label>
-        <textarea
-          id={`ha-card-yaml-${widget.id}`}
-          className="tm-input tm-ha-card-yaml"
-          value={draft}
-          onChange={(event) => {
-            setDraft(event.target.value);
-            setYamlError('');
-          }}
-          placeholder={'type: tile\nentity: light.wohnzimmer'}
-          spellCheck={false}
-        />
-      </div>
-      {yamlError ? (
-        <div className="tm-ha-card-error">{yamlError}</div>
-      ) : null}
-      <button
-        type="button"
-        className="tm-btn-secondary tm-btn-block"
-        onClick={applyDraft}
-      >
-        YAML übernehmen
+        {widget.card ? 'Andere Karte wählen' : 'Karte wählen'}
       </button>
       {pickerOpen && (
         <HaCardPicker
           hass={hass}
           onClose={() => setPickerOpen(false)}
           onSelect={(card) => {
-            applyCard(card);
             setPickerOpen(false);
+            setEditingCard(card);
+          }}
+        />
+      )}
+      {editingCard && (
+        <HaCardEditorDialog
+          card={editingCard}
+          hass={hass}
+          onClose={() => setEditingCard(null)}
+          onSave={(card) => {
+            applyCard(card);
+            setEditingCard(null);
           }}
         />
       )}

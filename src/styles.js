@@ -4732,6 +4732,183 @@ export const styles = `
 .tm-ha-picker-views .tm-ha-picker-view.active {
   -webkit-text-fill-color: #ffffff;
 }
+.tm-widget-inspector-section .tm-btn-block + .tm-btn-block {
+  margin-top: 0.5rem;
+}
+
+.tm-ha-editor-panel {
+  position: relative;
+  z-index: 1;
+  width: min(64rem, 100%);
+  height: min(46rem, calc(100dvh - 2rem));
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--ha-dialog-border-radius, 1.5rem);
+  background: var(--card-background-color, var(--ha-card-background, #ffffff));
+  color: var(--primary-text-color, #1d1d1f);
+  -webkit-text-fill-color: currentColor;
+  box-shadow: 0 20px 56px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  font-family: var(--ha-font-family-body, var(--paper-font-body1_-_font-family, system-ui, -apple-system, sans-serif));
+}
+.tm-ha-editor-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+}
+.tm-ha-editor-heading {
+  min-width: 0;
+}
+.tm-ha-editor-title {
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+.tm-ha-editor-subtitle {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--secondary-text-color, #6b6b70);
+  -webkit-text-fill-color: currentColor;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tm-ha-editor-icon-btn {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.tm-ha-editor-icon-btn:hover {
+  background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+}
+.tm-ha-editor-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.tm-ha-editor-pane {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 1rem 1.25rem;
+}
+.tm-ha-editor-pane--form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.tm-ha-editor-pane--form > * {
+  flex-shrink: 0;
+}
+.tm-ha-editor-pane--preview {
+  background: var(--primary-background-color, #f2f2f7);
+  border-left: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+}
+.tm-ha-editor-pane-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color, #6b6b70);
+  -webkit-text-fill-color: currentColor;
+  margin-bottom: 0.75rem;
+}
+.tm-ha-editor-slot {
+  display: block;
+}
+.tm-ha-editor-preview {
+  display: block;
+}
+.tm-ha-editor-preview-card {
+  display: block;
+  width: 100%;
+}
+.tm-ha-editor-note {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--secondary-text-color, #6b6b70);
+  -webkit-text-fill-color: currentColor;
+}
+.tm-ha-editor-yaml {
+  width: 100%;
+  min-height: 22rem;
+  flex: 1 1 auto;
+  resize: vertical;
+  padding: 0.85rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+  background: var(--code-editor-background-color, var(--secondary-background-color, #f7f7f9));
+  color: var(--primary-text-color, #1d1d1f);
+  -webkit-text-fill-color: currentColor;
+  font: 0.8125rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  outline: none;
+}
+.tm-ha-editor-error {
+  font-size: 0.8rem;
+  color: var(--error-color, #db4437);
+  -webkit-text-fill-color: currentColor;
+}
+.tm-ha-editor-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+}
+.tm-ha-editor-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.tm-ha-editor-text-btn,
+.tm-ha-editor-primary-btn {
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.tm-ha-editor-text-btn {
+  border: none;
+  background: transparent;
+  color: var(--primary-color, #03a9f4);
+  -webkit-text-fill-color: currentColor;
+}
+.tm-ha-editor-text-btn:hover {
+  background: var(--secondary-background-color, rgba(0, 0, 0, 0.06));
+}
+.tm-ha-editor-primary-btn {
+  border: none;
+  background: var(--primary-color, #03a9f4);
+  color: var(--text-primary-color, #ffffff);
+  -webkit-text-fill-color: currentColor;
+}
+@media (max-width: 760px) {
+  .tm-ha-editor-body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .tm-ha-editor-pane--preview {
+    border-left: none;
+    border-top: 1px solid var(--divider-color, rgba(0, 0, 0, 0.12));
+    max-height: 40%;
+  }
+}
 
 /* —— Schwarz bunt: pastel cards on black —— */
 [data-tm-theme="blackColorful"] .tm-card,

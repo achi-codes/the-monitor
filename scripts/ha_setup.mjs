@@ -8,7 +8,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, '..');
 const localFile = resolve(root, 'dist/the-monitor.js');
 const cardConfigFile = resolve(root, 'deploy/the-monitor-config.json');
-const kioskModeFile = resolve(root, 'deploy/kiosk-mode-config.json');
 const baseUrl = (process.env.HA_URL || 'http://homeassistant.local:8123').replace(/\/$/, '');
 const dashboardPath = 'the-monitor';
 const resourceBasePath = '/local/the-monitor.js';
@@ -23,10 +22,6 @@ function loadToken() {
   const mcpPath = `${process.env.HOME}/.cursor/mcp.json`;
   const data = JSON.parse(readFileSync(mcpPath, 'utf8'));
   return data.mcpServers['home-assistant'].env.API_ACCESS_TOKEN;
-}
-
-function loadKioskModeConfig() {
-  return JSON.parse(readFileSync(kioskModeFile, 'utf8'));
 }
 
 function loadCardConfig() {
@@ -108,9 +103,8 @@ async function ensureLovelaceResource(token, resourceUrl) {
   console.log(`Lovelace resource created: ${resourceUrl}`);
 }
 
-function buildDashboardConfig(cardConfig, kioskMode) {
+function buildDashboardConfig(cardConfig) {
   return {
-    kiosk_mode: kioskMode,
     views: [
       {
         title: 'Monitor',
@@ -126,37 +120,16 @@ function buildDashboardConfig(cardConfig, kioskMode) {
   };
 }
 
-async function saveDashboardConfig(token, cardConfig, kioskMode) {
+async function saveDashboardConfig(token, cardConfig) {
   await wsRequest(token, 'lovelace/config/save', {
     url_path: dashboardPath,
-    config: buildDashboardConfig(cardConfig, kioskMode),
+    config: buildDashboardConfig(cardConfig),
   });
   console.log('Dashboard config updated.');
 }
 
-async function ensureKioskMode(token, kioskMode) {
-  const config = await wsRequest(token, 'lovelace/config', { url_path: dashboardPath });
-  const current = config?.kiosk_mode?.non_admin_settings;
-  const desired = kioskMode.non_admin_settings;
-
-  if (
-    current?.hide_header === desired.hide_header
-    && current?.hide_sidebar === desired.hide_sidebar
-  ) {
-    console.log('Kiosk mode already configured for non-admin users.');
-    return;
-  }
-
-  await wsRequest(token, 'lovelace/config/save', {
-    url_path: dashboardPath,
-    config: { ...config, kiosk_mode: kioskMode },
-  });
-  console.log('Kiosk mode enabled: non-admin users hide header + sidebar.');
-}
-
 async function saveDashboardConfigLegacy(token, cardConfig) {
-  const kioskMode = loadKioskModeConfig();
-  await saveDashboardConfig(token, cardConfig, kioskMode);
+  await saveDashboardConfig(token, cardConfig);
 }
 
 async function ensureLovelace(token, cardConfig, resourceUrl, initDashboardConfig) {
@@ -175,7 +148,6 @@ async function ensureLovelace(token, cardConfig, resourceUrl, initDashboardConfi
     await saveDashboardConfigLegacy(token, cardConfig);
   } else {
     console.log(`Dashboard exists: ${baseUrl}/${dashboardPath}/0`);
-    await ensureKioskMode(token, loadKioskModeConfig());
     if (initDashboardConfig) {
       await saveDashboardConfigLegacy(token, cardConfig);
     } else {

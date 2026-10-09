@@ -2876,6 +2876,168 @@ export const styles = `
   flex-shrink: 0;
 }
 
+.tm-cover-card {
+  container-type: size;
+  cursor: default;
+  justify-content: space-between;
+  gap: clamp(0.5rem, 5cqh, 1.25rem);
+  padding: clamp(0.75rem, 6cqmin, 1.5rem);
+  overflow: hidden;
+}
+.tm-cover-card:active { transform: none; }
+.tm-cover-card-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: clamp(0.5rem, 4cqw, 1.5rem);
+}
+.tm-cover-card-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.tm-cover-card-title {
+  font-size: clamp(0.95rem, 7cqmin, 1.75rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tm-cover-card-area,
+.tm-cover-card-status {
+  font-size: clamp(0.75rem, 4.2cqmin, 1.125rem);
+  line-height: 1.3;
+  opacity: 0.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tm-cover-card-area {
+  margin-top: 0.2em;
+}
+.tm-cover-card-value {
+  margin-top: auto;
+  font-size: clamp(2rem, 22cqmin, 5.5rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.tm-cover-card-unit {
+  font-size: 0.9em;
+}
+.tm-cover-card-status {
+  margin-top: 0.35em;
+}
+
+.tm-cover-visual {
+  --tm-cover-visual-h: calc(68cqh - 12cqmin);
+  --tm-cover-visual-w: min(48cqw, calc(var(--tm-cover-visual-h) * 1.1));
+  flex: 0 0 auto;
+  width: var(--tm-cover-visual-w);
+  height: min(var(--tm-cover-visual-h), calc(var(--tm-cover-visual-w) * 1.5));
+  max-height: 100%;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+}
+.tm-cover-visual-box {
+  flex: 0 0 auto;
+  height: clamp(0.75rem, 9cqh, 2.25rem);
+  border-radius: 0.6rem;
+  background: linear-gradient(to bottom, #ffffff 0%, #f1f1ef 70%, #dcdcd8 100%);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  position: relative;
+  z-index: 1;
+}
+.tm-cover-visual-window {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: -0.35rem 6% 0;
+  position: relative;
+  overflow: hidden;
+  border-radius: 0 0 0.85rem 0.85rem;
+  border: 0.35rem solid color-mix(in srgb, #ffffff 45%, transparent);
+  border-top: none;
+}
+.tm-cover-visual-view {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 45% 55% at 85% 75%, rgba(96, 140, 64, 0.85), transparent 70%),
+    radial-gradient(ellipse 40% 50% at 15% 85%, rgba(120, 160, 80, 0.8), transparent 70%),
+    radial-gradient(ellipse 35% 40% at 55% 95%, rgba(150, 180, 110, 0.7), transparent 70%),
+    linear-gradient(to bottom, #e6f1f7 0%, #d4e6ef 55%, #b9d0a6 100%);
+  filter: blur(3px);
+  transform: scale(1.1);
+}
+.tm-cover-visual-slats {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, #ffffff 70%, var(--tm-surface, #cfe9dc)) 0,
+      color-mix(in srgb, #ffffff 55%, var(--tm-surface, #cfe9dc)) calc(var(--tm-cover-slat, 0.9rem) - 1px),
+      rgba(0, 0, 0, 0.14) calc(var(--tm-cover-slat, 0.9rem) - 1px),
+      rgba(0, 0, 0, 0.14) var(--tm-cover-slat, 0.9rem)
+    );
+  background-position: bottom;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+  transition: height 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tm-cover-card.dragging .tm-cover-visual-slats {
+  transition: none;
+}
+
+.tm-cover-card-controls {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.35fr 1fr;
+  gap: clamp(0.375rem, 2.5cqw, 0.75rem);
+  height: clamp(2.25rem, 24cqh, 4.5rem);
+}
+.tm-cover-card-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: clamp(0.75rem, 4cqmin, 1.25rem);
+  background: color-mix(in srgb, currentColor 7%, transparent);
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease;
+}
+.tm-cover-card-btn svg {
+  width: clamp(1.1rem, 8cqmin, 1.75rem);
+  height: auto;
+}
+.tm-cover-card-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+.tm-cover-card-btn:disabled {
+  cursor: default;
+}
+.tm-cover-card-btn--stop {
+  background: var(--tm-tile-fg, #ffffff);
+  color: var(--tm-cover-stop-fg, #000000);
+}
+@container (max-width: 15rem) {
+  .tm-cover-visual { display: none; }
+}
+@container (max-height: 9rem) {
+  .tm-cover-card-area,
+  .tm-cover-card-status { display: none; }
+}
+
 .tm-scene-btn {
   position: relative;
   overflow: hidden;
@@ -5016,6 +5178,10 @@ export const styles = `
 [data-tm-theme="blackColorful"] .tm-cover-header state-icon,
 [data-tm-theme="blackColorful"] .tm-cover-header ha-icon {
   color: var(--tm-tile-fg, #1a1a1a) !important;
+}
+
+[data-tm-theme="blackColorful"] .tm-cover-card {
+  --tm-cover-stop-fg: #ffffff;
 }
 
 [data-tm-theme="blackColorful"] .tm-cover-fill {

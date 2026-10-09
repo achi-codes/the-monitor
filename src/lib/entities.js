@@ -32,6 +32,12 @@ export function getEntity(hass, entityId) {
   };
 }
 
+export function getEntityAreaName(hass, entityId) {
+  const registryEntry = hass?.entities?.[entityId];
+  const areaId = registryEntry?.area_id || hass?.devices?.[registryEntry?.device_id]?.area_id;
+  return areaId ? hass?.areas?.[areaId]?.name || '' : '';
+}
+
 export function listEntities(hass, { domains = null, search = '' } = {}) {
   if (!hass?.states) return [];
 

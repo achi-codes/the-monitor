@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Sun, X, Shield, Blinds } from 'lucide-react';
+import { Plus, Sun, X, Shield, Blinds, ChevronUp, ChevronDown, Pause } from 'lucide-react';
 import EntityIcon from '../EntityIcon';
 import {
   toggleEntity,
@@ -13,9 +13,12 @@ import {
   setCoverPosition,
   openCover,
   closeCover,
+  stopCover,
   setLightRgbColor,
 } from '../../lib/services';
-import { formatEntityState, isEntityOn, getDomain } from '../../lib/entities';
+import {
+  formatEntityState, isEntityOn, getDomain, getEntityAreaName,
+} from '../../lib/entities';
 import { getEnabledEntityIds } from '../../lib/layout';
 import { getLightRgbFromState } from '../../lib/lightColors';
 import LightColorCircles from '../LightColorCircles';
@@ -644,7 +647,7 @@ function CoverPositionSlider({
   hass,
   overrideIcon,
   editMode,
-  variant = 'tile',
+  variant = 'group',
 }) {
   const position = getCoverPositionPercent(hass, entityId);
   const [value, setValue] = useState(position);
@@ -682,35 +685,6 @@ function CoverPositionSlider({
     updateFromPointer(e.clientY);
   };
 
-  if (variant === 'group') {
-    return (
-      <div
-        ref={tileRef}
-        className={`tm-quick-action tm-cover-action tm-cover-action--group${value > 0 ? ' active' : ''}${isDragging ? ' dragging' : ''}`}
-        style={{ '--tm-cover-position': `${value}%` }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handleRelease}
-        onPointerCancel={handleRelease}
-        role="slider"
-        aria-label={`Position ${label}`}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={value}
-        tabIndex={editMode ? -1 : 0}
-      >
-        <div className="tm-cover-fill" />
-        <div className="tm-cover-header">
-          <EntityIcon hass={hass} entity={entity} overrideIcon={overrideIcon} size={20} style={{ opacity: 0.9, color: '#bfdbfe' }} />
-          <div className="tm-flex-col" style={{ minWidth: 0, flex: 1 }}>
-            <div className="tm-font-bold tm-cover-group-label">{label}</div>
-            <div className="tm-text-xs tm-opacity-70">{value}%</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (variant === 'row') {
     return (
       <div className={`tm-cover-popup-entity${value > 0 ? ' active' : ''}`}>
@@ -740,7 +714,7 @@ function CoverPositionSlider({
   return (
     <div
       ref={tileRef}
-      className={`tm-quick-action tm-cover-action${value > 0 ? ' active' : ''}${isDragging ? ' dragging' : ''}`}
+      className={`tm-quick-action tm-cover-action tm-cover-action--group${value > 0 ? ' active' : ''}${isDragging ? ' dragging' : ''}`}
       style={{ '--tm-cover-position': `${value}%` }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -751,15 +725,133 @@ function CoverPositionSlider({
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={value}
-      tabIndex={0}
+      tabIndex={editMode ? -1 : 0}
     >
       <div className="tm-cover-fill" />
       <div className="tm-cover-header">
-        <EntityIcon hass={hass} entity={entity} overrideIcon={overrideIcon} size={22} style={{ opacity: 0.9, color: '#bfdbfe' }} />
+        <EntityIcon hass={hass} entity={entity} overrideIcon={overrideIcon} size={20} style={{ opacity: 0.9, color: '#bfdbfe' }} />
         <div className="tm-flex-col" style={{ minWidth: 0, flex: 1 }}>
-          <div className="tm-font-bold" style={{ fontSize: '1rem', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
+          <div className="tm-font-bold tm-cover-group-label">{label}</div>
           <div className="tm-text-xs tm-opacity-70">{value}%</div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function getCoverStatusLabel(state, position) {
+  if (state === 'opening') return 'Öffnet …';
+  if (state === 'closing') return 'Schließt …';
+  if (state === 'unavailable' || state === 'unknown') return 'Nicht verfügbar';
+  return position > 0 ? 'Geöffnet' : 'Geschlossen';
+}
+
+function CoverCard({ entityId, label, entity, hass, editMode }) {
+  const position = getCoverPositionPercent(hass, entityId);
+  const [value, setValue] = useState(position);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragging = useRef(false);
+  const windowRef = useRef(null);
+  const area = getEntityAreaName(hass, entityId);
+
+  useEffect(() => {
+    if (!dragging.current) setValue(position);
+  }, [position]);
+
+  const valueFromPointer = (clientY) => {
+    const rect = windowRef.current?.getBoundingClientRect();
+    if (!rect) return value;
+    const closedShare = (clientY - rect.top) / rect.height;
+    return Math.min(100, Math.max(0, Math.round((1 - closedShare) * 100)));
+  };
+
+  const handlePointerDown = (event) => {
+    if (editMode) return;
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragging.current = true;
+    setIsDragging(true);
+    setValue(valueFromPointer(event.clientY));
+  };
+
+  const handlePointerMove = (event) => {
+    if (!dragging.current) return;
+    setValue(valueFromPointer(event.clientY));
+  };
+
+  const handleRelease = (event) => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    setIsDragging(false);
+    const next = valueFromPointer(event.clientY);
+    setValue(next);
+    setCoverPosition(hass, entityId, next);
+  };
+
+  const status = getCoverStatusLabel(entity.state, value);
+
+  return (
+    <div className={`tm-quick-action tm-cover-card${isDragging ? ' dragging' : ''}`}>
+      <div className="tm-cover-card-main">
+        <div className="tm-cover-card-info">
+          <div className="tm-cover-card-title">{label}</div>
+          {area && <div className="tm-cover-card-area">{area}</div>}
+          <div className="tm-cover-card-value">
+            {value}
+            <span className="tm-cover-card-unit">%</span>
+          </div>
+          <div className="tm-cover-card-status">{status}</div>
+        </div>
+
+        <div
+          className="tm-cover-visual"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handleRelease}
+          onPointerCancel={handleRelease}
+          role="slider"
+          aria-label={`Position ${label}`}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={value}
+          tabIndex={editMode ? -1 : 0}
+        >
+          <div className="tm-cover-visual-box" />
+          <div ref={windowRef} className="tm-cover-visual-window">
+            <div className="tm-cover-visual-view" />
+            <div className="tm-cover-visual-slats" style={{ height: `${100 - value}%` }} />
+          </div>
+        </div>
+      </div>
+
+      <div className="tm-cover-card-controls">
+        <button
+          type="button"
+          className="tm-cover-card-btn"
+          disabled={editMode}
+          onClick={() => openCover(hass, entityId)}
+          aria-label={`${label} öffnen`}
+        >
+          <ChevronUp size={22} strokeWidth={2.25} />
+        </button>
+        <button
+          type="button"
+          className="tm-cover-card-btn tm-cover-card-btn--stop"
+          disabled={editMode}
+          onClick={() => stopCover(hass, entityId)}
+          aria-label={`${label} stoppen`}
+        >
+          <Pause size={22} strokeWidth={2.5} />
+        </button>
+        <button
+          type="button"
+          className="tm-cover-card-btn"
+          disabled={editMode}
+          onClick={() => closeCover(hass, entityId)}
+          aria-label={`${label} schließen`}
+        >
+          <ChevronDown size={22} strokeWidth={2.25} />
+        </button>
       </div>
     </div>
   );
@@ -779,12 +871,11 @@ export function CoverWidget({ widget, hass, getEntity, onConfigure, editMode }) 
   const label = widget.label || entity.name;
 
   return (
-    <CoverPositionSlider
+    <CoverCard
       entityId={widget.entity_id}
       label={label}
       entity={entity}
       hass={hass}
-      overrideIcon={widget.icon || 'mdi:window-shutter'}
       editMode={editMode}
     />
   );

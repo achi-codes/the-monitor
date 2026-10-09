@@ -221,6 +221,10 @@ export async function openCover(hass, entityId) {
   return callService(hass, 'cover', 'open_cover', { entity_id: entityId });
 }
 
+export async function stopCover(hass, entityId) {
+  return callService(hass, 'cover', 'stop_cover', { entity_id: entityId });
+}
+
 export function getCoverPositionPercent(hass, entityId) {
   const state = hass?.states?.[entityId];
   if (!state) return 0;

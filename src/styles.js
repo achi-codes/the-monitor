@@ -4637,10 +4637,16 @@ export const styles = `
   color: #1d1d1f;
   -webkit-text-fill-color: #1d1d1f;
 }
+.tm-ha-picker-list > * {
+  flex-shrink: 0;
+}
 .tm-ha-picker-group {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+}
+.tm-ha-picker-group > * {
+  flex-shrink: 0;
 }
 .tm-ha-picker-group-title {
   font-size: 0.6875rem;

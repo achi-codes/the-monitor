@@ -33,6 +33,7 @@ const PANEL_STYLE = {
 };
 
 const ITEM_STYLE = {
+  flexShrink: 0,
   colorScheme: 'only light',
   color: '#111111',
   WebkitTextFillColor: '#111111',

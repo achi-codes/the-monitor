@@ -13,10 +13,10 @@ import {
 
 const PREVIEW_DELAY_MS = 250;
 
-export default function HaCardEditorDialog({ card, hass, onClose, onSave }) {
+export default function HaCardEditorDialog({ card, hass, onClose, onSave, initialMode = 'visual' }) {
   useOverlayLock(true);
   const [config, setConfig] = useState(card);
-  const [mode, setMode] = useState('visual');
+  const [mode, setMode] = useState(initialMode);
   const [editorState, setEditorState] = useState('loading');
   const [yamlDraft, setYamlDraft] = useState(() => cardToYaml(card));
   const [yamlError, setYamlError] = useState('');

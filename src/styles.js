@@ -4898,6 +4898,26 @@ export const styles = `
   color: var(--text-primary-color, #ffffff);
   -webkit-text-fill-color: currentColor;
 }
+.tm-ha-native-picker-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.tm-ha-native-picker-note {
+  padding: 1rem 1.25rem;
+}
+.tm-ha-native-picker-slot {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.tm-ha-native-picker-slot > hui-card-picker {
+  flex: 1 1 auto;
+  min-height: 0;
+}
 @media (max-width: 760px) {
   .tm-ha-editor-body {
     grid-template-columns: minmax(0, 1fr);

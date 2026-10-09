@@ -7,6 +7,7 @@ import {
   dashboardIsStrategyOnly,
   fetchDashboards,
   fetchLovelaceConfig,
+  listDashboardViews,
 } from '../lib/haCards';
 
 function dashboardTitle(dashboard) {
@@ -17,6 +18,8 @@ export default function HaCardPicker({ hass, onClose, onSelect }) {
   useOverlayLock(true);
   const [dashboards, setDashboards] = useState([]);
   const [activePath, setActivePath] = useState(undefined);
+  const [dashboardConfig, setDashboardConfig] = useState(null);
+  const [activeViewIndex, setActiveViewIndex] = useState(0);
   const [cards, setCards] = useState([]);
   const [strategyOnly, setStrategyOnly] = useState(false);
   const [search, setSearch] = useState('');
@@ -56,16 +59,15 @@ export default function HaCardPicker({ hass, onClose, onSelect }) {
     let cancelled = false;
     setLoadingCards(true);
     setError('');
+    setActiveViewIndex(0);
     (async () => {
       try {
-        const dashboard = dashboards.find((item) => (item.url_path ?? null) === activePath);
         const config = await fetchLovelaceConfig(hass, activePath);
         if (cancelled) return;
-        const nextCards = collectCards(config, dashboardTitle(dashboard || {}));
-        setCards(nextCards);
-        setStrategyOnly(dashboardIsStrategyOnly(config, nextCards));
+        setDashboardConfig(config);
       } catch (err) {
         if (!cancelled) {
+          setDashboardConfig(null);
           setCards([]);
           setStrategyOnly(false);
           setError(err?.message || 'Dashboard konnte nicht geladen werden');
@@ -77,7 +79,26 @@ export default function HaCardPicker({ hass, onClose, onSelect }) {
     return () => {
       cancelled = true;
     };
-  }, [activePath, dashboards, hass]);
+  }, [activePath, hass]);
+
+  const views = useMemo(
+    () => listDashboardViews(dashboardConfig),
+    [dashboardConfig],
+  );
+
+  useEffect(() => {
+    if (!dashboardConfig) {
+      setCards([]);
+      setStrategyOnly(false);
+      return;
+    }
+    const dashboard = dashboards.find((item) => (item.url_path ?? null) === activePath);
+    const title = dashboardTitle(dashboard || {});
+    const viewIndex = views.length > 1 ? activeViewIndex : null;
+    const nextCards = collectCards(dashboardConfig, title, viewIndex);
+    setCards(nextCards);
+    setStrategyOnly(dashboardIsStrategyOnly(dashboardConfig, nextCards));
+  }, [activePath, activeViewIndex, dashboardConfig, dashboards, views.length]);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -139,6 +160,21 @@ export default function HaCardPicker({ hass, onClose, onSelect }) {
             );
           })}
         </div>
+
+        {views.length > 1 ? (
+          <div className="tm-ha-picker-dashboards tm-ha-picker-views">
+            {views.map((view) => (
+              <button
+                key={view.index}
+                type="button"
+                className={`tm-ha-picker-dash tm-ha-picker-view${view.index === activeViewIndex ? ' active' : ''}`}
+                onClick={() => setActiveViewIndex(view.index)}
+              >
+                {view.title}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         <div className="tm-ha-picker-list">
           {loadingList || loadingCards ? (

@@ -3,12 +3,48 @@ import { isMockHass } from './hass';
 
 const MONITOR_CARD_TYPE = 'custom:the-monitor-dashboard';
 
+const MOCK_GREETING = '[[[ const hour = new Date().getHours(); let greeting = ""; if (hour >= 22 || hour < 5) greeting = "Night"; else if (hour >= 18) greeting = "Evening"; else if (hour >= 12) greeting = "Afternoon"; else greeting = "Morning"; const name = user.name === "Rey" ? "Rey" : "Christina"; return `${greeting}, ${name}!`; ]]]';
+
 const MOCK_DASHBOARDS = [
+  { id: 'mobile', url_path: 'mobile', title: 'Mobile', mode: 'storage' },
   { id: 'lovelace', url_path: null, title: 'Übersicht', mode: 'storage' },
   { id: 'energy', url_path: 'energie', title: 'Energie', mode: 'storage' },
 ];
 
 const MOCK_CONFIGS = {
+  mobile: {
+    views: [
+      {
+        title: 'Overview',
+        sections: [
+          {
+            title: 'Bereich 1',
+            cards: [
+              {
+                type: 'vertical-stack',
+                cards: [
+                  {
+                    type: 'horizontal-stack',
+                    cards: [
+                      { type: 'conditional', card: { type: 'custom:button-card', entity: 'person.christina', name: MOCK_GREETING } },
+                      { type: 'conditional', card: { type: 'custom:button-card', entity: 'person.rey', name: MOCK_GREETING } },
+                      { type: 'custom:button-card', entity: 'person.christina', name: MOCK_GREETING },
+                      { type: 'custom:strip-card', cards: Array.from({ length: 5 }, (_, i) => ({ type: 'tile', entity: `light.spot_${i + 1}`, name: `Spot ${i + 1}` })) },
+                    ],
+                  },
+                  ...Array.from({ length: 18 }, (_, i) => ({
+                    type: 'tile',
+                    entity: `light.mock_${i + 1}`,
+                    name: `Licht ${i + 1}`,
+                  })),
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
   __default__: {
     views: [
       {
@@ -400,7 +436,27 @@ export async function fetchLovelaceConfig(hass, urlPath) {
   });
 }
 
-export function collectCards(config, dashboardTitle = 'Dashboard') {
+const LAYOUT_CARD_TYPES = new Set([
+  'vertical-stack',
+  'horizontal-stack',
+  'grid',
+  'stack-in-card',
+  'layout-card',
+]);
+
+function isLayoutCardType(type) {
+  const normalized = String(type || '').replace(/^custom:/, '');
+  return LAYOUT_CARD_TYPES.has(normalized);
+}
+
+export function listDashboardViews(config) {
+  return (config?.views || []).map((view, index) => ({
+    index,
+    title: view.title || view.path || `Ansicht ${index + 1}`,
+  }));
+}
+
+export function collectCards(config, dashboardTitle = 'Dashboard', viewIndex = null) {
   const cards = [];
 
   const walk = (entries, path, depth) => {
@@ -408,7 +464,9 @@ export function collectCards(config, dashboardTitle = 'Dashboard') {
       if (!card || typeof card !== 'object') return;
       const clean = sanitizeCardConfig(card);
       const label = clean ? describeCard(clean) : (card.type || 'Karte');
-      if (clean) {
+      const hasChildren = (Array.isArray(card.cards) && card.cards.length > 0) || Boolean(card.card);
+      const skipRow = Boolean(clean && isLayoutCardType(clean.type) && hasChildren);
+      if (clean && !skipRow) {
         cards.push({
           id: `${path}:${index}:${clean.type}`,
           label,
@@ -424,13 +482,15 @@ export function collectCards(config, dashboardTitle = 'Dashboard') {
     });
   };
 
-  (config?.views || []).forEach((view, viewIndex) => {
-    const viewTitle = view.title || view.path || `Ansicht ${viewIndex + 1}`;
-    const trail = `${dashboardTitle} · ${viewTitle}`;
+  (config?.views || []).forEach((view, index) => {
+    if (viewIndex != null && index !== viewIndex) return;
+    const viewTitle = view.title || view.path || `Ansicht ${index + 1}`;
+    const trail = viewIndex != null ? viewTitle : `${dashboardTitle} · ${viewTitle}`;
     if (Array.isArray(view.cards)) walk(view.cards, trail, 0);
     (view.sections || []).forEach((section, sectionIndex) => {
       const sectionTitle = section.title || `Bereich ${sectionIndex + 1}`;
-      walk(section.cards, `${trail} · ${sectionTitle}`, 0);
+      const sectionPath = viewIndex != null ? sectionTitle : `${trail} · ${sectionTitle}`;
+      walk(section.cards, sectionPath, 0);
     });
   });
 

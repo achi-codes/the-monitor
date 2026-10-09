@@ -4509,9 +4509,7 @@ export const styles = `
   border: none;
   padding: 0;
   margin: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.55);
 }
 .tm-ha-picker-panel {
   position: relative;
@@ -4527,6 +4525,8 @@ export const styles = `
   background: #f2f2f7;
   color: #1d1d1f;
   box-shadow: 0 20px 56px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  transform: translateZ(0);
 }
 .tm-ha-picker-header {
   display: flex;
@@ -4586,12 +4586,28 @@ export const styles = `
   background: #4338ca;
   color: white;
 }
+.tm-ha-picker-views .tm-ha-picker-view {
+  background: rgba(67, 56, 202, 0.08);
+}
+.tm-ha-picker-views .tm-ha-picker-view.active {
+  background: #1d1d1f;
+  color: white;
+}
 .tm-ha-picker-list {
   overflow: auto;
-  min-height: 0;
+  min-height: 12rem;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  background: #f2f2f7;
+}
+.tm-ha-picker-group {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 8rem;
 }
 .tm-ha-picker-group-title {
   font-size: 0.6875rem;
@@ -4619,6 +4635,7 @@ export const styles = `
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  contain: layout paint;
 }
 .tm-ha-picker-item:hover {
   background: rgba(67, 56, 202, 0.08);

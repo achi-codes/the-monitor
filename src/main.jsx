@@ -8,6 +8,7 @@ import { HassProvider } from './context/HassContext.jsx'
 import { ConfigProvider } from './context/ConfigContext.jsx'
 import { mergeInitialConfig, loadDevConfig } from './lib/config.js'
 import { schedulePersistCardConfig } from './lib/haLovelace.js'
+import { restoreHaMenuChrome } from './lib/haKiosk.js'
 import { ensureHaDashboard } from './lib/ensureHaDashboard.js'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 
@@ -105,6 +106,7 @@ class TheMonitorDashboard extends HTMLElement {
   }
 
   connectedCallback() {
+    restoreHaMenuChrome()
     injectDocumentStyles('the-monitor-ha-shell', haShellStyles)
     injectDocumentStyles('the-monitor-card-host', haCardHostStyles)
 

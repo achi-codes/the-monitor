@@ -8,6 +8,9 @@ export const styles = `
   box-sizing: border-box;
   font-family: system-ui, -apple-system, sans-serif;
   color: white;
+  position: relative;
+  /* Keep position:fixed children inside the card so they don't cover the HA header. */
+  transform: translateZ(0);
 }
 
 :root {
@@ -601,7 +604,7 @@ export const styles = `
 }
 .tm-dashboard::before {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
   background: #ffffff;
   z-index: -1;
@@ -3779,7 +3782,7 @@ export const styles = `
 
 /* ── Vacuum Island (Dynamic Island, white) ── */
 .tm-vi-backdrop {
-  position: fixed;
+  position: absolute;
   inset: 0;
   border: none;
   background: transparent;
@@ -3795,7 +3798,7 @@ export const styles = `
   --tm-vi-track: #e5e5ea;
   --tm-vi-shadow: 0 8px 32px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.06);
   --tm-vi-ease: cubic-bezier(0.32, 0.72, 0, 1);
-  position: fixed;
+  position: absolute;
   top: var(--tm-gap);
   left: 50%;
   transform: translateX(-50%);

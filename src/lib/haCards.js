@@ -419,6 +419,16 @@ export async function fetchDashboards(hass) {
       mode: 'storage',
     });
   }
+  // Prefer Mobile-style dashboards first — that's usually what wall cards copy from.
+  dashboards.sort((left, right) => {
+    const score = (dashboard) => {
+      const title = `${dashboard.title || ''} ${dashboard.url_path || ''}`.toLowerCase();
+      if (title.includes('mobile')) return 0;
+      if (dashboard.url_path == null || dashboard.url_path === 'lovelace') return 2;
+      return 1;
+    };
+    return score(left) - score(right);
+  });
   return dashboards;
 }
 

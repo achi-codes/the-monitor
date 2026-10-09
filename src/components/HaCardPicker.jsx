@@ -128,8 +128,8 @@ export default function HaCardPicker({ hass, onClose, onSelect }) {
       <div className="tm-ha-picker-panel" role="dialog" aria-modal="true" aria-label="Home-Assistant-Karte wählen">
         <div className="tm-ha-picker-header">
           <div>
-            <div className="tm-ha-picker-title">Home-Assistant-Karte</div>
-            <div className="tm-ha-picker-subtitle">Karte aus einem Dashboard übernehmen</div>
+            <div className="tm-ha-picker-title">Karte wählen</div>
+            <div className="tm-ha-picker-subtitle">Dashboard und Ansicht wählen, dann eine Karte antippen</div>
           </div>
           <button type="button" className="tm-ha-picker-close" onClick={onClose} aria-label="Schließen">
             <X size={16} />

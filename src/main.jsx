@@ -7,7 +7,7 @@ import { registerOverlayRoot, unregisterOverlayRoot } from './lib/overlayPortal'
 import { HassProvider } from './context/HassContext.jsx'
 import { ConfigProvider } from './context/ConfigContext.jsx'
 import { mergeInitialConfig, loadDevConfig } from './lib/config.js'
-import { schedulePersistCardConfig } from './lib/haLovelace.js'
+import { ensureHaChromeVisible, schedulePersistCardConfig } from './lib/haLovelace.js'
 import { ensureHaDashboard } from './lib/ensureHaDashboard.js'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 
@@ -102,6 +102,7 @@ class TheMonitorDashboard extends HTMLElement {
   set hass(hass) {
     this._hass = hass
     this._updateHass?.(hass)
+    ensureHaChromeVisible(hass)
   }
 
   connectedCallback() {

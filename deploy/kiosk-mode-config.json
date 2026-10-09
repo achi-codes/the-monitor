@@ -1,7 +1,7 @@
 {
   "non_admin_settings": {
-    "hide_header": true,
-    "hide_sidebar": true,
+    "hide_header": false,
+    "hide_sidebar": false,
     "ignore_entity_settings": true
   },
   "admin_settings": {

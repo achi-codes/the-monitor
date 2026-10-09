@@ -265,8 +265,7 @@ export default function Settings({ onBack }) {
                       und gelten auf allen Geräten (iPad, Mac, Wanddisplay).
                     </p>
                     <p className="tm-text-sm tm-opacity-70">
-                      Kiosk-Modus: Nicht-Admin-Nutzer sehen keine HA-Sidebar und keine Topbar
-                      (via kiosk-mode Integration). Admins behalten die normale HA-Oberfläche.
+                      Die Home-Assistant-Seitenleiste und die obere Leiste bleiben erreichbar.
                     </p>
                   </>
                 ) : (

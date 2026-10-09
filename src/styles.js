@@ -3,7 +3,7 @@ export const styles = `
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 100dvh;
+  min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
   font-family: system-ui, -apple-system, sans-serif;
@@ -35,7 +35,7 @@ export const styles = `
 .tm-full-screen {
   width: 100%;
   height: 100%;
-  min-height: 100dvh;
+  min-height: 0;
   position: relative;
   overflow: hidden;
   background: var(--tm-bg, #000);
@@ -336,19 +336,24 @@ export const styles = `
   overflow-x: auto;
   overflow-y: hidden;
   scroll-snap-type: x mandatory;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
+  overscroll-behavior-x: contain;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;
 }
 .tm-page-pager::-webkit-scrollbar { display: none; }
+.tm-page-pager.is-scrolling,
+.tm-page-pager.is-scrolling * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
 .tm-page {
   flex: 0 0 100%;
   width: 100%;
   min-width: 100%;
   max-width: 100%;
   scroll-snap-align: start;
-  scroll-snap-stop: always;
   min-height: 0;
   height: 100%;
   overflow: hidden;
@@ -4733,32 +4738,14 @@ export const styles = `
 }
 `;
 
+
 export const haShellStyles = `
-html:has(the-monitor-dashboard),
-body:has(the-monitor-dashboard) {
-  height: 100% !important;
-  overflow: hidden !important;
-}
-
-#view,
-hui-view-panel,
-.view,
-hui-view,
-ha-panel-screen {
-  height: 100% !important;
-  min-height: 100dvh !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow: hidden !important;
-}
-
 the-monitor-dashboard {
   display: block !important;
   width: 100% !important;
   min-width: 100% !important;
   height: 100% !important;
-  min-height: 100dvh !important;
-  overflow: hidden !important;
+  min-height: 0 !important;
   box-sizing: border-box !important;
 }
 

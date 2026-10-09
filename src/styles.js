@@ -4524,9 +4524,9 @@ export const styles = `
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: #f2f2f7;
   color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
   box-shadow: 0 20px 56px rgba(0, 0, 0, 0.22);
   overflow: hidden;
-  transform: translateZ(0);
 }
 .tm-ha-picker-header {
   display: flex;
@@ -4547,6 +4547,7 @@ export const styles = `
   border: none;
   background: rgba(0, 0, 0, 0.06);
   color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
   width: 2rem;
   height: 2rem;
   border-radius: 999px;
@@ -4568,6 +4569,7 @@ export const styles = `
   border: none;
   background: transparent;
   color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
   border-radius: 0.7rem;
   padding: 0.55rem 0.4rem;
   font-weight: 650;
@@ -4585,6 +4587,7 @@ export const styles = `
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: white;
   color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
   font-size: 0.875rem;
   outline: none;
 }
@@ -4598,6 +4601,7 @@ export const styles = `
   border: none;
   background: rgba(0, 0, 0, 0.06);
   color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
   border-radius: 999px;
   padding: 0.45rem 0.8rem;
   font-weight: 600;
@@ -4608,6 +4612,7 @@ export const styles = `
 .tm-ha-picker-dash.active {
   background: #4338ca;
   color: white;
+  -webkit-text-fill-color: #ffffff;
 }
 .tm-ha-picker-views .tm-ha-picker-view {
   background: rgba(67, 56, 202, 0.08);
@@ -4622,23 +4627,27 @@ export const styles = `
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.35rem;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   background: #f2f2f7;
+  color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
 }
 .tm-ha-picker-group {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 .tm-ha-picker-group-title {
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  opacity: 0.5;
-  margin-bottom: 0.35rem;
+  color: rgba(29, 29, 31, 0.5);
+  -webkit-text-fill-color: rgba(29, 29, 31, 0.5);
+  margin-bottom: 0.1rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4648,19 +4657,17 @@ export const styles = `
   width: 100%;
   text-align: left;
   border: none;
-  background: white;
+  background: #ffffff;
   color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
   border-radius: 0.75rem;
   padding: 0.7rem 0.85rem;
-  margin-bottom: 0.35rem;
   font-size: 0.875rem;
+  line-height: 1.35;
   cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  contain: layout paint;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 3rem;
 }
 .tm-ha-picker-item-rich {
   display: flex;
@@ -4670,27 +4677,33 @@ export const styles = `
   white-space: normal;
 }
 .tm-ha-picker-item-title {
+  display: block;
+  width: 100%;
   font-weight: 600;
+  color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 100%;
 }
 .tm-ha-picker-item-meta {
+  display: block;
+  width: 100%;
   font-size: 0.7rem;
-  opacity: 0.55;
+  color: rgba(29, 29, 31, 0.55);
+  -webkit-text-fill-color: rgba(29, 29, 31, 0.55);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 100%;
 }
 .tm-ha-picker-item:hover {
-  background: rgba(67, 56, 202, 0.08);
+  background: #e8e8ff;
 }
 .tm-ha-picker-more {
   border: none;
   background: rgba(0, 0, 0, 0.06);
   color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
   border-radius: 0.75rem;
   padding: 0.75rem;
   font-weight: 650;
@@ -4700,8 +4713,13 @@ export const styles = `
 .tm-ha-picker-empty {
   font-size: 0.875rem;
   line-height: 1.45;
-  opacity: 0.7;
+  color: rgba(29, 29, 31, 0.7);
+  -webkit-text-fill-color: rgba(29, 29, 31, 0.7);
   padding: 0.5rem 0.15rem;
+}
+.tm-ha-picker-dash.active,
+.tm-ha-picker-views .tm-ha-picker-view.active {
+  -webkit-text-fill-color: #ffffff;
 }
 
 /* —— Schwarz bunt: pastel cards on black —— */

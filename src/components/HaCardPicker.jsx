@@ -143,14 +143,14 @@ export default function HaCardPicker({ hass, onClose, onSelect }) {
   const typeRows = useMemo(() => {
     if (tab !== 'types') return [];
     const query = deferredSearch.trim().toLowerCase();
-    return listCardTypes().filter((card) => {
-      if (!query) return true;
-      return (
-        card.name.toLowerCase().includes(query)
-        || card.type.toLowerCase().includes(query)
-        || (card.description || '').toLowerCase().includes(query)
-      );
-    });
+    const rows = listCardTypes();
+    if (!query) return rows;
+    return rows.filter((card) => (
+      card.name.toLowerCase().includes(query)
+      || card.type.toLowerCase().includes(query)
+      || (card.description || '').toLowerCase().includes(query)
+      || (card.group || '').toLowerCase().includes(query)
+    ));
   }, [deferredSearch, tab]);
 
   const filteredDashboardCards = useMemo(() => {

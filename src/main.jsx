@@ -151,6 +151,7 @@ ensureHaDashboard()
 
 const root = document.getElementById('root')
 if (root) {
+  injectDocumentStyles('the-monitor-dev-styles', styles)
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
       <HassProvider enableMock>

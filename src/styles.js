@@ -4614,45 +4614,6 @@ export const styles = `
   opacity: 0.7;
   padding: 0.5rem 0.15rem;
 }
-`;
-
-export const haShellStyles = `
-html:has(the-monitor-dashboard),
-body:has(the-monitor-dashboard) {
-  height: 100% !important;
-  overflow: hidden !important;
-}
-
-#view,
-hui-view-panel,
-.view,
-hui-view,
-ha-panel-screen {
-  height: 100% !important;
-  min-height: 100dvh !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow: hidden !important;
-}
-
-the-monitor-dashboard {
-  display: block !important;
-  width: 100% !important;
-  min-width: 100% !important;
-  height: 100% !important;
-  min-height: 100dvh !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-}
-
-ha-card:has(the-monitor-dashboard),
-hui-card:has(the-monitor-dashboard) {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  height: 100% !important;
-  width: 100% !important;
-}
 
 /* —— Schwarz bunt: pastel cards on black —— */
 [data-tm-theme="blackColorful"] .tm-card,
@@ -4674,6 +4635,13 @@ hui-card:has(the-monitor-dashboard) {
   color: var(--tm-tile-fg, #1a1a1a);
   border: none;
   border-radius: var(--tm-radius-xl, 2rem);
+}
+
+[data-tm-theme="blackColorful"] .tm-scene-btn.empty,
+[data-tm-theme="blackColorful"] .tm-quick-action.empty {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  border: 1px dashed rgba(255, 255, 255, 0.28);
 }
 
 [data-tm-theme="blackColorful"] .tm-scene-gradient {
@@ -4713,6 +4681,7 @@ hui-card:has(the-monitor-dashboard) {
 
 [data-tm-theme="blackColorful"] .tm-media-panel {
   background: color-mix(in srgb, var(--tm-tile-fg, #1a1a1a) 10%, transparent);
+  border-color: transparent;
 }
 
 [data-tm-theme="blackColorful"] .tm-brightness-fill {
@@ -4727,7 +4696,9 @@ hui-card:has(the-monitor-dashboard) {
 [data-tm-theme="blackColorful"] .tm-brightness-action state-icon,
 [data-tm-theme="blackColorful"] .tm-brightness-action ha-icon,
 [data-tm-theme="blackColorful"] .tm-brightness-header state-icon,
-[data-tm-theme="blackColorful"] .tm-brightness-header ha-icon {
+[data-tm-theme="blackColorful"] .tm-brightness-header ha-icon,
+[data-tm-theme="blackColorful"] .tm-cover-header state-icon,
+[data-tm-theme="blackColorful"] .tm-cover-header ha-icon {
   color: var(--tm-tile-fg, #1a1a1a) !important;
 }
 
@@ -4759,6 +4730,45 @@ hui-card:has(the-monitor-dashboard) {
 [data-tm-theme="blackColorful"] .tm-title-xl,
 [data-tm-theme="blackColorful"] .tm-title-lg {
   text-shadow: none !important;
+}
+`;
+
+export const haShellStyles = `
+html:has(the-monitor-dashboard),
+body:has(the-monitor-dashboard) {
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+#view,
+hui-view-panel,
+.view,
+hui-view,
+ha-panel-screen {
+  height: 100% !important;
+  min-height: 100dvh !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+the-monitor-dashboard {
+  display: block !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  height: 100% !important;
+  min-height: 100dvh !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+ha-card:has(the-monitor-dashboard),
+hui-card:has(the-monitor-dashboard) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  height: 100% !important;
+  width: 100% !important;
 }
 `;
 

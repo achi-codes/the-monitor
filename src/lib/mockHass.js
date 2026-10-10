@@ -2,6 +2,34 @@ function createState(entityId, state, attributes = {}) {
   return { entity_id: entityId, state, attributes, last_changed: new Date().toISOString(), last_updated: new Date().toISOString() };
 }
 
+function mockDailyForecast() {
+  const days = [
+    ['partlycloudy', 19, 11, 20], ['partlycloudy', 18, 10, 10], ['sunny', 17, 9, 5],
+    ['rainy', 15, 8, 80], ['partlycloudy', 16, 9, 15], ['sunny', 18, 10, 0], ['cloudy', 16, 9, 40],
+  ];
+  const start = new Date();
+  start.setHours(12, 0, 0, 0);
+  return days.map(([condition, temperature, templow, precipitation_probability], index) => ({
+    datetime: new Date(start.getTime() + index * 86400000).toISOString(),
+    condition,
+    temperature,
+    templow,
+    precipitation_probability,
+  }));
+}
+
+function mockHourlyForecast() {
+  const conditions = ['partlycloudy', 'sunny', 'partlycloudy', 'cloudy', 'cloudy', 'partlycloudy', 'rainy', 'cloudy'];
+  const temps = [16, 17, 18, 17, 16, 15, 14, 13];
+  const start = new Date();
+  start.setMinutes(0, 0, 0);
+  return conditions.map((condition, index) => ({
+    datetime: new Date(start.getTime() + index * 3600000).toISOString(),
+    condition,
+    temperature: temps[index],
+  }));
+}
+
 const MOCK_STATES = {
   'light.wohnzimmer': createState('light.wohnzimmer', 'on', { friendly_name: 'Wohnzimmer Licht', brightness: 200 }),
   'light.kueche': createState('light.kueche', 'off', { friendly_name: 'Küche Licht' }),
@@ -30,34 +58,15 @@ const MOCK_STATES = {
     entity_id: ['light.wohnzimmer', 'light.kueche', 'switch.steckdose', 'cover.wohnzimmer', 'climate.wohnzimmer'],
   }),
   'weather.zuhause': createState('weather.zuhause', 'partlycloudy', {
-    friendly_name: 'Zuhause',
+    friendly_name: 'Saarbrücken',
     supported_features: 3,
-    temperature: 18,
+    temperature: 16,
     humidity: 68,
     pressure: 1013,
     wind_speed: 12,
     visibility: 10,
-    forecast: [
-      { datetime: '2026-06-17', condition: 'partlycloudy', temperature: 22, templow: 14, precipitation_probability: 20 },
-      { datetime: '2026-06-18', condition: 'sunny', temperature: 26, templow: 16, precipitation_probability: 5 },
-      { datetime: '2026-06-19', condition: 'cloudy', temperature: 20, templow: 13, precipitation_probability: 30 },
-      { datetime: '2026-06-20', condition: 'rainy', temperature: 17, templow: 12, precipitation_probability: 80 },
-      { datetime: '2026-06-21', condition: 'partlycloudy', temperature: 21, templow: 14, precipitation_probability: 15 },
-      { datetime: '2026-06-22', condition: 'sunny', temperature: 24, templow: 15, precipitation_probability: 0 },
-      { datetime: '2026-06-23', condition: 'cloudy', temperature: 19, templow: 12, precipitation_probability: 40 },
-    ],
-    hourly_forecast: [
-      { datetime: '2026-06-17T20:00:00+02:00', condition: 'partlycloudy', temperature: 21 },
-      { datetime: '2026-06-17T21:00:00+02:00', condition: 'partlycloudy', temperature: 20 },
-      { datetime: '2026-06-17T22:00:00+02:00', condition: 'cloudy', temperature: 19 },
-      { datetime: '2026-06-17T23:00:00+02:00', condition: 'cloudy', temperature: 17 },
-      { datetime: '2026-06-18T00:00:00+02:00', condition: 'partlycloudy', temperature: 15 },
-      { datetime: '2026-06-18T01:00:00+02:00', condition: 'partlycloudy', temperature: 14 },
-      { datetime: '2026-06-18T02:00:00+02:00', condition: 'clear-night', temperature: 13 },
-      { datetime: '2026-06-18T03:00:00+02:00', condition: 'clear-night', temperature: 12 },
-      { datetime: '2026-06-18T04:00:00+02:00', condition: 'clear-night', temperature: 11 },
-      { datetime: '2026-06-18T05:00:00+02:00', condition: 'partlycloudy', temperature: 11 },
-    ],
+    forecast: mockDailyForecast(),
+    hourly_forecast: mockHourlyForecast(),
   }),
   'media_player.wohnzimmer': createState('media_player.wohnzimmer', 'playing', {
     friendly_name: 'Bluetooth Speaker',

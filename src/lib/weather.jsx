@@ -1,4 +1,5 @@
 import { format, parseISO, addHours, startOfHour, isSameDay } from 'date-fns';
+import { de } from 'date-fns/locale';
 import {
   Sun, Moon, Cloud, CloudRain, CloudSnow, CloudFog, CloudLightning,
   CloudSun, Wind,
@@ -59,6 +60,9 @@ export const CONDITION_META = {
   lightning: { label: 'Gewitter', Icon: CloudLightning, gradient: 'linear-gradient(160deg, #4c1d95 0%, #1e3a8a 100%)' },
   hail: { label: 'Hagel', Icon: CloudSnow, gradient: 'linear-gradient(160deg, #94a3b8 0%, #475569 100%)' },
   windy: { label: 'Windig', Icon: Wind, gradient: 'linear-gradient(160deg, #38bdf8 0%, #64748b 100%)' },
+  'windy-variant': { label: 'Windig', Icon: Wind, gradient: 'linear-gradient(160deg, #38bdf8 0%, #64748b 100%)' },
+  'lightning-rainy': { label: 'Gewitter', Icon: CloudLightning, gradient: 'linear-gradient(160deg, #4c1d95 0%, #1e3a8a 100%)' },
+  'snowy-rainy': { label: 'Schneeregen', Icon: CloudSnow, gradient: 'linear-gradient(160deg, #cbd5e1 0%, #64748b 100%)' },
   exceptional: { label: 'Extrem', Icon: CloudLightning, gradient: 'linear-gradient(160deg, #7c2d12 0%, #1e293b 100%)' },
 };
 
@@ -124,7 +128,12 @@ export function parseForecastDay(day) {
   };
 }
 
+export const WEATHER_FORECAST_DAILY = 1;
 export const WEATHER_FORECAST_HOURLY = 2;
+
+export function weatherSupportsDailyForecast(entity) {
+  return Boolean((entity?.attributes?.supported_features ?? 0) & WEATHER_FORECAST_DAILY);
+}
 
 const EIGHT_HOURS_MS = 8 * 60 * 60 * 1000;
 
@@ -267,11 +276,53 @@ export function buildWeatherPreviews(entity, hourlyForecast = null) {
   };
 }
 
-export function extractWeatherData(entity, hourlyForecast = null) {
+function roundTemp(value) {
+  return value != null && Number.isFinite(Number(value)) ? Math.round(Number(value)) : null;
+}
+
+export function buildUpcomingHours(entity, hourlySource, today, limit = 6) {
+  const now = new Date();
+  const slots = (hourlySource || [])
+    .map((slot) => ({ slot, dt: slot.datetime ? parseISO(slot.datetime) : null }))
+    .filter(({ dt }) => dt && !Number.isNaN(dt.getTime()) && dt > now)
+    .slice(0, limit)
+    .map(({ slot, dt }) => ({
+      datetime: slot.datetime,
+      hour: dt.getHours(),
+      label: `${dt.getHours()} Uhr`,
+      temp: roundTemp(slot.temperature ?? slot.temp),
+      condition: slot.condition ?? entity.state,
+    }));
+  if (slots.length >= Math.min(limit, 3)) return slots;
+
+  return buildForwardPreview(entity.attributes.temperature, entity.state, today, limit + 1)
+    .slice(1)
+    .map((slot) => ({ ...slot, label: `${slot.hour} Uhr` }));
+}
+
+export function buildUpcomingDays(forecast, limit = 6) {
+  const now = new Date();
+  return forecast
+    .map((day) => ({ day, dt: day.datetime ? parseISO(day.datetime) : null }))
+    .filter(({ dt }) => dt && !Number.isNaN(dt.getTime()) && dt > now && !isSameDay(dt, now))
+    .slice(0, limit)
+    .map(({ day, dt }) => ({
+      ...day,
+      label: format(dt, 'EEEEEE', { locale: de }),
+      high: roundTemp(day.high),
+      low: roundTemp(day.low),
+    }));
+}
+
+export function extractWeatherData(entity, hourlyForecast = null, dailyForecast = null) {
   const { state, attributes, name } = entity;
-  const forecast = (attributes.forecast || []).map(parseForecastDay);
-  const today = forecast[0] || null;
+  const forecast = (dailyForecast || attributes.forecast || []).map(parseForecastDay);
+  const now = new Date();
+  const today = forecast.find((day) => day.datetime && isSameDay(parseISO(day.datetime), now))
+    || forecast[0]
+    || null;
   const previews = buildWeatherPreviews(entity, hourlyForecast);
+  const hourlySource = hourlyForecast || readHourlyForecastAttributes(attributes);
 
   return {
     name,
@@ -286,5 +337,7 @@ export function extractWeatherData(entity, hourlyForecast = null) {
     today,
     dayPreview: previews.dayPreview,
     hourlyPreview: previews.hourlyPreview,
+    upcomingHours: buildUpcomingHours(entity, hourlySource, today),
+    upcomingDays: buildUpcomingDays(forecast),
   };
 }

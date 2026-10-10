@@ -41,7 +41,8 @@ export function renderDashboardWidget({
       return (
         <WeatherWidget
           entityId={widget.entity_id}
-          compact
+          title={widget.label}
+          location={widget.location}
           editMode={editMode}
           onConfigure={editMode ? handleConfigure : undefined}
         />

@@ -437,6 +437,9 @@ export function normalizeLayout(rawLayout, legacyConfig = null) {
           normalized.showHistory = Boolean(widget.showHistory);
           normalized.historyHours = normalizeSensorHistoryHours(widget.historyHours);
         }
+        if (widget.type === 'weather' && typeof widget.location === 'string') {
+          normalized.location = widget.location;
+        }
         if (widget.type === 'haCard') {
           normalized.card = sanitizeCardConfig(widget.card);
         }

@@ -140,6 +140,18 @@ export default function WidgetInspector({
               placeholder="Anzeigename"
             />
           </div>
+          {widget.type === 'weather' && (
+            <div className="tm-widget-inspector-field">
+              <span className="tm-widget-inspector-field-label">Ort</span>
+              <input
+                className="tm-input"
+                type="text"
+                value={widget.location || ''}
+                onChange={(e) => onUpdate(pageIndex, widget.id, { location: e.target.value })}
+                placeholder="Name der Wetter-Entität"
+              />
+            </div>
+          )}
           {!isHaCard && (
             <div className="tm-widget-inspector-field">
               <span className="tm-widget-inspector-field-label">Icon</span>

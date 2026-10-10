@@ -1,7 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { format, parseISO, isToday } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Settings as SettingsIcon, X, Droplets, Wind, Gauge } from 'lucide-react';
+import {
+  Settings as SettingsIcon, X, Droplets, Wind, Gauge, MapPin, ArrowUp, ArrowDown, ChevronRight,
+} from 'lucide-react';
 import { useHass } from '../context/HassContext';
 import { useConfig } from '../context/ConfigContext';
 import {
@@ -10,7 +12,8 @@ import {
   extractWeatherData,
   getWeatherVideoSrc,
 } from '../lib/weather.jsx';
-import { useHourlyForecast } from '../lib/useHourlyForecast';
+import { useHourlyForecast, useDailyForecast } from '../lib/useHourlyForecast';
+import { getWeatherArt, getWeatherTone } from '../lib/weatherArt';
 
 const WEATHER_VIDEO_SLOW_DELAY_MS = 1000;
 const WEATHER_VIDEO_SLOW_RATE = 0.2;
@@ -268,55 +271,168 @@ function Stat({ label, value, icon: Icon }) {
   );
 }
 
-export default function WeatherWidget({ entityId: entityIdProp, compact = false, onConfigure, editMode = false }) {
+const FORECAST_TILE_MIN_REM = 5.25;
+const FORECAST_TILE_GAP_REM = 0.6;
+
+function useTileCount(ref) {
+  const [count, setCount] = useState(4);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(([entry]) => {
+      const rem = parseFloat(getComputedStyle(node).fontSize) || 16;
+      const width = entry.contentRect.width / rem;
+      const next = Math.floor((width + FORECAST_TILE_GAP_REM) / (FORECAST_TILE_MIN_REM + FORECAST_TILE_GAP_REM));
+      setCount(Math.min(6, Math.max(3, next)));
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [ref]);
+
+  return count;
+}
+
+function formatTemp(value) {
+  return value != null ? `${Math.round(value)}°` : '—';
+}
+
+function ForecastSection({ title, items, renderItem, sectionClass }) {
+  if (!items.length) return null;
+  return (
+    <section className={`tm-weather-card-section ${sectionClass}`}>
+      <div className="tm-weather-card-section-head">
+        <span>{title}</span>
+        <ChevronRight className="tm-weather-card-section-chevron" />
+      </div>
+      <div className="tm-weather-card-tiles" style={{ '--tm-weather-tiles': items.length }}>
+        {items.map(renderItem)}
+      </div>
+    </section>
+  );
+}
+
+function WeatherCard({ data, title, location, editMode, onConfigure, onExpand }) {
+  const forecastRef = useRef(null);
+  const count = useTileCount(forecastRef);
+  const hour = new Date().getHours();
+  const hours = data.upcomingHours.slice(0, count);
+  const days = data.upcomingDays.slice(0, count);
+  const conditionLabel = getConditionMeta(data.condition, hour).label;
+
+  return (
+    <button
+      type="button"
+      className={`tm-card tm-weather-widget tm-weather-card tm-weather-card--${getWeatherTone(data.condition, hour)}`}
+      onClick={() => {
+        if (editMode) {
+          onConfigure?.();
+          return;
+        }
+        onExpand();
+      }}
+      aria-label="Wetterdetails öffnen"
+    >
+      <div className="tm-weather-card-inner">
+        <div className="tm-weather-card-summary">
+          <div className="tm-weather-card-head">
+            <div className="tm-weather-card-title">{title}</div>
+            {location && (
+              <div className="tm-weather-card-location">
+                <MapPin className="tm-weather-card-location-icon" />
+                <span>{location}</span>
+              </div>
+            )}
+          </div>
+          <div className="tm-weather-card-now">
+            <div className="tm-weather-card-temp">{formatTemp(data.temp)}</div>
+            <div className="tm-weather-card-condition">{conditionLabel}</div>
+            {data.today && (
+              <div className="tm-weather-card-hilo">
+                <span className="tm-weather-card-hilo-item tm-weather-card-hilo-item--high">
+                  <ArrowUp />
+                  {formatTemp(data.today.high)}
+                </span>
+                <span className="tm-weather-card-hilo-item tm-weather-card-hilo-item--low">
+                  <ArrowDown />
+                  {formatTemp(data.today.low)}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="tm-weather-card-art" aria-hidden="true">
+            <img src={getWeatherArt(data.condition, hour)} alt="" draggable="false" />
+          </div>
+        </div>
+
+        <div className="tm-weather-card-forecast" ref={forecastRef}>
+          <ForecastSection
+            title={`Nächste ${hours.length} Stunden`}
+            sectionClass="tm-weather-card-section--hours"
+            items={hours}
+            renderItem={(slot) => (
+              <div key={slot.datetime || slot.label} className="tm-weather-card-tile">
+                <span className="tm-weather-card-tile-label">{slot.label}</span>
+                <img className="tm-weather-card-tile-icon" src={getWeatherArt(slot.condition, slot.hour)} alt="" draggable="false" />
+                <span className="tm-weather-card-tile-temp">{formatTemp(slot.temp)}</span>
+              </div>
+            )}
+          />
+          <ForecastSection
+            title={`Nächste ${days.length} Tage`}
+            sectionClass="tm-weather-card-section--days"
+            items={days}
+            renderItem={(day) => (
+              <div key={day.datetime} className="tm-weather-card-tile">
+                <span className="tm-weather-card-tile-label tm-weather-card-tile-label--day">{day.label}</span>
+                <img className="tm-weather-card-tile-icon" src={getWeatherArt(day.condition, 12)} alt="" draggable="false" />
+                <span className="tm-weather-card-tile-temp">{formatTemp(day.high)}</span>
+                <span className="tm-weather-card-tile-low">{formatTemp(day.low)}</span>
+              </div>
+            )}
+          />
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function getLocationName(entity, fallback) {
+  const name = String(fallback || entity?.attributes?.friendly_name || '').trim();
+  return name.replace(/^(forecast|wettervorhersage)\s+/i, '');
+}
+
+export default function WeatherWidget({
+  entityId: entityIdProp,
+  onConfigure,
+  editMode = false,
+  title = '',
+  location = '',
+}) {
   const [expanded, setExpanded] = useState(false);
   const { hass, getEntity, revision } = useHass();
   const { config } = useConfig();
   const entityId = entityIdProp || config.weather?.entity_id || '';
   const entity = entityId ? getEntity(entityId) : null;
   const hourlyForecast = useHourlyForecast(hass, entityId, entity);
+  const dailyForecast = useDailyForecast(hass, entityId, entity);
   const data = useMemo(
-    () => (entity ? extractWeatherData(entity, hourlyForecast) : null),
-    [entity, hourlyForecast, revision],
+    () => (entity ? extractWeatherData(entity, hourlyForecast, dailyForecast) : null),
+    [entity, hourlyForecast, dailyForecast, revision],
   );
 
   if (!entityId || !data) return <WeatherPlaceholder onConfigure={onConfigure} />;
-  const meta = getConditionMeta(data.condition, new Date().getHours(), config.appearance);
-  const flatPastel = config.appearance?.mode === 'blackColorful';
 
   return (
     <>
-      <button
-        type="button"
-        className={`tm-card tm-weather-widget${compact ? ' tm-weather-compact' : ''}${flatPastel ? ' tm-weather-widget--pastel' : ''}`}
-        onClick={() => {
-          if (editMode) {
-            onConfigure?.();
-            return;
-          }
-          setExpanded(true);
-        }}
-        aria-label="Wetterdetails öffnen"
-      >
-        <WeatherBackground condition={data.condition} meta={meta} hass={hass} flat={flatPastel} />
-
-        <div className="tm-weather-content">
-          <div className="tm-weather-main">
-            <div className="tm-weather-location">{data.name}</div>
-            <div className="tm-weather-temp-xl">
-              {data.temp != null ? Math.round(data.temp) : '—'}°
-            </div>
-            <div className="tm-weather-condition">{meta.label}</div>
-            {data.today && (
-              <div className="tm-weather-hilo">
-                H:{data.today.high != null ? Math.round(data.today.high) : '—'}° · L:{data.today.low != null ? Math.round(data.today.low) : '—'}°
-              </div>
-            )}
-          </div>
-
-          <DayStrip slots={data.hourlyPreview.slice(0, 6)} compact className="tm-weather-hourly-preview" />
-        </div>
-      </button>
+      <WeatherCard
+        data={data}
+        title={title || 'Wetter'}
+        location={getLocationName(entity, location)}
+        editMode={editMode}
+        onConfigure={onConfigure}
+        onExpand={() => setExpanded(true)}
+      />
 
       {expanded && (
         <WeatherExpanded

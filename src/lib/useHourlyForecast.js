@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { weatherSupportsHourlyForecast } from './weather.jsx';
+import { weatherSupportsHourlyForecast, weatherSupportsDailyForecast } from './weather.jsx';
 
 function readAttributeHourly(entity) {
   return entity?.attributes?.hourly_forecast
@@ -8,16 +8,21 @@ function readAttributeHourly(entity) {
     || null;
 }
 
-export function useHourlyForecast(hass, entityId, entity) {
-  const [forecast, setForecast] = useState(() => readAttributeHourly(entity));
+function readAttributeDaily(entity) {
+  const forecast = entity?.attributes?.forecast;
+  return Array.isArray(forecast) && forecast.length ? forecast : null;
+}
+
+function useForecastSubscription(hass, entityId, entity, forecastType, readAttribute, isSupported) {
+  const [forecast, setForecast] = useState(() => readAttribute(entity));
 
   useEffect(() => {
-    setForecast(readAttributeHourly(entity));
+    setForecast(readAttribute(entity));
   }, [entity]);
 
   useEffect(() => {
     if (!entityId || !entity || !hass?.connection?.subscribeMessage) return undefined;
-    if (!weatherSupportsHourlyForecast(entity)) return undefined;
+    if (!isSupported(entity)) return undefined;
 
     let active = true;
     let unsubscribe = () => {};
@@ -29,7 +34,7 @@ export function useHourlyForecast(hass, entityId, entity) {
       },
       {
         type: 'weather/subscribe_forecast',
-        forecast_type: 'hourly',
+        forecast_type: forecastType,
         entity_id: entityId,
       },
     ).then((unsub) => {
@@ -47,4 +52,12 @@ export function useHourlyForecast(hass, entityId, entity) {
   }, [hass, entityId, entity?.id, entity?.attributes?.supported_features]);
 
   return forecast;
+}
+
+export function useHourlyForecast(hass, entityId, entity) {
+  return useForecastSubscription(hass, entityId, entity, 'hourly', readAttributeHourly, weatherSupportsHourlyForecast);
+}
+
+export function useDailyForecast(hass, entityId, entity) {
+  return useForecastSubscription(hass, entityId, entity, 'daily', readAttributeDaily, weatherSupportsDailyForecast);
 }

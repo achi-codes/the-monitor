@@ -107,6 +107,18 @@ const MOCK_STATES = {
   'cover.schlafzimmer': createState('cover.schlafzimmer', 'closed', { friendly_name: 'Schlafzimmer Rolladen', current_position: 0 }),
   'cover.kueche': createState('cover.kueche', 'open', { friendly_name: 'Küche Rolladen', current_position: 45 }),
   'binary_sensor.kueche_fenster': createState('binary_sensor.kueche_fenster', 'on', { friendly_name: 'Küche Fenster' }),
+  'binary_sensor.terrassentuer': {
+    ...createState('binary_sensor.terrassentuer', 'on', { friendly_name: 'Terrassentür', device_class: 'door' }),
+    last_changed: new Date(Date.now() - 12 * 60000).toISOString(),
+  },
+  'binary_sensor.flur_bewegung': {
+    ...createState('binary_sensor.flur_bewegung', 'off', { friendly_name: 'Flur Bewegung', device_class: 'motion' }),
+    last_changed: new Date(Date.now() - 95 * 60000).toISOString(),
+  },
+  'binary_sensor.garage_tor': {
+    ...createState('binary_sensor.garage_tor', 'off', { friendly_name: 'Garagentor', device_class: 'garage_door' }),
+    last_changed: new Date(Date.now() - 26 * 3600000).toISOString(),
+  },
   'binary_sensor.grandland_charging': createState('binary_sensor.grandland_charging', 'on', {
     friendly_name: 'Grandland lädt',
     device_class: 'battery_charging',

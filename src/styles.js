@@ -5309,6 +5309,207 @@ export const styles = `
   box-shadow: inset 0 0 0 2.5px var(--tm-tile-fg, #1a1a1a);
 }
 
+.tm-contact-card {
+  container: tm-contact / size;
+  cursor: default;
+  padding: 0;
+  overflow: hidden;
+  --tm-contact-strong: #4cd97b;
+  --tm-contact-muted: color-mix(in srgb, currentColor 55%, transparent);
+  --tm-contact-chip: color-mix(in srgb, currentColor 7%, transparent);
+}
+.tm-contact-card:active { transform: none; }
+.tm-contact-card-inner {
+  --tm-contact-pad: clamp(0.85rem, 6cqmin, 2rem);
+  height: 100%;
+  box-sizing: border-box;
+  padding: var(--tm-contact-pad);
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "head art"
+    "hero art"
+    "stats stats";
+  column-gap: clamp(0.5rem, 3cqw, 1.5rem);
+  row-gap: clamp(0.5rem, 4cqh, 1.4rem);
+}
+.tm-contact-card-head { grid-area: head; min-width: 0; }
+.tm-contact-card-title {
+  --tm-contact-title-room: 78cqw;
+  font-size: max(0.95rem, min(clamp(1rem, 8cqmin, 2.5rem), calc(var(--tm-contact-title-room) / var(--tm-contact-title-chars, 10))));
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tm-contact-card-type {
+  margin-top: 0.3em;
+  font-size: clamp(0.8rem, 4.4cqmin, 1.45rem);
+  color: var(--tm-contact-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tm-contact-card-hero { grid-area: hero; align-self: end; min-width: 0; }
+.tm-contact-card-state {
+  --tm-contact-state-room: 82cqw;
+  font-size: max(1.2rem, min(clamp(1.8rem, 17cqmin, 6rem), calc(var(--tm-contact-state-room) / var(--tm-contact-state-chars, 6))));
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tm-contact-card--active .tm-contact-card-state,
+.tm-contact-card--active .tm-contact-card-stat-value--state {
+  color: var(--tm-contact-strong);
+}
+.tm-contact-card--unavailable .tm-contact-card-state { color: var(--tm-contact-muted); }
+.tm-contact-card-since {
+  margin-top: 0.4em;
+  font-size: clamp(0.8rem, 4.4cqmin, 1.45rem);
+  color: var(--tm-contact-muted);
+  white-space: nowrap;
+}
+.tm-contact-card-art {
+  grid-area: art;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.tm-contact-card-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 15rem;
+  object-fit: contain;
+  user-select: none;
+}
+.tm-contact-card-stats {
+  grid-area: stats;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: clamp(0.4rem, 2cqw, 0.9rem);
+}
+.tm-contact-card-stat {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25em;
+  padding: min(clamp(0.6rem, 3.4cqmin, 1.15rem), 2.6cqw) min(clamp(0.7rem, 4cqmin, 1.4rem), 3cqw);
+  border-radius: clamp(0.75rem, 3.5cqmin, 1.25rem);
+  background: var(--tm-contact-chip);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  border: 0;
+}
+.tm-contact-card-stat--history {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5em;
+  cursor: pointer;
+}
+.tm-contact-card-stat--history:active { transform: scale(0.98); }
+.tm-contact-card-stat-text {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+}
+.tm-contact-card-stat-label {
+  font-size: max(0.72rem, min(clamp(0.75rem, 3.8cqmin, 1.2rem), 3cqw));
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tm-contact-card-stat-value {
+  font-size: max(0.72rem, min(clamp(0.75rem, 3.8cqmin, 1.2rem), 3cqw));
+  color: var(--tm-contact-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+.tm-contact-card-stat-value--state { font-weight: 500; color: inherit; }
+.tm-contact-card-stat-chevron {
+  flex: none;
+  width: clamp(1rem, 4.5cqmin, 1.5rem);
+  height: clamp(1rem, 4.5cqmin, 1.5rem);
+  color: var(--tm-contact-muted);
+}
+.tm-contact-card-timeline {
+  position: relative;
+  display: block;
+  height: clamp(0.45rem, 2.2cqmin, 0.75rem);
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  overflow: hidden;
+}
+.tm-contact-card-timeline-on {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: var(--tm-contact-strong);
+}
+@container tm-contact (max-width: 30rem) {
+  .tm-contact-card-stats { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+  .tm-contact-card-stat--status { display: none; }
+}
+@container tm-contact (max-height: 16rem) {
+  .tm-contact-card-stats { display: none; }
+  .tm-contact-card-inner {
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "head art" "hero art";
+  }
+}
+@container tm-contact (max-width: 17rem) {
+  .tm-contact-card-art { display: none; }
+  .tm-contact-card-inner { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "hero" "stats"; }
+  .tm-contact-card-state { --tm-contact-state-room: 150cqw; }
+  .tm-contact-card-title { --tm-contact-title-room: 170cqw; }
+  .tm-contact-card-stat--changed { display: none; }
+  .tm-contact-card-stats { grid-template-columns: minmax(0, 1fr); }
+}
+@container tm-contact (max-width: 17rem) and (max-height: 16rem) {
+  .tm-contact-card-inner { grid-template-areas: "head" "hero"; }
+}
+@container tm-contact (max-aspect-ratio: 4 / 5) and (min-height: 26rem) {
+  .tm-contact-card-inner {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "head" "art" "hero" "stats";
+  }
+  .tm-contact-card-state { --tm-contact-state-room: 150cqw; }
+  .tm-contact-card-title { --tm-contact-title-room: 170cqw; }
+  .tm-contact-card-stats { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .tm-contact-card-stat--status { display: none; }
+  .tm-contact-card-stat-label,
+  .tm-contact-card-stat-value { font-size: clamp(0.75rem, 5cqw, 1.2rem); }
+}
+[data-tm-theme="light"] .tm-contact-card,
+[data-tm-theme="colorful"] .tm-contact-card {
+  --tm-contact-strong: #1f9d55;
+}
+[data-tm-theme="blackColorful"] .tm-contact-card {
+  --tm-contact-strong: oklch(from var(--tm-surface) calc(1.37 - l) min(calc(c * 2.2 + 0.05), 0.16) h);
+  --tm-contact-chip: rgba(255, 255, 255, 0.42);
+  --tm-contact-muted: color-mix(in srgb, var(--tm-tile-fg, #1a1a1a) 55%, transparent);
+  background: radial-gradient(110% 90% at 80% 15%, rgba(255, 255, 255, 0.4), transparent 60%), var(--tm-surface);
+}
+
 .tm-weather-card {
   container: tm-weather / size;
   --tm-wx-fg: #fff;

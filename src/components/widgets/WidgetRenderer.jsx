@@ -149,6 +149,7 @@ export function renderDashboardWidget({
         <SensorStatusWidget
           widget={widget}
           hass={hass}
+          editMode={editMode}
           onConfigure={handleConfigure}
         />
       );

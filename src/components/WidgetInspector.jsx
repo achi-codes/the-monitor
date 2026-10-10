@@ -16,7 +16,9 @@ import { SCENE_ART } from '../lib/sceneArt';
 import EvEntityFields from './EvEntityFields';
 import { CONTACT_ART } from '../lib/contactArt';
 import SensorChartFields from './SensorChartFields';
+import RoomWidgetFields from './RoomWidgetFields';
 import { MAX_VACUUM_ZONES, VACUUM_ZONE_DOMAINS, getZoneLabel, normalizeVacuumZones } from '../lib/vacuumStatus';
+import { MAX_MEDIA_DEVICES, getMediaDeviceIds, getMediaDeviceLabel } from '../lib/mediaPlayer';
 
 function patchDeviceImages(widget, section, patch) {
   const current = normalizeEnergyDeviceImages(widget.deviceImages);
@@ -97,7 +99,9 @@ export default function WidgetInspector({
   const isHaCard = widget.type === 'haCard';
   const isScene = widget.type === 'scene';
   const isEv = widget.type === 'ev';
+  const isRoom = widget.type === 'room';
   const isVacuum = widget.type === 'vacuum';
+  const isMedia = widget.type === 'media';
 
   return (
     <div className="tm-widget-inspector">
@@ -364,7 +368,64 @@ export default function WidgetInspector({
         </div>
       )}
 
-      {!isPopup && !isCoverPopup && !isCamera && !isSensor && !isSensorStatus && !isHaCard && !isScene && !isEv && widget.type !== 'shopping' && !isSankey && !isEnergyTile && (
+      {isRoom && (
+        <RoomWidgetFields
+          widget={widget}
+          hass={hass}
+          onChange={(patch) => onUpdate(pageIndex, widget.id, patch)}
+        />
+      )}
+
+      {isMedia && (
+        <div className="tm-widget-inspector-section">
+          <label className="tm-widget-inspector-label">Geräte (max. {MAX_MEDIA_DEVICES})</label>
+          <p className="tm-widget-inspector-hint">
+            Erscheinen im Dropdown oben rechts. Das erste Gerät ist der Standard; ohne Namen wird der Raum verwendet.
+          </p>
+          <EntityPicker
+            value=""
+            onChange={(entityId) => {
+              const patch = appendEntity(widget, entityId, MAX_MEDIA_DEVICES);
+              if (patch) onUpdate(pageIndex, widget.id, patch);
+            }}
+            domains={meta.domains}
+            placeholder="Player hinzufügen…"
+          />
+          <div className="tm-widget-inspector-entity-list">
+            {getMediaDeviceIds(widget).map((entityId, _index, ids) => (
+              <EntityRow
+                key={entityId}
+                name={getFriendlyName(hass, entityId)}
+                onRemove={() => {
+                  const nextIds = ids.filter((id) => id !== entityId);
+                  const { [entityId]: _removed, ...deviceNames } = widget.device_names || {};
+                  onUpdate(pageIndex, widget.id, {
+                    entity_ids: nextIds,
+                    entity_id: nextIds[0] || '',
+                    device_names: deviceNames,
+                  });
+                }}
+              >
+                <div className="tm-widget-inspector-entity-row-main">
+                  <span className="tm-widget-inspector-entity-name">{getFriendlyName(hass, entityId)}</span>
+                  <input
+                    className="tm-input"
+                    type="text"
+                    value={widget.device_names?.[entityId] || ''}
+                    placeholder={getMediaDeviceLabel(hass, { device_names: {} }, entityId)}
+                    aria-label="Anzeigename im Dropdown"
+                    onChange={(e) => onUpdate(pageIndex, widget.id, {
+                      device_names: { ...(widget.device_names || {}), [entityId]: e.target.value },
+                    })}
+                  />
+                </div>
+              </EntityRow>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!isPopup && !isCoverPopup && !isCamera && !isSensor && !isSensorStatus && !isHaCard && !isScene && !isEv && !isRoom && !isMedia && widget.type !== 'shopping' && !isSankey && !isEnergyTile && (
         <div className="tm-widget-inspector-section">
           <label className="tm-widget-inspector-label">Entität</label>
           <EntityPicker

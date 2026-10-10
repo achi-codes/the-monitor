@@ -86,7 +86,28 @@ function buildHassFromConnection(connection, auth, onUpdate) {
   });
 
   hass._unsubscribe = unsub;
+  loadRegistries(connection, hass).then(() => onUpdate?.(hass));
   return hass;
+}
+
+async function loadRegistries(connection, hass) {
+  try {
+    const [areas, devices, entities] = await Promise.all([
+      connection.sendMessagePromise({ type: 'config/area_registry/list' }),
+      connection.sendMessagePromise({ type: 'config/device_registry/list' }),
+      connection.sendMessagePromise({ type: 'config/entity_registry/list' }),
+    ]);
+    hass.areas = Object.fromEntries(areas.map((area) => [area.area_id, area]));
+    hass.devices = Object.fromEntries(devices.map((device) => [device.id, { area_id: device.area_id }]));
+    hass.entities = Object.fromEntries(entities.map((entry) => [entry.entity_id, {
+      area_id: entry.area_id,
+      device_id: entry.device_id,
+      hidden: Boolean(entry.hidden_by),
+      entity_category: entry.entity_category,
+    }]));
+  } catch (err) {
+    console.warn('The Monitor: Registries konnten nicht geladen werden', err);
+  }
 }
 
 export async function connectWithAuth(auth, onUpdate) {

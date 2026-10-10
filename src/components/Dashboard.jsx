@@ -12,6 +12,7 @@ import DashboardGrid from './DashboardGrid';
 import DashboardEditor from './DashboardEditor';
 import RoomSelector from './RoomSelector';
 import { QuickActionPopup, CoverPopup } from './widgets/ActionWidgets';
+import { RoomPopup } from './RoomWidget';
 
 export default function Dashboard({ user, onSettings, onScreensaver }) {
   const [time, setTime] = useState(new Date());
@@ -252,9 +253,11 @@ export default function Dashboard({ user, onSettings, onScreensaver }) {
       )}
 
       {qaPopup && !editMode && (
-        qaPopup.variant === 'cover'
-          ? <CoverPopup data={qaPopup} hass={hass} getEntity={getEntity} onClose={closeQaPopup} />
-          : <QuickActionPopup data={qaPopup} hass={hass} onClose={closeQaPopup} />
+        qaPopup.variant === 'room'
+          ? <RoomPopup data={qaPopup} hass={hass} onClose={closeQaPopup} />
+          : qaPopup.variant === 'cover'
+            ? <CoverPopup data={qaPopup} hass={hass} getEntity={getEntity} onClose={closeQaPopup} />
+            : <QuickActionPopup data={qaPopup} hass={hass} onClose={closeQaPopup} />
       )}
       </div>
     </div>

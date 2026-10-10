@@ -17,6 +17,7 @@ export const SLOT_LIMITS = {
   cameraEntities: 3,
   sensorEntities: 4,
   contactStatusEntities: 8,
+  roomEntities: 16,
   widgetsPerPage: 24,
   pages: 6,
 };
@@ -34,6 +35,11 @@ export const WIDGET_TYPES = {
   scene: { label: 'Szene', icon: 'mdi:palette', domains: ['scene', 'script'] },
   sensor: { label: 'Sensor', icon: 'mdi:gauge', domains: ['sensor', 'binary_sensor'] },
   sensorStatus: { label: 'Sensor Status', icon: 'mdi:door-open', domains: ['binary_sensor', 'cover'] },
+  room: {
+    label: 'Raum',
+    icon: 'mdi:sofa',
+    domains: ['light', 'switch', 'fan', 'input_boolean', 'cover', 'climate', 'media_player', 'lock', 'sensor', 'binary_sensor', 'scene', 'script'],
+  },
   sankey: { label: 'Energiefluss', icon: 'mdi:chart-sankey', domains: [] },
   energyTile: { label: 'Energie-Kachel', icon: 'mdi:lightning-bolt', domains: [] },
   ev: { label: 'E-Auto', icon: 'mdi:car-electric', domains: [] },
@@ -64,6 +70,7 @@ const DEFAULT_SIZE_BY_TYPE = {
   scene: 'S',
   sensor: 'M',
   sensorStatus: 'M',
+  room: 'M',
   sankey: 'tall',
   energyTile: 'M',
   ev: 'L',
@@ -419,10 +426,12 @@ export function normalizeLayout(rawLayout, legacyConfig = null) {
                     ? SLOT_LIMITS.contactStatusEntities
                     : widget.type === 'scene'
                       ? SLOT_LIMITS.sceneEntities
-                      : SLOT_LIMITS.popupEntities,
+                      : widget.type === 'room'
+                        ? SLOT_LIMITS.roomEntities
+                        : SLOT_LIMITS.popupEntities,
             )
             : [],
-          disabled_entity_ids: widget.type === 'popup' && Array.isArray(widget.disabled_entity_ids)
+          disabled_entity_ids: (widget.type === 'popup' || widget.type === 'room') && Array.isArray(widget.disabled_entity_ids)
             ? widget.disabled_entity_ids.filter(Boolean)
             : [],
           label: widget.label || '',
@@ -449,6 +458,11 @@ export function normalizeLayout(rawLayout, legacyConfig = null) {
           if (typeof widget.battery_entity === 'string') normalized.battery_entity = widget.battery_entity;
           if (typeof widget.remaining_entity === 'string') normalized.remaining_entity = widget.remaining_entity;
           normalized.zones = normalizeVacuumZones(widget.zones);
+        }
+        if (widget.type === 'room') {
+          normalized.area_id = typeof widget.area_id === 'string' ? widget.area_id : '';
+          normalized.area_name = typeof widget.area_name === 'string' ? widget.area_name : '';
+          if (typeof widget.accent === 'string' && widget.accent) normalized.accent = widget.accent;
         }
         if (widget.type === 'weather' && typeof widget.location === 'string') {
           normalized.location = widget.location;

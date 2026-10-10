@@ -1,7 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import {
+  useState, useEffect, useRef, useId,
+} from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Plus, Sun, X, Shield, Blinds, ChevronUp, ChevronDown, Pause, Play, Check,
+  Plus, Sun, X, Shield, Blinds, ChevronUp, ChevronDown, Pause, Play, Check, Pipette,
 } from 'lucide-react';
 import EntityIcon from '../EntityIcon';
 import {
@@ -17,14 +19,21 @@ import {
   closeCover,
   stopCover,
   setLightRgbColor,
+  setLightColorTemp,
 } from '../../lib/services';
 import {
   formatEntityState, isEntityOn, getDomain, getEntityAreaName,
 } from '../../lib/entities';
 import { getEnabledEntityIds, SLOT_LIMITS } from '../../lib/layout';
 import { SCENE_ART, resolveSceneArtKey, describeSceneTargets } from '../../lib/sceneArt';
-import { getLightRgbFromState } from '../../lib/lightColors';
-import LightColorCircles from '../LightColorCircles';
+import {
+  LIGHT_COLOR_PRESETS,
+  getActiveLightPresetId,
+  getLightColorSupport,
+  getLightRgbFromState,
+  hexToRgb,
+  rgbToHex,
+} from '../../lib/lightColors';
 import { getOverlayRoot, useOverlayLock } from '../../lib/overlayPortal';
 import { useConfig } from '../../context/ConfigContext';
 
@@ -143,108 +152,231 @@ export function getCoverPopupSummary(hass, entityIds, slotLabel, getEntity) {
   };
 }
 
-function BrightnessQuickAction({ widget, hass, getEntity, onConfigure, editMode }) {
-  const { config } = useConfig();
+const DEFAULT_LIGHT_RGB = [255, 196, 120];
 
+function getLightStatusLabel(state) {
+  if (state === 'unavailable' || state === 'unknown') return 'Nicht verfügbar';
+  return state === 'on' ? 'Eingeschaltet' : 'Ausgeschaltet';
+}
+
+function LightLampVisual({ on, onToggle, disabled, label }) {
+  const uid = useId().replace(/:/g, '');
+  const coneId = `tm-light-cone-${uid}`;
+  const shadeId = `tm-light-shade-${uid}`;
+  return (
+    <button
+      type="button"
+      className={`tm-light-card-visual${on ? ' on' : ''}`}
+      onClick={onToggle}
+      disabled={disabled}
+      aria-label={`${label} ${on ? 'ausschalten' : 'einschalten'}`}
+    >
+      <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMin meet" aria-hidden>
+        <defs>
+          <linearGradient id={coneId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" className="tm-light-card-cone-stop" stopOpacity="0.85" />
+            <stop offset="100%" className="tm-light-card-cone-stop" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id={shadeId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#fdf6f0" />
+            <stop offset="100%" stopColor="#f1ddd0" />
+          </linearGradient>
+        </defs>
+        <polygon className="tm-light-card-cone" points="22,56 78,56 104,104 -4,104" fill={`url(#${coneId})`} />
+        <line x1="50" y1="-2" x2="50" y2="24" className="tm-light-card-cord" />
+        <rect x="45" y="22" width="10" height="5" rx="1.5" className="tm-light-card-cap" />
+        <path d="M20 56 C20 36 33 26 50 26 C67 26 80 36 80 56 Z" fill={`url(#${shadeId})`} />
+        <ellipse cx="50" cy="56" rx="30" ry="4.5" className="tm-light-card-rim" />
+      </svg>
+    </button>
+  );
+}
+
+function LightCard({ widget, hass, entity, editMode }) {
+  const entityId = widget.entity_id;
+  const label = widget.label || entity.name;
+  const area = getEntityAreaName(hass, entityId);
+  const isLight = getDomain(entityId) === 'light';
+  const active = entity.state === 'on';
+  const brightness = active ? getBrightnessPercent(hass, entityId) : 0;
+  const colorSupport = isLight ? getLightColorSupport(hass, entityId) : { colorTemp: false, rgb: false };
+  const presets = LIGHT_COLOR_PRESETS.filter((preset) => (
+    colorSupport.rgb || (colorSupport.colorTemp && preset.kelvin)
+  ));
+  const activePresetId = isLight ? getActiveLightPresetId(hass, entityId) : null;
+  const lightRgb = (isLight && getLightRgbFromState(hass, entityId)) || DEFAULT_LIGHT_RGB;
+
+  const [value, setValue] = useState(brightness);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragging = useRef(false);
+  const trackRef = useRef(null);
+  const colorInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!dragging.current) setValue(brightness);
+  }, [brightness]);
+
+  useEffect(() => {
+    const input = colorInputRef.current;
+    if (!input) return undefined;
+    const onChange = () => {
+      const rgb = hexToRgb(input.value);
+      if (rgb) setLightRgbColor(hass, entityId, rgb);
+    };
+    input.addEventListener('change', onChange);
+    return () => input.removeEventListener('change', onChange);
+  }, [hass, entityId]);
+
+  const valueFromPointer = (clientX) => {
+    const rect = trackRef.current?.getBoundingClientRect();
+    if (!rect) return value;
+    return Math.min(100, Math.max(0, Math.round(((clientX - rect.left) / rect.width) * 100)));
+  };
+
+  const handlePointerDown = (event) => {
+    if (editMode) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragging.current = true;
+    setIsDragging(true);
+    setValue(valueFromPointer(event.clientX));
+  };
+
+  const handlePointerMove = (event) => {
+    if (!dragging.current) return;
+    setValue(valueFromPointer(event.clientX));
+  };
+
+  const handleRelease = (event) => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    setIsDragging(false);
+    const next = valueFromPointer(event.clientX);
+    setValue(next);
+    setEntityBrightness(hass, entityId, next);
+  };
+
+  const handleKeyDown = (event) => {
+    if (editMode) return;
+    const step = { ArrowRight: 5, ArrowUp: 5, ArrowLeft: -5, ArrowDown: -5 }[event.key];
+    if (!step) return;
+    event.preventDefault();
+    const next = Math.min(100, Math.max(0, value + step));
+    setValue(next);
+    setEntityBrightness(hass, entityId, next);
+  };
+
+  const handlePreset = (preset) => {
+    if (editMode) return;
+    if (preset.kelvin && colorSupport.colorTemp) setLightColorTemp(hass, entityId, preset.kelvin);
+    else setLightRgbColor(hass, entityId, preset.rgb);
+  };
+
+  const customActive = activePresetId === 'custom';
+
+  return (
+    <div
+      className={`tm-quick-action tm-light-card${active ? ' on' : ''}${isDragging ? ' dragging' : ''}`}
+      style={{
+        '--tm-light-rgb': lightRgb.join(', '),
+        '--tm-light-level': active ? Math.max(0.25, value / 100) : 0,
+      }}
+    >
+      <div className="tm-light-card-main">
+        <div className="tm-light-card-info">
+          <div className="tm-light-card-title">{label}</div>
+          {area && <div className="tm-light-card-area">{area}</div>}
+          <div className="tm-light-card-value">
+            {value}
+            <span className="tm-light-card-unit">%</span>
+          </div>
+          <div className="tm-light-card-status">{getLightStatusLabel(entity.state)}</div>
+        </div>
+        <LightLampVisual
+          on={active}
+          label={label}
+          disabled={editMode}
+          onToggle={() => toggleEntity(hass, entityId)}
+        />
+      </div>
+
+      <div
+        ref={trackRef}
+        className="tm-light-card-slider"
+        style={{ '--tm-light-ratio': value / 100 }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handleRelease}
+        onPointerCancel={handleRelease}
+        onKeyDown={handleKeyDown}
+        role="slider"
+        aria-label={`Helligkeit ${label}`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={value}
+        tabIndex={editMode ? -1 : 0}
+      >
+        <div className="tm-light-card-slider-fill" />
+        <div className="tm-light-card-slider-thumb" />
+      </div>
+
+      {presets.length > 0 && (
+        <div className="tm-light-card-colors" role="group" aria-label="Lichtfarbe wählen">
+          {presets.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className={`tm-light-card-color${activePresetId === preset.id ? ' active' : ''}`}
+              style={{ '--tm-swatch': preset.swatch }}
+              onClick={() => handlePreset(preset)}
+              disabled={editMode}
+              aria-pressed={activePresetId === preset.id}
+            >
+              <span className="tm-light-card-swatch" />
+              <span className="tm-light-card-color-label">{preset.label}</span>
+            </button>
+          ))}
+          {colorSupport.rgb && (
+            <label
+              className={`tm-light-card-color tm-light-card-color--picker${customActive ? ' active' : ''}${editMode ? ' disabled' : ''}`}
+              style={customActive ? { '--tm-swatch': `rgb(${lightRgb.join(', ')})` } : undefined}
+            >
+              <span className="tm-light-card-swatch">
+                {!customActive && <Pipette size={20} strokeWidth={2} />}
+              </span>
+              <span className="tm-light-card-color-label">Farbe</span>
+              <input
+                ref={colorInputRef}
+                type="color"
+                className="tm-light-card-color-input"
+                defaultValue={rgbToHex(lightRgb)}
+                disabled={editMode}
+                aria-label="Eigene Farbe wählen"
+              />
+            </label>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BrightnessQuickAction({ widget, hass, getEntity, onConfigure, editMode }) {
   if (!widget.entity_id) {
     return (
-      <button type="button" className="tm-quick-action tm-brightness-action empty" onClick={onConfigure}>
+      <button type="button" className="tm-quick-action tm-light-card empty" onClick={onConfigure}>
         <Sun size={24} />
         <span className="tm-text-sm">Licht konfigurieren</span>
       </button>
     );
   }
 
-  const entity = getEntity(widget.entity_id);
-  const label = widget.label || entity.name;
-  const domain = getDomain(widget.entity_id);
-  const isLight = domain === 'light';
-  const brightness = getBrightnessPercent(hass, widget.entity_id);
-  const active = entity.state === 'on';
-  const activeRgb = isLight ? getLightRgbFromState(hass, widget.entity_id) : null;
-  const [value, setValue] = useState(brightness);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragging = useRef(false);
-  const tileRef = useRef(null);
-
-  useEffect(() => {
-    if (!dragging.current) setValue(brightness);
-  }, [brightness]);
-
-  const handleRelease = () => {
-    dragging.current = false;
-    setIsDragging(false);
-  };
-
-  const updateFromPointer = (clientY) => {
-    const rect = tileRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const next = Math.min(100, Math.max(0, Math.round(((rect.bottom - clientY) / rect.height) * 100)));
-    setValue(next);
-    setEntityBrightness(hass, widget.entity_id, next);
-  };
-
-  const handlePointerDown = (e) => {
-    if (editMode) return;
-    tileRef.current?.setPointerCapture(e.pointerId);
-    dragging.current = true;
-    setIsDragging(true);
-    updateFromPointer(e.clientY);
-  };
-
-  const handlePointerMove = (e) => {
-    if (!dragging.current) return;
-    updateFromPointer(e.clientY);
-  };
-
-  const handleColorPick = (rgb) => {
-    if (editMode) return;
-    setLightRgbColor(hass, widget.entity_id, rgb);
-  };
-
   return (
-    <div
-      ref={tileRef}
-      className={`tm-quick-action tm-brightness-action${active ? ' active' : ''}${isDragging ? ' dragging' : ''}${isLight ? ' tm-brightness-action--light' : ''}`}
-      style={{ '--tm-brightness': `${value}%` }}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handleRelease}
-      onPointerCancel={handleRelease}
-      role="slider"
-      aria-label={`Helligkeit ${label}`}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={value}
-      tabIndex={0}
-    >
-      <div className="tm-brightness-fill" />
-      <div className="tm-brightness-header">
-        <EntityIcon
-          hass={hass}
-          entity={entity}
-          overrideIcon={widget.icon}
-          size={22}
-          style={{
-            opacity: 0.9,
-            color: isBlackColorfulMode(config.appearance) ? 'var(--tm-tile-fg)' : '#fef08a',
-          }}
-        />
-        <div className="tm-flex-col" style={{ minWidth: 0, flex: 1 }}>
-          <div className="tm-font-bold" style={{ fontSize: '1rem', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
-          <div className="tm-text-xs tm-opacity-70">{value}%</div>
-        </div>
-      </div>
-      {isLight && (
-        <div
-          className="tm-brightness-colors"
-          onPointerDown={(event) => event.stopPropagation()}
-          onPointerMove={(event) => event.stopPropagation()}
-        >
-          <LightColorCircles activeRgb={activeRgb} onPick={handleColorPick} />
-        </div>
-      )}
-    </div>
+    <LightCard
+      widget={widget}
+      hass={hass}
+      entity={getEntity(widget.entity_id)}
+      editMode={editMode}
+    />
   );
 }
 

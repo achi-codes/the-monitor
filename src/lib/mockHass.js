@@ -1,3 +1,5 @@
+import { MOCK_ROOM_STATES, attachMockRegistries } from './mockRooms';
+
 function createState(entityId, state, attributes = {}) {
   return { entity_id: entityId, state, attributes, last_changed: new Date().toISOString(), last_updated: new Date().toISOString() };
 }
@@ -31,7 +33,13 @@ function mockHourlyForecast() {
 }
 
 const MOCK_STATES = {
-  'light.wohnzimmer': createState('light.wohnzimmer', 'on', { friendly_name: 'Wohnzimmer Licht', brightness: 200 }),
+  'light.wohnzimmer': createState('light.wohnzimmer', 'on', {
+    friendly_name: 'Wohnzimmer Licht',
+    brightness: 179,
+    supported_color_modes: ['color_temp', 'hs'],
+    color_mode: 'color_temp',
+    color_temp_kelvin: 2700,
+  }),
   'light.kueche': createState('light.kueche', 'off', { friendly_name: 'Küche Licht' }),
   'switch.steckdose': createState('switch.steckdose', 'off', { friendly_name: 'Steckdose TV' }),
   'climate.wohnzimmer': createState('climate.wohnzimmer', 'heat', { friendly_name: 'Wohnzimmer Heizung', current_temperature: 21.5, temperature: 22 }),
@@ -75,9 +83,26 @@ const MOCK_STATES = {
     media_title: 'Hurt Feelings',
     media_artist: 'Mac Miller',
     media_album_name: 'Swimming',
-    media_position: 161,
-    media_duration: 204,
+    media_position: 83,
+    media_position_updated_at: new Date().toISOString(),
+    media_duration: 236,
+    volume_level: 0.45,
+    app_name: 'Spotify',
     entity_picture: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/1b/Mac_Miller_-_Swimming.png/220px-Mac_Miller_-_Swimming.png',
+  }),
+  'media_player.kueche': createState('media_player.kueche', 'paused', {
+    friendly_name: 'Küche Sonos',
+    media_title: 'Sunrise',
+    media_artist: 'Norah Jones',
+    media_position: 41,
+    media_position_updated_at: new Date().toISOString(),
+    media_duration: 201,
+    volume_level: 0.3,
+    app_name: 'Radio',
+  }),
+  'media_player.schlafzimmer': createState('media_player.schlafzimmer', 'off', {
+    friendly_name: 'Schlafzimmer HomePod',
+    volume_level: 0.2,
   }),
   'camera.garten': createState('camera.garten', 'idle', {
     friendly_name: 'Garten',
@@ -172,7 +197,7 @@ const MOCK_STATES = {
 const serviceLog = [];
 
 export function createMockHass() {
-  const states = { ...MOCK_STATES };
+  const states = { ...MOCK_STATES, ...MOCK_ROOM_STATES };
 
   const hass = {
     states,
@@ -196,11 +221,20 @@ export function createMockHass() {
           if (typeof data.brightness === 'number') {
             s.attributes = { ...s.attributes, brightness: data.brightness };
           }
+          if (Array.isArray(data.rgb_color)) {
+            s.attributes = { ...s.attributes, color_mode: 'hs', rgb_color: data.rgb_color };
+          }
+          if (typeof data.color_temp_kelvin === 'number') {
+            s.attributes = { ...s.attributes, color_mode: 'color_temp', color_temp_kelvin: data.color_temp_kelvin };
+          }
         }
       }
       if (domain === 'light' && service === 'turn_off' && entityId) {
         const s = states[entityId];
         if (s) s.state = 'off';
+      }
+      if (domain === 'climate' && service === 'set_temperature' && states[entityId]) {
+        states[entityId].attributes = { ...states[entityId].attributes, temperature: data.temperature };
       }
       if (domain === 'switch' && service === 'toggle' && entityId) {
         const s = states[entityId];
@@ -212,8 +246,27 @@ export function createMockHass() {
       if (domain === 'media_player') {
         const s = states[entityId];
         if (!s) return { context: { id: 'mock' } };
-        if (service === 'media_pause') s.state = 'paused';
-        if (service === 'media_play') s.state = 'playing';
+        const attrs = s.attributes;
+        const elapsed = s.state === 'playing' && attrs.media_position_updated_at
+          ? (Date.now() - Date.parse(attrs.media_position_updated_at)) / 1000
+          : 0;
+        const freezePosition = (position) => ({
+          media_position: Math.min(attrs.media_duration || 0, Math.max(0, position)),
+          media_position_updated_at: new Date().toISOString(),
+        });
+        if (service === 'media_pause') {
+          s.state = 'paused';
+          s.attributes = { ...attrs, ...freezePosition((attrs.media_position || 0) + elapsed) };
+        }
+        if (service === 'media_play') {
+          s.state = 'playing';
+          s.attributes = { ...attrs, ...freezePosition(attrs.media_position || 0) };
+        }
+        if (service === 'media_seek') s.attributes = { ...attrs, ...freezePosition(data.seek_position) };
+        if (service === 'media_next_track' || service === 'media_previous_track') {
+          s.attributes = { ...attrs, ...freezePosition(0) };
+        }
+        if (service === 'volume_set') s.attributes = { ...attrs, volume_level: data.volume_level };
         if (service === 'turn_off') s.state = 'off';
         if (service === 'turn_on') s.state = 'idle';
       }
@@ -286,6 +339,7 @@ export function createMockHass() {
   hass.getServiceLog = () => serviceLog;
 
   hass.__mock = true;
+  attachMockRegistries(hass);
 
   return hass;
 }

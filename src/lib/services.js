@@ -126,6 +126,19 @@ export async function setLightRgbColor(hass, entityId, rgb) {
   });
 }
 
+export async function setLightColorTemp(hass, entityId, kelvin) {
+  if (!hass?.states?.[entityId] || getDomain(entityId) !== 'light') return;
+  return callService(hass, 'light', 'turn_on', {
+    entity_id: entityId,
+    color_temp_kelvin: Math.round(kelvin),
+  });
+}
+
+export async function setClimateTemperature(hass, entityId, temperature) {
+  if (getDomain(entityId) !== 'climate' || !hass?.states?.[entityId]) return;
+  return callService(hass, 'climate', 'set_temperature', { entity_id: entityId, temperature });
+}
+
 export async function activateScene(hass, entityId) {
   const domain = getDomain(entityId);
   if (!domain) return;
@@ -152,6 +165,17 @@ export async function mediaNext(hass, entityId) {
 
 export async function mediaPrevious(hass, entityId) {
   return callService(hass, 'media_player', 'media_previous_track', { entity_id: entityId });
+}
+
+export async function mediaSeek(hass, entityId, seconds) {
+  return callService(hass, 'media_player', 'media_seek', { entity_id: entityId, seek_position: seconds });
+}
+
+export async function mediaSetVolume(hass, entityId, level) {
+  return callService(hass, 'media_player', 'volume_set', {
+    entity_id: entityId,
+    volume_level: Math.min(1, Math.max(0, level)),
+  });
 }
 
 export async function fetchTodoItems(hass, entityId) {

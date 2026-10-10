@@ -22,6 +22,7 @@ import SensorWidget from '../SensorWidget';
 import SensorStatusWidget from '../SensorStatusWidget';
 import HaCardWidget from '../HaCardWidget';
 import VacuumWidget from '../VacuumWidget';
+import RoomWidget from '../RoomWidget';
 import { WIDGET_TYPES, getWidgetLabel } from '../../lib/layout';
 
 export function renderDashboardWidget({
@@ -51,8 +52,8 @@ export function renderDashboardWidget({
     case 'media':
       return (
         <MediaPlayer
-          entityId={widget.entity_id}
-          compact
+          widget={widget}
+          editMode={editMode}
           onConfigure={editMode ? handleConfigure : undefined}
         />
       );
@@ -152,6 +153,16 @@ export function renderDashboardWidget({
           hass={hass}
           editMode={editMode}
           onConfigure={handleConfigure}
+        />
+      );
+    case 'room':
+      return (
+        <RoomWidget
+          widget={widget}
+          hass={hass}
+          onConfigure={handleConfigure}
+          onOpen={onOpenPopup}
+          editMode={editMode}
         />
       );
     case 'sankey':

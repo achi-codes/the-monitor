@@ -1,4 +1,5 @@
 import { normalizeConfig } from './config';
+import { markConfigPersisted } from './uiSession';
 
 const CARD_TYPE = 'custom:the-monitor-dashboard';
 
@@ -82,8 +83,10 @@ export function schedulePersistCardConfig(hass, config, delayMs = 1200) {
 
   if (persistTimer) window.clearTimeout(persistTimer);
   persistTimer = window.setTimeout(() => {
+    markConfigPersisted();
     persistChain = persistChain
       .then(() => persistCardConfigToLovelace(hass, config))
+      .then(() => markConfigPersisted())
       .catch(() => {});
   }, delayMs);
 }

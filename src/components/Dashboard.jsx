@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { Settings, Monitor, Pencil } from 'lucide-react';
 import { useHass } from '../context/HassContext';
 import { useConfig } from '../context/ConfigContext';
 import { resolveHassUrl } from '../lib/hass';
+import { readUiSession, saveUiSession } from '../lib/uiSession';
 import PagePager from './PagePager';
 import PageManagePopup from './PageManagePopup';
 import DashboardGrid from './DashboardGrid';
@@ -15,9 +16,11 @@ import { QuickActionPopup, CoverPopup } from './widgets/ActionWidgets';
 export default function Dashboard({ user, onSettings, onScreensaver }) {
   const [time, setTime] = useState(new Date());
   const [qaPopup, setQaPopup] = useState(null);
-  const [editMode, setEditMode] = useState(false);
-  const [activePageIndex, setActivePageIndex] = useState(0);
-  const [selectedWidgetId, setSelectedWidgetId] = useState(null);
+  const [restoredSession] = useState(readUiSession);
+  const [editMode, setEditMode] = useState(() => Boolean(restoredSession.editMode));
+  const [activePageIndex, setActivePageIndex] = useState(() => restoredSession.activePageIndex || 0);
+  const [selectedWidgetId, setSelectedWidgetId] = useState(() => restoredSession.selectedWidgetId || null);
+  const previousRoomIdRef = useRef(null);
   const [pageManageOpen, setPageManageOpen] = useState(false);
   const [slotPickerOpen, setSlotPickerOpen] = useState(false);
 
@@ -46,8 +49,15 @@ export default function Dashboard({ user, onSettings, onScreensaver }) {
   const pages = activeRoom?.layout?.pages || [];
 
   useEffect(() => {
-    setActivePageIndex(0);
+    if (previousRoomIdRef.current !== null && previousRoomIdRef.current !== activeRoomId) {
+      setActivePageIndex(0);
+    }
+    previousRoomIdRef.current = activeRoomId;
   }, [activeRoomId]);
+
+  useEffect(() => {
+    saveUiSession({ editMode, activePageIndex, selectedWidgetId });
+  }, [editMode, activePageIndex, selectedWidgetId]);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);

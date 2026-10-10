@@ -5,6 +5,7 @@ import Settings from './components/Settings';
 import StatusIsland from './components/StatusIsland';
 import { useConfig } from './context/ConfigContext';
 import { getThemeAttributes } from './lib/colorThemes';
+import { readUiSession, saveUiSession } from './lib/uiSession';
 
 const DEFAULT_PROFILE = { id: 0, name: 'Zuhause', color: '#6366f1' };
 
@@ -16,9 +17,13 @@ function App() {
   );
   const showBackgroundImage = config.appearance?.mode !== 'light'
     && config.appearance?.mode !== 'blackColorful';
-  const [view, setView] = useState('dashboard');
+  const [view, setView] = useState(() => (readUiSession().view === 'settings' ? 'settings' : 'dashboard'));
   const [activeProfile] = useState(DEFAULT_PROFILE);
   const [lastActivity, setLastActivity] = useState(Date.now());
+
+  useEffect(() => {
+    saveUiSession({ view });
+  }, [view]);
 
   const resetTimer = useCallback(() => {
     setLastActivity(Date.now());

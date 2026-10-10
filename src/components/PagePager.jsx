@@ -15,6 +15,7 @@ export default function PagePager({
   const pointerDown = useRef(false);
   const programmatic = useRef(false);
   const settleTimer = useRef(0);
+  const hasPositioned = useRef(false);
   const [activePage, setActivePage] = useState(controlledIndex ?? 0);
 
   const currentIndex = activePage;
@@ -66,12 +67,24 @@ export default function PagePager({
   useEffect(() => {
     if (controlledIndex == null || userScrolling.current || pointerDown.current) return undefined;
     const el = scrollRef.current;
-    if (!el || el.clientWidth === 0) return undefined;
+    if (!el) return undefined;
+    if (el.clientWidth === 0) {
+      if (!controlledIndex) return undefined;
+      const frame = window.requestAnimationFrame(() => {
+        const node = scrollRef.current;
+        if (!node || node.clientWidth === 0) return;
+        node.scrollTo({ left: controlledIndex * node.clientWidth, behavior: 'auto' });
+        hasPositioned.current = true;
+      });
+      return () => window.cancelAnimationFrame(frame);
+    }
     const targetLeft = controlledIndex * el.clientWidth;
     setActivePage(controlledIndex);
+    const behavior = hasPositioned.current ? 'smooth' : 'auto';
+    hasPositioned.current = true;
     if (Math.abs(el.scrollLeft - targetLeft) > 16) {
       programmatic.current = true;
-      el.scrollTo({ left: targetLeft, behavior: 'smooth' });
+      el.scrollTo({ left: targetLeft, behavior });
       const clearProgrammatic = window.setTimeout(() => {
         programmatic.current = false;
       }, 1500);

@@ -5497,7 +5497,8 @@ export const styles = `
   .tm-contact-card-stats { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .tm-contact-card-stat--status { display: none; }
   .tm-contact-card-stat-label,
-  .tm-contact-card-stat-value { font-size: clamp(0.75rem, 5cqw, 1.2rem); }
+  .tm-contact-card-stat-value { font-size: clamp(0.7rem, 4cqw, 1.2rem); }
+  .tm-contact-card-stat { padding: clamp(0.55rem, 3cqw, 1.1rem) clamp(0.6rem, 3.6cqw, 1.3rem); }
 }
 [data-tm-theme="light"] .tm-contact-card,
 [data-tm-theme="colorful"] .tm-contact-card {
@@ -5922,6 +5923,9 @@ export const styles = `
   .tm-ev-card-stat-value { font-size: clamp(0.9rem, 6cqw, 1.45rem); }
   .tm-ev-card-stat-label { font-size: clamp(0.72rem, 4.4cqw, 1.1rem); }
   .tm-ev-card-stat { padding: clamp(0.6rem, 4cqw, 1.15rem); }
+}
+@container tm-ev (max-aspect-ratio: 4 / 5) and (max-height: 40rem) {
+  .tm-ev-card-stat:nth-child(n + 3) { display: none; }
 }
 @container tm-ev (max-width: 32rem) and (min-aspect-ratio: 4 / 5) {
   .tm-ev-card-stat:nth-child(4) { display: none; }

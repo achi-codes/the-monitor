@@ -59,7 +59,8 @@ function formatLastChange(lastChanged) {
   const time = format(date, 'HH:mm');
   if (isToday(date)) return `Heute, ${time}`;
   if (isYesterday(date)) return `Gestern, ${time}`;
-  return format(date, 'EEE, d. MMM, HH:mm', { locale: de });
+  if (Date.now() - lastChanged < 6 * 86400000) return format(date, 'EEEEEE., HH:mm', { locale: de });
+  return format(date, 'd. MMM, HH:mm', { locale: de });
 }
 
 function useBinaryHistory(hass, entityId, lastChanged, enabled) {
@@ -118,11 +119,11 @@ function openMoreInfo(node, entityId) {
   }));
 }
 
-function ContactCard({ hass, entityId, label, editMode }) {
+function ContactCard({ hass, entityId, label, editMode, artOverride }) {
   const [entity] = resolveContactEntities(hass, [entityId]);
   const now = useNow();
   const open = isContactOpen(entity);
-  const profile = getContactProfile(entity);
+  const profile = getContactProfile(entity, artOverride);
   const stateLabel = getContactStateLabel(entity);
   const unavailable = entity.state === 'unavailable' || entity.state === 'unknown';
   const area = getEntityAreaName(hass, entityId);
@@ -233,6 +234,7 @@ export default function SensorStatusWidget({ widget, hass, onConfigure, editMode
         entityId={entityIds[0]}
         label={widget.label || getFriendlyName(hass, entityIds[0])}
         editMode={editMode}
+        artOverride={widget.contact_art || ""}
       />
     );
   }

@@ -14,6 +14,7 @@ import { getFriendlyName } from '../lib/entities';
 import HaCardConfig from './HaCardConfig';
 import { SCENE_ART } from '../lib/sceneArt';
 import EvEntityFields from './EvEntityFields';
+import { CONTACT_ART } from '../lib/contactArt';
 
 function patchDeviceImages(widget, section, patch) {
   const current = normalizeEnergyDeviceImages(widget.deviceImages);
@@ -402,6 +403,21 @@ export default function WidgetInspector({
               />
             ))}
           </div>
+          {entityList(widget).length === 1 && (
+            <div className="tm-widget-inspector-field">
+              <span className="tm-widget-inspector-field-label">Motiv</span>
+              <select
+                className="tm-input"
+                value={widget.contact_art || ''}
+                onChange={(e) => onUpdate(pageIndex, widget.id, { contact_art: e.target.value })}
+              >
+                <option value="">Automatisch</option>
+                {Object.entries(CONTACT_ART).map(([key, art]) => (
+                  <option key={key} value={key}>{art.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       )}
 

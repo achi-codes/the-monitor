@@ -437,6 +437,9 @@ export function normalizeLayout(rawLayout, legacyConfig = null) {
           normalized.showHistory = Boolean(widget.showHistory);
           normalized.historyHours = normalizeSensorHistoryHours(widget.historyHours);
         }
+        if (widget.type === 'sensorStatus' && typeof widget.contact_art === 'string' && widget.contact_art) {
+          normalized.contact_art = widget.contact_art;
+        }
         if (widget.type === 'weather' && typeof widget.location === 'string') {
           normalized.location = widget.location;
         }

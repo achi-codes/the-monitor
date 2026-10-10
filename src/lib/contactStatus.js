@@ -69,28 +69,44 @@ const BINARY_SENSOR_PROFILES = {
 function guessArtFromName(name) {
   const lower = name.toLowerCase();
   if (/garage|\btor\b|einfahrt/.test(lower)) return 'garage';
+  if (/dachfenster|schräg|schraeg|velux|skylight|oberlicht/.test(lower)) return 'skylight';
+  if (/terrass|schiebetür|schiebetuer|balkontür|balkontuer|patio/.test(lower)) return 'patio';
   if (lower.includes('fenster') || lower.includes('window')) return 'window';
   if (/bewegung|motion|präsenz|praesenz|presence/.test(lower)) return 'motion';
   if (/tür|tuer|\btur\b|door/.test(lower)) return 'door';
   return null;
 }
 
-export function getContactProfile(entity) {
+const OPENING_ARTS = ['door', 'patio', 'window', 'skylight', 'garage'];
+
+function getBaseProfile(entity) {
   const name = entity.name || entity.label || '';
   if (entity.domain === 'cover') {
     return { art: 'window', typeLabel: 'Rollladen', labels: OPEN_CLOSED };
   }
   const deviceClass = entity.attributes?.device_class || '';
   const profile = BINARY_SENSOR_PROFILES[deviceClass];
+  const guessed = guessArtFromName(name);
   if (profile) {
-    return { ...profile, art: profile.art || guessArtFromName(name) || 'door' };
+    const keepsGuess = guessed && OPENING_ARTS.includes(guessed) && OPENING_ARTS.includes(profile.art || 'door');
+    return { ...profile, art: (keepsGuess ? guessed : profile.art) || guessed || 'door' };
   }
-  const art = guessArtFromName(name) || 'door';
+  const art = guessed || 'door';
   const typeLabel = {
-    garage: 'Garagentor', window: 'Fensterkontakt', motion: 'Bewegungsmelder', door: 'Kontakt',
+    garage: 'Garagentor',
+    window: 'Fensterkontakt',
+    skylight: 'Dachfenster',
+    patio: 'Türkontakt',
+    motion: 'Bewegungsmelder',
+    door: 'Kontakt',
   }[art];
   const labels = art === 'motion' ? ['Bewegung', 'Keine Bewegung'] : OPEN_CLOSED;
   return { art, typeLabel, labels };
+}
+
+export function getContactProfile(entity, artOverride = '') {
+  const profile = getBaseProfile(entity);
+  return artOverride ? { ...profile, art: artOverride } : profile;
 }
 
 export function getContactStateLabel(entity) {

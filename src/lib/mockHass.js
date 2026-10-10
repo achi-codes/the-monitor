@@ -107,6 +107,7 @@ const MOCK_STATES = {
   'cover.schlafzimmer': createState('cover.schlafzimmer', 'closed', { friendly_name: 'Schlafzimmer Rolladen', current_position: 0 }),
   'cover.kueche': createState('cover.kueche', 'open', { friendly_name: 'Küche Rolladen', current_position: 45 }),
   'binary_sensor.kueche_fenster': createState('binary_sensor.kueche_fenster', 'on', { friendly_name: 'Küche Fenster' }),
+  'binary_sensor.bad_dachfenster': createState('binary_sensor.bad_dachfenster', 'on', { friendly_name: 'Bad Dachfenster', device_class: 'window' }),
   'binary_sensor.terrassentuer': {
     ...createState('binary_sensor.terrassentuer', 'on', { friendly_name: 'Terrassentür', device_class: 'door' }),
     last_changed: new Date(Date.now() - 12 * 60000).toISOString(),

@@ -15,6 +15,7 @@ import HaCardConfig from './HaCardConfig';
 import { SCENE_ART } from '../lib/sceneArt';
 import EvEntityFields from './EvEntityFields';
 import { CONTACT_ART } from '../lib/contactArt';
+import SensorChartFields from './SensorChartFields';
 
 function patchDeviceImages(widget, section, patch) {
   const current = normalizeEnergyDeviceImages(widget.deviceImages);
@@ -458,7 +459,15 @@ export default function WidgetInspector({
             <span>Verlauf anzeigen</span>
           </label>
 
-          {widget.showHistory && (
+          {widget.showHistory && entityList(widget).length === 1 && (
+            <SensorChartFields
+              widget={widget}
+              hass={hass}
+              onChange={(patch) => onUpdate(pageIndex, widget.id, patch)}
+            />
+          )}
+
+          {widget.showHistory && entityList(widget).length > 1 && (
             <div className="tm-widget-inspector-field">
               <div className="tm-widget-inspector-label">Zeitraum</div>
               <div className="tm-widget-inspector-sizes tm-widget-inspector-sizes--hours">

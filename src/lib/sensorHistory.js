@@ -158,6 +158,17 @@ export async function fetchSensorHistory(hass, entityId, { hours = 24 } = {}) {
   }
 }
 
+export async function fetchSensorHistoryRange(hass, entityId, start, end) {
+  if (!entityId || !hass) return [];
+  try {
+    if (hass.connection?.sendMessagePromise) return await fetchViaWebSocket(hass, entityId, start, end);
+    return await fetchViaRest(hass, entityId, start, end);
+  } catch (err) {
+    console.warn('The Monitor: Sensor-Verlauf konnte nicht geladen werden', err);
+    return [];
+  }
+}
+
 export function normalizeSensorHistoryHours(value) {
   const hours = Number(value);
   return SENSOR_HISTORY_HOURS.includes(hours) ? hours : 24;

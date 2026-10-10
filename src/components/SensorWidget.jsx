@@ -1,6 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import EntityIcon from './EntityIcon';
+import SensorHistoryCard from './SensorHistoryCard';
+import { normalizeSensorChart } from '../lib/sensorStatistics';
 import SensorSparkline, { formatScrubTime } from './SensorSparkline';
 import { useHass } from '../context/HassContext';
 import { getFriendlyName } from '../lib/entities';
@@ -191,7 +193,7 @@ function MultiSensorView({
   );
 }
 
-export default function SensorWidget({ widget, hass, getEntity, onConfigure }) {
+export default function SensorWidget({ widget, hass, getEntity, onConfigure, editMode = false }) {
   const entityIds = resolveSensorEntityIds(widget);
   const showHistory = Boolean(widget.showHistory);
   const historyHours = widget.historyHours || 24;
@@ -206,6 +208,19 @@ export default function SensorWidget({ widget, hass, getEntity, onConfigure }) {
   }
 
   const multi = entityIds.length > 1;
+
+  if (!multi && showHistory && canShowSensorHistory(hass, entityIds[0])) {
+    return (
+      <SensorHistoryCard
+        hass={hass}
+        entityId={entityIds[0]}
+        label={widget.label || getFriendlyName(hass, entityIds[0])}
+        chart={normalizeSensorChart(widget.chart)}
+        historyHours={historyHours}
+        editMode={editMode}
+      />
+    );
+  }
   const useCombinedChart = multi && showHistory;
 
   return (

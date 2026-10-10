@@ -2,6 +2,7 @@ import { ENERGY_TILE_KINDS } from './energySampleData';
 import { normalizeEnergyDeviceImages } from './energyDeviceImages';
 import { sanitizeCardConfig } from './haCards';
 import { normalizeSensorHistoryHours } from './sensorHistory';
+import { normalizeSensorChart } from './sensorStatistics';
 
 export const GRID_COLS = 12;
 export const GRID_ROWS = 4;
@@ -436,6 +437,7 @@ export function normalizeLayout(rawLayout, legacyConfig = null) {
         if (widget.type === 'sensor') {
           normalized.showHistory = Boolean(widget.showHistory);
           normalized.historyHours = normalizeSensorHistoryHours(widget.historyHours);
+          if (widget.chart && typeof widget.chart === 'object') normalized.chart = normalizeSensorChart(widget.chart);
         }
         if (widget.type === 'sensorStatus' && typeof widget.contact_art === 'string' && widget.contact_art) {
           normalized.contact_art = widget.contact_art;

@@ -107,6 +107,13 @@ const MOCK_STATES = {
   'cover.schlafzimmer': createState('cover.schlafzimmer', 'closed', { friendly_name: 'Schlafzimmer Rolladen', current_position: 0 }),
   'cover.kueche': createState('cover.kueche', 'open', { friendly_name: 'Küche Rolladen', current_position: 45 }),
   'binary_sensor.kueche_fenster': createState('binary_sensor.kueche_fenster', 'on', { friendly_name: 'Küche Fenster' }),
+  'sensor.wohnzimmer_strom': createState('sensor.wohnzimmer_strom', '1834.27', {
+    friendly_name: 'Stromverbrauch', unit_of_measurement: 'kWh', device_class: 'energy', state_class: 'total_increasing',
+  }),
+  'sensor.wohnzimmer_temperatur': createState('sensor.wohnzimmer_temperatur', '21.4', {
+    friendly_name: 'Temperatur', unit_of_measurement: '°C', device_class: 'temperature', state_class: 'measurement',
+  }),
+  'sensor.strompreis': createState('sensor.strompreis', '0.312', { friendly_name: 'Strompreis', unit_of_measurement: '€/kWh' }),
   'binary_sensor.bad_dachfenster': createState('binary_sensor.bad_dachfenster', 'on', { friendly_name: 'Bad Dachfenster', device_class: 'window' }),
   'binary_sensor.terrassentuer': {
     ...createState('binary_sensor.terrassentuer', 'on', { friendly_name: 'Terrassentür', device_class: 'door' }),

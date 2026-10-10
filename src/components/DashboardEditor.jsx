@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   Activity,
   Camera,
+  CarFront,
   Check,
   CloudSun,
   DoorOpen,
@@ -38,6 +39,7 @@ const WIDGET_ICONS = {
   sensorStatus: DoorOpen,
   sankey: Activity,
   energyTile: Sparkles,
+  ev: CarFront,
   haCard: LayoutTemplate,
 };
 

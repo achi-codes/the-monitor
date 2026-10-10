@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   Activity,
   Camera,
+  CarFront,
   CloudSun,
   DoorOpen,
   Gauge,
@@ -36,6 +37,7 @@ const WIDGET_ICONS = {
   sensorStatus: DoorOpen,
   sankey: Activity,
   energyTile: Sparkles,
+  ev: CarFront,
   haCard: LayoutTemplate,
 };
 

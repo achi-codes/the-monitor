@@ -17,6 +17,7 @@ import CameraWidget from '../CameraWidget';
 import ShoppingList from '../ShoppingList';
 import SankeyWidget from '../SankeyWidget';
 import EnergyTileWidget from '../EnergyTileWidget';
+import EvWidget from '../EvWidget';
 import SensorWidget from '../SensorWidget';
 import SensorStatusWidget from '../SensorStatusWidget';
 import HaCardWidget from '../HaCardWidget';
@@ -154,6 +155,8 @@ export function renderDashboardWidget({
       return <SankeyWidget widget={widget} />;
     case 'energyTile':
       return <EnergyTileWidget widget={widget} hass={hass} />;
+    case 'ev':
+      return <EvWidget widget={widget} hass={hass} />;
     case 'haCard':
       return (
         <HaCardWidget

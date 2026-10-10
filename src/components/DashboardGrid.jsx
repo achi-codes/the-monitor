@@ -279,7 +279,7 @@ export default function DashboardGrid({
   }, [onAddWidgetAt, onSelectWidget, page.widgets, pageIndex, slotPicker]);
 
   const getItemStyle = (widget) => {
-    const pastelVars = blackColorful ? getPastelCardVars(widget.id) : null;
+    const pastelVars = blackColorful ? getPastelCardVars(widget.id, widget.type) : null;
 
     if (!editMode) {
       return {
@@ -370,7 +370,7 @@ export default function DashboardGrid({
         return (
           <div
             key={widget.id}
-            className={`tm-dashboard-grid-item${selectedWidgetId === widget.id ? ' selected' : ''}${editMode ? ' editing' : ''}${isInteracting ? ' is-interacting' : ''}${widget.type === 'energyTile' ? ' tm-dashboard-grid-item--energy-tile' : ''}${widget.type === 'sankey' ? ' tm-dashboard-grid-item--sankey' : ''}`}
+            className={`tm-dashboard-grid-item${selectedWidgetId === widget.id ? ' selected' : ''}${editMode ? ' editing' : ''}${isInteracting ? ' is-interacting' : ''}${widget.type === 'energyTile' || widget.type === 'ev' ? ' tm-dashboard-grid-item--energy-tile' : ''}${widget.type === 'sankey' ? ' tm-dashboard-grid-item--sankey' : ''}`}
             style={getItemStyle(widget)}
             onClick={(event) => {
               if (!editMode) return;

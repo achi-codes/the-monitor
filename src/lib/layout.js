@@ -34,6 +34,7 @@ export const WIDGET_TYPES = {
   sensorStatus: { label: 'Sensor Status', icon: 'mdi:door-open', domains: ['binary_sensor', 'cover'] },
   sankey: { label: 'Energiefluss', icon: 'mdi:chart-sankey', domains: [] },
   energyTile: { label: 'Energie-Kachel', icon: 'mdi:lightning-bolt', domains: [] },
+  ev: { label: 'E-Auto', icon: 'mdi:car-electric', domains: [] },
   haCard: { label: 'HA-Karte', icon: 'mdi:card-bulleted', domains: [] },
 };
 
@@ -62,6 +63,7 @@ const DEFAULT_SIZE_BY_TYPE = {
   sensorStatus: 'M',
   sankey: 'tall',
   energyTile: 'M',
+  ev: 'L',
   haCard: 'XL',
 };
 

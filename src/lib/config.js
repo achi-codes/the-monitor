@@ -32,6 +32,10 @@ export const DEFAULT_CONFIG = {
     stateEntity: '',
     batteryEntity: '',
     powerEntity: '',
+    rangeEntity: '',
+    chargeTimeEntity: '',
+    lastTripEntity: '',
+    costEntity: '',
     label: 'E-Auto',
   },
   backgroundImage: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?q=80&w=2940&auto=format&fit=crop',
@@ -79,6 +83,10 @@ export function normalizeConfig(raw = {}) {
       stateEntity: raw.ev.stateEntity || raw.ev.state_entity || '',
       batteryEntity: raw.ev.batteryEntity || raw.ev.battery_entity || '',
       powerEntity: raw.ev.powerEntity || raw.ev.power_entity || '',
+      rangeEntity: raw.ev.rangeEntity || '',
+      chargeTimeEntity: raw.ev.chargeTimeEntity || '',
+      lastTripEntity: raw.ev.lastTripEntity || '',
+      costEntity: raw.ev.costEntity || '',
       label: raw.ev.label || DEFAULT_CONFIG.ev.label,
     };
   }

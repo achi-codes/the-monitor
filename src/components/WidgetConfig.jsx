@@ -1,5 +1,6 @@
 import EntityPicker from './EntityPicker';
 import RoomConfig from './RoomConfig';
+import EvEntityFields from './EvEntityFields';
 import { SLOT_LIMITS } from '../lib/config';
 import { useConfig } from '../context/ConfigContext';
 
@@ -7,9 +8,6 @@ const DOMAIN_GROUPS = {
   presence: ['person'],
   vacuum: ['vacuum'],
   windows: ['cover', 'binary_sensor'],
-  evState: ['binary_sensor', 'sensor', 'switch', 'input_boolean'],
-  evPower: ['sensor'],
-  evBattery: ['sensor', 'binary_sensor'],
 };
 
 function SingleEntityEditor({ title, entityId, section, domains, onSet }) {
@@ -30,7 +28,6 @@ export default function WidgetConfig() {
   const {
     config,
     setSingleEntity,
-    updateEv,
     addPresence,
     removePresence,
     addWindow,
@@ -71,48 +68,12 @@ export default function WidgetConfig() {
 
       <section>
         <h3 style={{ fontSize: '1.25rem', fontWeight: 500, opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-          E-Auto (Status-Island)
+          E-Auto
         </h3>
         <p style={{ fontSize: '0.875rem', opacity: 0.6, marginBottom: '0.75rem', lineHeight: 1.5 }}>
-          Grüne Notification mit Akku-Ring, wenn das Auto lädt — gleiche Entitäten wie auf der Energie-Kachel.
+          Für die E-Auto-Kachel und die grüne Lade-Notification. Leere Felder werden bei evcc automatisch erkannt.
         </p>
-        <div className="tm-config-slot">
-          <div className="tm-text-sm tm-opacity-70">Anzeigename</div>
-          <input
-            className="tm-input"
-            type="text"
-            value={config.ev?.label || ''}
-            onChange={(e) => updateEv({ label: e.target.value })}
-            placeholder="Grandland"
-          />
-        </div>
-        <div className="tm-config-slot" style={{ marginTop: '0.75rem' }}>
-          <div className="tm-text-sm tm-opacity-70">Lade-Status</div>
-          <EntityPicker
-            value={config.ev?.stateEntity || ''}
-            onChange={(entityId) => updateEv({ stateEntity: entityId })}
-            domains={DOMAIN_GROUPS.evState}
-            placeholder="binary_sensor / sensor …"
-          />
-        </div>
-        <div className="tm-config-slot" style={{ marginTop: '0.75rem' }}>
-          <div className="tm-text-sm tm-opacity-70">Ladeleistung</div>
-          <EntityPicker
-            value={config.ev?.powerEntity || ''}
-            onChange={(entityId) => updateEv({ powerEntity: entityId })}
-            domains={DOMAIN_GROUPS.evPower}
-            placeholder="sensor.evcc_…_charge_power"
-          />
-        </div>
-        <div className="tm-config-slot" style={{ marginTop: '0.75rem' }}>
-          <div className="tm-text-sm tm-opacity-70">Akku (%)</div>
-          <EntityPicker
-            value={config.ev?.batteryEntity || ''}
-            onChange={(entityId) => updateEv({ batteryEntity: entityId })}
-            domains={DOMAIN_GROUPS.evBattery}
-            placeholder="sensor.battery …"
-          />
-        </div>
+        <EvEntityFields />
       </section>
 
       <section>

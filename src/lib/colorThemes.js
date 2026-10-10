@@ -143,8 +143,10 @@ export function getPastelCardColor(key = '0') {
   return PASTEL_CARD_COLORS[hashKey(key) % PASTEL_CARD_COLORS.length];
 }
 
-export function getPastelCardVars(key = '0') {
-  const { bg, fg } = getPastelCardColor(key);
+const FIXED_PASTEL_BY_WIDGET_TYPE = { ev: PASTEL_CARD_COLORS[0] };
+
+export function getPastelCardVars(key = '0', widgetType = '') {
+  const { bg, fg } = FIXED_PASTEL_BY_WIDGET_TYPE[widgetType] || getPastelCardColor(key);
   return {
     '--tm-surface': bg,
     '--tm-surface-2': bg,

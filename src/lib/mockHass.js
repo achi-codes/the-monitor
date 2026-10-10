@@ -112,6 +112,26 @@ const MOCK_STATES = {
     unit_of_measurement: 'kW',
     device_class: 'power',
   }),
+  'sensor.grandland_range': createState('sensor.grandland_range', '320', {
+    friendly_name: 'Grandland Reichweite',
+    unit_of_measurement: 'km',
+    device_class: 'distance',
+  }),
+  'sensor.grandland_charge_remaining': createState('sensor.grandland_charge_remaining', '4800', {
+    friendly_name: 'Grandland Restladezeit',
+    unit_of_measurement: 's',
+    device_class: 'duration',
+  }),
+  'sensor.grandland_last_trip': createState('sensor.grandland_last_trip', '42', {
+    friendly_name: 'Grandland Letzte Fahrt',
+    unit_of_measurement: 'km',
+    device_class: 'distance',
+  }),
+  'sensor.grandland_cost_today': createState('sensor.grandland_cost_today', '6.24', {
+    friendly_name: 'Grandland Kosten heute',
+    unit_of_measurement: '€',
+    device_class: 'monetary',
+  }),
 };
 
 const serviceLog = [];

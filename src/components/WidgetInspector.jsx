@@ -13,6 +13,7 @@ import { normalizeEnergyDeviceImages } from '../lib/energyDeviceImages';
 import { getFriendlyName } from '../lib/entities';
 import HaCardConfig from './HaCardConfig';
 import { SCENE_ART } from '../lib/sceneArt';
+import EvEntityFields from './EvEntityFields';
 
 function patchDeviceImages(widget, section, patch) {
   const current = normalizeEnergyDeviceImages(widget.deviceImages);
@@ -92,6 +93,7 @@ export default function WidgetInspector({
   const isSensorStatus = widget.type === 'sensorStatus';
   const isHaCard = widget.type === 'haCard';
   const isScene = widget.type === 'scene';
+  const isEv = widget.type === 'ev';
 
   return (
     <div className="tm-widget-inspector">
@@ -336,7 +338,17 @@ export default function WidgetInspector({
         </div>
       )}
 
-      {!isPopup && !isCoverPopup && !isCamera && !isSensor && !isSensorStatus && !isHaCard && !isScene && widget.type !== 'shopping' && !isSankey && !isEnergyTile && (
+      {isEv && (
+        <div className="tm-widget-inspector-section">
+          <label className="tm-widget-inspector-label">Fahrzeug</label>
+          <p className="tm-widget-inspector-hint">
+            Gilt für alle E-Auto-Kacheln. Leere Felder werden bei evcc automatisch erkannt.
+          </p>
+          <EvEntityFields showLabel={false} />
+        </div>
+      )}
+
+      {!isPopup && !isCoverPopup && !isCamera && !isSensor && !isSensorStatus && !isHaCard && !isScene && !isEv && widget.type !== 'shopping' && !isSankey && !isEnergyTile && (
         <div className="tm-widget-inspector-section">
           <label className="tm-widget-inspector-label">Entität</label>
           <EntityPicker

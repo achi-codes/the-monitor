@@ -88,14 +88,118 @@ export function resolveEvPowerEntity(hass, config, isMock = false) {
     if (byName) return byName.entity_id;
   }
 
-  const stateEntity = resolveEvStateEntity(config, null, false);
-  const match = stateEntity?.match(/^sensor\.evcc_([^_]+)_/);
-  if (match) {
-    const candidate = `sensor.evcc_${match[1]}_charge_power`;
-    if (hass?.states?.[candidate]) return candidate;
+  return findEvccEntity(hass, config, ['charge_power']);
+}
+
+const EVCC_SUFFIXES = [
+  'charging', 'connected', 'enabled', 'charge_power', 'vehicle_soc', 'vehicle_range',
+  'charge_remaining_duration', 'session_price', 'session_energy', 'charged_energy',
+];
+const EVCC_ENTITY_RE = new RegExp(`^(?:binary_)?sensor\\.evcc_(.+?)_(?:${EVCC_SUFFIXES.join('|')})$`);
+
+export function getEvccLoadpoint(hass, config) {
+  const ev = config?.ev || {};
+  for (const entityId of [ev.stateEntity, ev.powerEntity, ev.batteryEntity, ev.rangeEntity]) {
+    const match = String(entityId || '').match(EVCC_ENTITY_RE);
+    if (match) return match[1];
+  }
+  if (!hass?.states) return '';
+  const charging = Object.keys(hass.states).find((id) => /^binary_sensor\.evcc_.+_charging$/.test(id));
+  return charging ? charging.slice('binary_sensor.evcc_'.length, -'_charging'.length) : '';
+}
+
+function findEvccEntity(hass, config, suffixes) {
+  const loadpoint = getEvccLoadpoint(hass, config);
+  if (!loadpoint || !hass?.states) return '';
+  for (const suffix of suffixes) {
+    const candidate = `sensor.evcc_${loadpoint}_${suffix}`;
+    if (hass.states[candidate]) return candidate;
+  }
+  return '';
+}
+
+function readNumber(hass, entityId) {
+  const stateObj = entityId ? hass?.states?.[entityId] : null;
+  if (!stateObj) return null;
+  const value = Number(stateObj.state);
+  return Number.isFinite(value) ? value : null;
+}
+
+function readDurationSeconds(hass, entityId) {
+  const stateObj = entityId ? hass?.states?.[entityId] : null;
+  if (!stateObj) return null;
+  const raw = String(stateObj.state ?? '');
+  const clock = raw.match(/^(\d+):(\d{2})(?::(\d{2}))?$/);
+  if (clock) return Number(clock[1]) * 3600 + Number(clock[2]) * 60 + Number(clock[3] || 0);
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return null;
+  const unit = String(stateObj.attributes?.unit_of_measurement || 's').toLowerCase();
+  if (unit === 'h') return value * 3600;
+  if (unit === 'min') return value * 60;
+  if (unit === 'd') return value * 86400;
+  return value;
+}
+
+function readEnergyKwh(hass, entityId) {
+  const value = readNumber(hass, entityId);
+  if (value == null) return null;
+  const unit = String(hass.states[entityId].attributes?.unit_of_measurement || 'kWh').toLowerCase();
+  return unit === 'wh' ? value / 1000 : value;
+}
+
+export function getEvOverview(hass, config, isMock = false) {
+  const ev = config?.ev || {};
+  const mockId = (suffix) => (isMock ? `sensor.grandland_${suffix}` : '');
+  const pick = (configured, evccSuffixes, mockSuffix) => (
+    configured || findEvccEntity(hass, config, evccSuffixes) || mockId(mockSuffix)
+  );
+
+  const stateEntity = resolveEvStateEntity(config, null, isMock);
+  const charging = resolveEvCharging(hass, stateEntity, isMock);
+  const loadpoint = getEvccLoadpoint(hass, config);
+  const connectedEntity = loadpoint ? `binary_sensor.evcc_${loadpoint}_connected` : '';
+  const connected = hass?.states?.[connectedEntity]
+    ? hass.states[connectedEntity].state === 'on'
+    : null;
+
+  let soc = getEvBatteryPercent(hass, resolveEvBatteryEntity(config, isMock), null);
+  if (soc == null || soc <= 0) {
+    const evccSoc = readNumber(hass, findEvccEntity(hass, config, ['vehicle_soc']));
+    if (evccSoc != null && evccSoc > 0) soc = Math.min(100, Math.round(evccSoc));
   }
 
-  return '';
+  const rangeKm = readNumber(hass, pick(ev.rangeEntity, ['vehicle_range'], 'range'));
+  const limitSoc = readNumber(hass, findEvccEntity(hass, config, ['effective_limit_soc', 'limit_soc']));
+  const powerWatts = getEvChargingPowerWatts(hass, config, isMock);
+  const remainingSeconds = readDurationSeconds(
+    hass,
+    pick(ev.chargeTimeEntity, ['charge_remaining_duration'], 'charge_remaining'),
+  );
+  const costEntity = pick(ev.costEntity, ['session_price'], 'cost_today');
+
+  return {
+    label: ev.label || 'E-Auto',
+    charging,
+    connected,
+    soc,
+    rangeKm: rangeKm != null && rangeKm > 0 ? rangeKm : null,
+    limitSoc: limitSoc != null && limitSoc > 0 ? Math.min(100, Math.round(limitSoc)) : 100,
+    powerWatts: charging ? powerWatts : 0,
+    remainingSeconds: charging && remainingSeconds > 0 ? remainingSeconds : null,
+    lastTripKm: readNumber(hass, ev.lastTripEntity || mockId('last_trip')),
+    cost: readNumber(hass, costEntity),
+    costIsSession: !ev.costEntity && !isMock,
+    sessionKwh: readEnergyKwh(hass, findEvccEntity(hass, config, ['session_energy', 'charged_energy'])),
+  };
+}
+
+export function formatEvDuration(seconds) {
+  if (seconds == null || !Number.isFinite(seconds)) return '—';
+  const totalMinutes = Math.max(1, Math.round(seconds / 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (!hours) return `${minutes} min`;
+  return minutes ? `${hours} h ${minutes} min` : `${hours} h`;
 }
 
 export function getEvChargingPowerWatts(hass, config, isMock = false) {
@@ -117,9 +221,7 @@ export function getEvChargingPowerWatts(hass, config, isMock = false) {
 export function formatEvChargingPower(watts) {
   if (watts == null || !Number.isFinite(watts) || watts <= 0) return '—';
   const kw = watts / 1000;
-  if (kw >= 10) return `${kw.toFixed(1)} kW`;
-  if (kw >= 1) return `${kw.toFixed(1)} kW`;
-  return `${kw.toFixed(2)} kW`;
+  return `${kw.toLocaleString('de-DE', { maximumFractionDigits: kw >= 1 ? 1 : 2 })} kW`;
 }
 
 export function getEvBatteryPercent(hass, batteryEntity, demoFallback = null) {

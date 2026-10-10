@@ -103,6 +103,12 @@ const MOCK_STATES = {
     fan_speed: 'Turbo',
     status: 'Reinigt Wohnzimmer …',
   }),
+  'sensor.roborock_restzeit': createState('sensor.roborock_restzeit', '18', {
+    friendly_name: 'Roborock Restzeit', unit_of_measurement: 'min', device_class: 'duration',
+  }),
+  'script.saugen_wohnzimmer': createState('script.saugen_wohnzimmer', 'off', { friendly_name: 'Saugen Wohnzimmer' }),
+  'script.saugen_kueche': createState('script.saugen_kueche', 'off', { friendly_name: 'Saugen Küche' }),
+  'script.saugen_flur': createState('script.saugen_flur', 'off', { friendly_name: 'Saugen Flur' }),
   'cover.wohnzimmer': createState('cover.wohnzimmer', 'open', { friendly_name: 'Wohnzimmer Rolladen', current_position: 100 }),
   'cover.schlafzimmer': createState('cover.schlafzimmer', 'closed', { friendly_name: 'Schlafzimmer Rolladen', current_position: 0 }),
   'cover.kueche': createState('cover.kueche', 'open', { friendly_name: 'Küche Rolladen', current_position: 45 }),
@@ -218,6 +224,9 @@ export function createMockHass() {
         if (service === 'alarm_arm_home') s.state = 'armed_home';
         if (service === 'alarm_arm_away') s.state = 'armed_away';
         if (service === 'alarm_arm_night') s.state = 'armed_night';
+      }
+      if (domain === 'script' && entityId?.startsWith('script.saugen_') && states['vacuum.roborock']) {
+        states['vacuum.roborock'].state = 'cleaning';
       }
       if (domain === 'vacuum' && entityId) {
         const s = states[entityId];

@@ -213,6 +213,25 @@ export async function vacuumReturnToBase(hass, entityId) {
   return callService(hass, 'vacuum', 'return_to_base', { entity_id: entityId });
 }
 
+export async function vacuumStart(hass, entityId) {
+  return callService(hass, 'vacuum', 'start', { entity_id: entityId });
+}
+
+const RUN_SERVICE_BY_DOMAIN = {
+  script: 'turn_on',
+  scene: 'turn_on',
+  button: 'press',
+  input_button: 'press',
+  automation: 'trigger',
+};
+
+export async function runEntity(hass, entityId) {
+  const domain = getDomain(entityId);
+  const service = RUN_SERVICE_BY_DOMAIN[domain];
+  if (!service) return null;
+  return callService(hass, domain, service, { entity_id: entityId });
+}
+
 export async function closeCover(hass, entityId) {
   return callService(hass, 'cover', 'close_cover', { entity_id: entityId });
 }

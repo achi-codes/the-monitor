@@ -16,6 +16,7 @@ import { SCENE_ART } from '../lib/sceneArt';
 import EvEntityFields from './EvEntityFields';
 import { CONTACT_ART } from '../lib/contactArt';
 import SensorChartFields from './SensorChartFields';
+import { MAX_VACUUM_ZONES, VACUUM_ZONE_DOMAINS, getZoneLabel, normalizeVacuumZones } from '../lib/vacuumStatus';
 
 function patchDeviceImages(widget, section, patch) {
   const current = normalizeEnergyDeviceImages(widget.deviceImages);
@@ -96,6 +97,7 @@ export default function WidgetInspector({
   const isHaCard = widget.type === 'haCard';
   const isScene = widget.type === 'scene';
   const isEv = widget.type === 'ev';
+  const isVacuum = widget.type === 'vacuum';
 
   return (
     <div className="tm-widget-inspector">
@@ -371,6 +373,74 @@ export default function WidgetInspector({
             domains={meta.domains}
             placeholder="Entität wählen…"
           />
+        </div>
+      )}
+
+      {isVacuum && (
+        <div className="tm-widget-inspector-section">
+          <label className="tm-widget-inspector-label">Saugroboter</label>
+          <div className="tm-widget-inspector-field">
+            <span className="tm-widget-inspector-field-label">Akku-Sensor</span>
+            <EntityPicker
+              value={widget.battery_entity || ''}
+              onChange={(battery_entity) => onUpdate(pageIndex, widget.id, { battery_entity })}
+              domains={['sensor']}
+              placeholder="Optional — sonst automatisch"
+            />
+          </div>
+          <div className="tm-widget-inspector-field">
+            <span className="tm-widget-inspector-field-label">Restzeit-Sensor</span>
+            <EntityPicker
+              value={widget.remaining_entity || ''}
+              onChange={(remaining_entity) => onUpdate(pageIndex, widget.id, { remaining_entity })}
+              domains={['sensor']}
+              placeholder="Optional — zeigt „Noch ca. … Min.“"
+            />
+          </div>
+        </div>
+      )}
+
+      {isVacuum && (
+        <div className="tm-widget-inspector-section">
+          <label className="tm-widget-inspector-label">Zonen (max. {MAX_VACUUM_ZONES})</label>
+          <p className="tm-widget-inspector-hint">
+            Skripte oder Buttons, die einen Raum reinigen — erscheinen hinter „Zonen“ auf der Kachel.
+          </p>
+          <EntityPicker
+            value=""
+            onChange={(entityId) => {
+              const zones = normalizeVacuumZones(widget.zones);
+              if (!entityId || zones.length >= MAX_VACUUM_ZONES || zones.some((zone) => zone.entity_id === entityId)) return;
+              onUpdate(pageIndex, widget.id, { zones: [...zones, { entity_id: entityId, name: '' }] });
+            }}
+            domains={VACUUM_ZONE_DOMAINS}
+            placeholder="Zone hinzufügen…"
+          />
+          <div className="tm-widget-inspector-entity-list">
+            {normalizeVacuumZones(widget.zones).map((zone, index, zones) => (
+              <EntityRow
+                key={zone.entity_id}
+                name={getFriendlyName(hass, zone.entity_id)}
+                onRemove={() => onUpdate(pageIndex, widget.id, {
+                  zones: zones.filter((item) => item.entity_id !== zone.entity_id),
+                })}
+              >
+                <div className="tm-widget-inspector-entity-row-main">
+                  <span className="tm-widget-inspector-entity-name">{getFriendlyName(hass, zone.entity_id)}</span>
+                  <input
+                    className="tm-input"
+                    type="text"
+                    value={zone.name}
+                    placeholder={getZoneLabel(hass, { ...zone, name: '' })}
+                    aria-label="Name der Zone"
+                    onChange={(e) => onUpdate(pageIndex, widget.id, {
+                      zones: zones.map((item, i) => (i === index ? { ...item, name: e.target.value } : item)),
+                    })}
+                  />
+                </div>
+              </EntityRow>
+            ))}
+          </div>
         </div>
       )}
 

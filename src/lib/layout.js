@@ -3,6 +3,7 @@ import { normalizeEnergyDeviceImages } from './energyDeviceImages';
 import { sanitizeCardConfig } from './haCards';
 import { normalizeSensorHistoryHours } from './sensorHistory';
 import { normalizeSensorChart } from './sensorStatistics';
+import { normalizeVacuumZones } from './vacuumStatus';
 
 export const GRID_COLS = 12;
 export const GRID_ROWS = 4;
@@ -36,6 +37,7 @@ export const WIDGET_TYPES = {
   sankey: { label: 'Energiefluss', icon: 'mdi:chart-sankey', domains: [] },
   energyTile: { label: 'Energie-Kachel', icon: 'mdi:lightning-bolt', domains: [] },
   ev: { label: 'E-Auto', icon: 'mdi:car-electric', domains: [] },
+  vacuum: { label: 'Saugroboter', icon: 'mdi:robot-vacuum', domains: ['vacuum'] },
   haCard: { label: 'HA-Karte', icon: 'mdi:card-bulleted', domains: [] },
 };
 
@@ -65,6 +67,7 @@ const DEFAULT_SIZE_BY_TYPE = {
   sankey: 'tall',
   energyTile: 'M',
   ev: 'L',
+  vacuum: 'L',
   haCard: 'XL',
 };
 
@@ -441,6 +444,11 @@ export function normalizeLayout(rawLayout, legacyConfig = null) {
         }
         if (widget.type === 'sensorStatus' && typeof widget.contact_art === 'string' && widget.contact_art) {
           normalized.contact_art = widget.contact_art;
+        }
+        if (widget.type === 'vacuum') {
+          if (typeof widget.battery_entity === 'string') normalized.battery_entity = widget.battery_entity;
+          if (typeof widget.remaining_entity === 'string') normalized.remaining_entity = widget.remaining_entity;
+          normalized.zones = normalizeVacuumZones(widget.zones);
         }
         if (widget.type === 'weather' && typeof widget.location === 'string') {
           normalized.location = widget.location;

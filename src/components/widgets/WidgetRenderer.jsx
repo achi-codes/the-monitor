@@ -21,6 +21,7 @@ import EvWidget from '../EvWidget';
 import SensorWidget from '../SensorWidget';
 import SensorStatusWidget from '../SensorStatusWidget';
 import HaCardWidget from '../HaCardWidget';
+import VacuumWidget from '../VacuumWidget';
 import { WIDGET_TYPES, getWidgetLabel } from '../../lib/layout';
 
 export function renderDashboardWidget({
@@ -159,6 +160,15 @@ export function renderDashboardWidget({
       return <EnergyTileWidget widget={widget} hass={hass} />;
     case 'ev':
       return <EvWidget widget={widget} hass={hass} />;
+    case 'vacuum':
+      return (
+        <VacuumWidget
+          widget={widget}
+          hass={hass}
+          editMode={editMode}
+          onConfigure={handleConfigure}
+        />
+      );
     case 'haCard':
       return (
         <HaCardWidget

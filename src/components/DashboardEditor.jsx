@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   Activity,
+  Bot,
   Camera,
   CarFront,
   Check,
@@ -40,6 +41,7 @@ const WIDGET_ICONS = {
   sankey: Activity,
   energyTile: Sparkles,
   ev: CarFront,
+  vacuum: Bot,
   haCard: LayoutTemplate,
 };
 

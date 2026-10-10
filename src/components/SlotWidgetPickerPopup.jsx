@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Activity,
+  Bot,
   Camera,
   CarFront,
   CloudSun,
@@ -38,6 +39,7 @@ const WIDGET_ICONS = {
   sankey: Activity,
   energyTile: Sparkles,
   ev: CarFront,
+  vacuum: Bot,
   haCard: LayoutTemplate,
 };
 

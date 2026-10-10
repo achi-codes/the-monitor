@@ -11,6 +11,7 @@ export const SLOT_LIMITS = {
   windows: 8,
   popupEntities: 12,
   coverPopupEntities: 6,
+  sceneEntities: 4,
   cameraEntities: 3,
   sensorEntities: 4,
   contactStatusEntities: 8,
@@ -135,7 +136,7 @@ export function getWidgetLabel(widget) {
 export function getWidgetEntities(widget) {
   if (widget.type === 'popup' || widget.type === 'coverPopup') return widget.entity_ids || [];
   if (widget.type === 'camera') return resolveCameraEntityIds(widget);
-  if (widget.type === 'sensor') {
+  if (widget.type === 'sensor' || widget.type === 'scene') {
     if (widget.entity_ids?.length) return widget.entity_ids;
     return widget.entity_id ? [widget.entity_id] : [];
   }
@@ -410,7 +411,9 @@ export function normalizeLayout(rawLayout, legacyConfig = null) {
                   ? SLOT_LIMITS.sensorEntities
                   : widget.type === 'sensorStatus'
                     ? SLOT_LIMITS.contactStatusEntities
-                    : SLOT_LIMITS.popupEntities,
+                    : widget.type === 'scene'
+                      ? SLOT_LIMITS.sceneEntities
+                      : SLOT_LIMITS.popupEntities,
             )
             : [],
           disabled_entity_ids: widget.type === 'popup' && Array.isArray(widget.disabled_entity_ids)
@@ -434,6 +437,11 @@ export function normalizeLayout(rawLayout, legacyConfig = null) {
         }
         if (widget.type === 'haCard') {
           normalized.card = sanitizeCardConfig(widget.card);
+        }
+        if (widget.type === 'scene' && widget.scene_art && typeof widget.scene_art === 'object') {
+          normalized.scene_art = Object.fromEntries(
+            Object.entries(widget.scene_art).filter(([, key]) => typeof key === 'string' && key),
+          );
         }
         return clampWidget(normalized);
       }),

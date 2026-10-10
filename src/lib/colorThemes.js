@@ -153,6 +153,19 @@ export function getPastelCardVars(key = '0') {
   };
 }
 
+const LIGHT_PASTEL_CARD_COLORS = PASTEL_CARD_COLORS.filter((color) => color.fg !== '#ffffff');
+
+/** Distinct light pastels for cards that sit side by side inside one widget. */
+export function getPastelSeriesVars(key, index) {
+  const { bg, fg } = LIGHT_PASTEL_CARD_COLORS[(hashKey(key) + index) % LIGHT_PASTEL_CARD_COLORS.length];
+  return {
+    '--tm-surface': bg,
+    '--tm-surface-2': bg,
+    '--tm-surface-border': 'transparent',
+    '--tm-tile-fg': fg,
+  };
+}
+
 export function normalizeAppearance(raw = {}) {
   const mode = migrateMode(raw.mode);
   const colorSet = COLOR_SETS.some((set) => set.id === raw.colorSet)

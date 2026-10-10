@@ -12,6 +12,7 @@ import { SENSOR_HISTORY_HOURS } from '../lib/sensorHistory';
 import { normalizeEnergyDeviceImages } from '../lib/energyDeviceImages';
 import { getFriendlyName } from '../lib/entities';
 import HaCardConfig from './HaCardConfig';
+import { SCENE_ART } from '../lib/sceneArt';
 
 function patchDeviceImages(widget, section, patch) {
   const current = normalizeEnergyDeviceImages(widget.deviceImages);
@@ -90,6 +91,7 @@ export default function WidgetInspector({
   const isSensor = widget.type === 'sensor';
   const isSensorStatus = widget.type === 'sensorStatus';
   const isHaCard = widget.type === 'haCard';
+  const isScene = widget.type === 'scene';
 
   return (
     <div className="tm-widget-inspector">
@@ -282,7 +284,59 @@ export default function WidgetInspector({
         />
       )}
 
-      {!isPopup && !isCoverPopup && !isCamera && !isSensor && !isSensorStatus && !isHaCard && widget.type !== 'shopping' && !isSankey && !isEnergyTile && (
+      {isScene && (
+        <div className="tm-widget-inspector-section">
+          <label className="tm-widget-inspector-label">Szenen (max. {SLOT_LIMITS.sceneEntities})</label>
+          <p className="tm-widget-inspector-hint">
+            1, 2 oder 4 Szenen pro Kachel. Das Motiv wird automatisch am Namen erkannt.
+          </p>
+          <EntityPicker
+            value=""
+            onChange={(entityId) => {
+              const patch = appendEntity(widget, entityId, SLOT_LIMITS.sceneEntities);
+              if (patch) onUpdate(pageIndex, widget.id, patch);
+            }}
+            domains={meta.domains}
+            placeholder="Szene hinzufügen…"
+          />
+          <div className="tm-widget-inspector-entity-list">
+            {entityList(widget).map((entityId) => (
+              <EntityRow
+                key={entityId}
+                name={getFriendlyName(hass, entityId)}
+                onRemove={() => {
+                  const nextIds = entityList(widget).filter((id) => id !== entityId);
+                  const { [entityId]: _removed, ...sceneArt } = widget.scene_art || {};
+                  onUpdate(pageIndex, widget.id, {
+                    entity_ids: nextIds,
+                    entity_id: nextIds[0] || '',
+                    scene_art: sceneArt,
+                  });
+                }}
+              >
+                <div className="tm-widget-inspector-entity-row-main">
+                  <span className="tm-widget-inspector-entity-name">{getFriendlyName(hass, entityId)}</span>
+                  <select
+                    className="tm-input tm-widget-inspector-scene-art"
+                    value={widget.scene_art?.[entityId] || ''}
+                    onChange={(e) => onUpdate(pageIndex, widget.id, {
+                      scene_art: { ...(widget.scene_art || {}), [entityId]: e.target.value },
+                    })}
+                    aria-label="Motiv"
+                  >
+                    <option value="">Motiv: automatisch</option>
+                    {Object.entries(SCENE_ART).map(([key, art]) => (
+                      <option key={key} value={key}>{`Motiv: ${art.label}`}</option>
+                    ))}
+                  </select>
+                </div>
+              </EntityRow>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!isPopup && !isCoverPopup && !isCamera && !isSensor && !isSensorStatus && !isHaCard && !isScene && widget.type !== 'shopping' && !isSankey && !isEnergyTile && (
         <div className="tm-widget-inspector-section">
           <label className="tm-widget-inspector-label">Entität</label>
           <EntityPicker

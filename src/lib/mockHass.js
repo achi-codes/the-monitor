@@ -13,6 +13,22 @@ const MOCK_STATES = {
   'scene.essen': createState('scene.essen', 'scening', { friendly_name: 'Essen' }),
   'scene.schlafen': createState('scene.schlafen', 'scening', { friendly_name: 'Schlafen' }),
   'script.verlassen': createState('script.verlassen', 'off', { friendly_name: 'Haus verlassen' }),
+  'scene.abendstimmung': createState('scene.abendstimmung', 'scening', {
+    friendly_name: 'Abendstimmung',
+    entity_id: ['light.wohnzimmer', 'cover.wohnzimmer', 'climate.wohnzimmer', 'media_player.wohnzimmer'],
+  }),
+  'scene.guten_morgen': createState('scene.guten_morgen', 'scening', {
+    friendly_name: 'Guten Morgen',
+    entity_id: ['cover.schlafzimmer', 'light.kueche', 'switch.steckdose'],
+  }),
+  'scene.kino': createState('scene.kino', 'scening', {
+    friendly_name: 'Kino',
+    entity_id: ['light.wohnzimmer', 'cover.wohnzimmer', 'media_player.wohnzimmer'],
+  }),
+  'scene.alles_aus': createState('scene.alles_aus', 'scening', {
+    friendly_name: 'Alles aus',
+    entity_id: ['light.wohnzimmer', 'light.kueche', 'switch.steckdose', 'cover.wohnzimmer', 'climate.wohnzimmer'],
+  }),
   'weather.zuhause': createState('weather.zuhause', 'partlycloudy', {
     friendly_name: 'Zuhause',
     supported_features: 3,

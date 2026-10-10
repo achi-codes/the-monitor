@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Plus, Sun, X, Shield, Blinds, ChevronUp, ChevronDown, Pause } from 'lucide-react';
+import {
+  Plus, Sun, X, Shield, Blinds, ChevronUp, ChevronDown, Pause, Play, Check,
+} from 'lucide-react';
 import EntityIcon from '../EntityIcon';
 import {
   toggleEntity,
@@ -19,7 +21,8 @@ import {
 import {
   formatEntityState, isEntityOn, getDomain, getEntityAreaName,
 } from '../../lib/entities';
-import { getEnabledEntityIds } from '../../lib/layout';
+import { getEnabledEntityIds, SLOT_LIMITS } from '../../lib/layout';
+import { SCENE_ART, resolveSceneArtKey, describeSceneTargets } from '../../lib/sceneArt';
 import { getLightRgbFromState } from '../../lib/lightColors';
 import LightColorCircles from '../LightColorCircles';
 import { getOverlayRoot, useOverlayLock } from '../../lib/overlayPortal';
@@ -31,6 +34,7 @@ import {
   isColorfulMode,
   isBlackColorfulMode,
   resolveColorTheme,
+  getPastelSeriesVars,
 } from '../../lib/colorThemes';
 
 const LIGHT_ENTITY_COLORS = {
@@ -362,10 +366,64 @@ export function AlarmWidget({ widget, hass, getEntity, onConfigure, editMode }) 
   );
 }
 
-export function SceneWidget({ widget, widgetIndex, hass, getEntity, onConfigure, editMode }) {
-  const { config } = useConfig();
+function SceneCard({
+  entityId, label, artKey, hass, getEntity, editMode, colorVars,
+}) {
+  const [started, setStarted] = useState(false);
 
-  if (!widget.entity_id) {
+  useEffect(() => {
+    if (!started) return undefined;
+    const timer = setTimeout(() => setStarted(false), 1600);
+    return () => clearTimeout(timer);
+  }, [started]);
+
+  const entity = getEntity(entityId);
+  const name = label || entity.name;
+  const description = describeSceneTargets(hass, entityId);
+  const art = SCENE_ART[resolveSceneArtKey(name, artKey)];
+
+  const handleStart = () => {
+    if (editMode) return;
+    activateScene(hass, entityId);
+    setStarted(true);
+  };
+
+  return (
+    <div className="tm-scene-card" style={colorVars}>
+      <div className="tm-scene-card-inner">
+        <div className="tm-scene-card-text">
+          <div className="tm-scene-card-kicker">{getDomain(entityId) === 'script' ? 'Skript' : 'Szene'}</div>
+          <div className="tm-scene-card-title">{name}</div>
+          {description && <div className="tm-scene-card-sub">{description}</div>}
+        </div>
+        <div className="tm-scene-card-art">
+          {!art.ownBackdrop && <div className="tm-scene-card-art-disc" />}
+          <img src={art.src} alt="" draggable={false} />
+        </div>
+        <button
+          type="button"
+          className={`tm-scene-card-start${started ? ' started' : ''}`}
+          onClick={handleStart}
+          disabled={editMode}
+          aria-label={`${name} starten`}
+        >
+          {started
+            ? <Check size={26} strokeWidth={2.75} />
+            : <Play size={26} fill="currentColor" strokeWidth={0} />}
+          <span className="tm-scene-card-start-label">{started ? 'Gestartet' : 'Szene starten'}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function SceneWidget({ widget, hass, getEntity, onConfigure, editMode }) {
+  const { config } = useConfig();
+  const entityIds = widget.entity_ids?.length
+    ? widget.entity_ids.slice(0, SLOT_LIMITS.sceneEntities)
+    : (widget.entity_id ? [widget.entity_id] : []);
+
+  if (entityIds.length === 0) {
     return (
       <button type="button" className="tm-scene-btn empty" onClick={onConfigure}>
         <Plus size={20} />
@@ -374,31 +432,25 @@ export function SceneWidget({ widget, widgetIndex, hass, getEntity, onConfigure,
     );
   }
 
-  const entity = getEntity(widget.entity_id);
-  const label = widget.label || entity.name;
-  const gradient = getSceneGradient(widgetIndex, widget.entity_id, config.appearance);
-
-  const handleClick = () => {
-    if (editMode) return;
-    activateScene(hass, widget.entity_id);
-  };
-
-  const blackColorful = isBlackColorfulMode(config.appearance);
+  const pastel = isBlackColorfulMode(config.appearance);
 
   return (
-    <button type="button" className="tm-scene-btn" onClick={handleClick}>
-      <div className="tm-scene-gradient" style={{ background: gradient, opacity: blackColorful ? 1 : undefined }} />
-      <div className="tm-scene-icon">
-        <EntityIcon
-          hass={hass}
-          entity={entity}
-          overrideIcon={widget.icon}
-          size={18}
-          style={{ color: blackColorful ? 'currentColor' : 'white' }}
-        />
+    <div className="tm-scenes">
+      <div className={`tm-scenes-grid tm-scenes-grid--${entityIds.length}`}>
+        {entityIds.map((entityId, index) => (
+          <SceneCard
+            key={entityId}
+            entityId={entityId}
+            label={entityIds.length === 1 ? widget.label : ''}
+            artKey={widget.scene_art?.[entityId]}
+            hass={hass}
+            getEntity={getEntity}
+            editMode={editMode}
+            colorVars={pastel ? getPastelSeriesVars(widget.id, index) : undefined}
+          />
+        ))}
       </div>
-      <div className="tm-scene-label">{label}</div>
-    </button>
+    </div>
   );
 }
 

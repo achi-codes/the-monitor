@@ -52,6 +52,20 @@ export default function RoomWidgetFields({ widget, hass, onChange }) {
       </div>
 
       <div className="tm-widget-inspector-section">
+        <label className="tm-widget-inspector-label">Foto</label>
+        <input
+          className="tm-input"
+          type="url"
+          value={widget.image || ''}
+          onChange={(e) => onChange({ image: e.target.value })}
+          placeholder="https://… oder /local/wohnzimmer.jpg"
+        />
+        <p className="tm-widget-inspector-hint">
+          Leer lassen, um das Bereichsfoto aus Home Assistant zu nutzen.
+        </p>
+      </div>
+
+      <div className="tm-widget-inspector-section">
         <label className="tm-widget-inspector-label">Farbe</label>
         <div className="tm-room-accent-picker">
           <button

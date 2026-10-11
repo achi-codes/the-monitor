@@ -70,7 +70,7 @@ const DEFAULT_SIZE_BY_TYPE = {
   scene: 'S',
   sensor: 'M',
   sensorStatus: 'M',
-  room: 'M',
+  room: 'XL',
   sankey: 'tall',
   energyTile: 'M',
   ev: 'L',
@@ -463,6 +463,7 @@ export function normalizeLayout(rawLayout, legacyConfig = null) {
           normalized.area_id = typeof widget.area_id === 'string' ? widget.area_id : '';
           normalized.area_name = typeof widget.area_name === 'string' ? widget.area_name : '';
           if (typeof widget.accent === 'string' && widget.accent) normalized.accent = widget.accent;
+          if (typeof widget.image === 'string' && widget.image) normalized.image = widget.image;
         }
         if (widget.type === 'weather' && typeof widget.location === 'string') {
           normalized.location = widget.location;

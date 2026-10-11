@@ -1,4 +1,5 @@
 import { getDomain, getEntity, isEntityOn } from './entities';
+import { resolveHassUrl } from './hass';
 import { getBrightnessPercent, getCoverPositionPercent } from './services';
 
 export const ROOM_ACCENTS = {
@@ -69,6 +70,11 @@ export function getRoomName(hass, widget) {
   return hass?.areas?.[widget.area_id]?.name || widget.area_name || 'Raum';
 }
 
+export function getRoomImage(hass, widget) {
+  const path = widget.image || hass?.areas?.[widget.area_id]?.picture || '';
+  return resolveHassUrl(hass, path);
+}
+
 function isRelevantForRoom(hass, entityId) {
   const domain = getDomain(entityId);
   if (!ROOM_DOMAINS.has(domain)) return false;
@@ -102,15 +108,21 @@ function readNumber(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-function findSensorValue(hass, ids, deviceClass) {
+function findSensor(hass, ids, deviceClass) {
   for (const id of ids) {
     const stateObj = hass.states[id];
     if (getDomain(id) === 'sensor' && stateObj?.attributes?.device_class === deviceClass) {
       const value = readNumber(stateObj.state);
-      if (value != null) return value;
+      if (value != null) {
+        return { value, unit: stateObj.attributes.unit_of_measurement || '' };
+      }
     }
   }
   return null;
+}
+
+function findSensorValue(hass, ids, deviceClass) {
+  return findSensor(hass, ids, deviceClass)?.value ?? null;
 }
 
 function isContactOpen(stateObj) {
@@ -124,12 +136,20 @@ export function getRoomSummary(hass, entityIds) {
   const covers = entityIds.filter((id) => getDomain(id) === 'cover');
   const climate = entityIds.find((id) => getDomain(id) === 'climate');
   const media = entityIds.find((id) => getDomain(id) === 'media_player');
+  const scenes = entityIds.filter((id) => ['scene', 'script'].includes(getDomain(id)));
   const climateAttrs = climate ? states[climate]?.attributes || {} : {};
+  const carbon = findSensor(hass, entityIds, 'carbon_dioxide');
 
   const temperature = findSensorValue(hass, entityIds, 'temperature')
     ?? readNumber(climateAttrs.current_temperature);
   const humidity = findSensorValue(hass, entityIds, 'humidity')
     ?? readNumber(climateAttrs.current_humidity);
+
+  const activeDevices = entityIds.filter((id) => {
+    const domain = getDomain(id);
+    if (['sensor', 'binary_sensor', 'scene', 'script'].includes(domain)) return false;
+    return isEntityOn(states[id]?.state, domain);
+  }).length;
 
   const openCovers = covers.filter((id) => getCoverPositionPercent(hass, id) > 0);
   const coverPosition = covers.length
@@ -151,8 +171,14 @@ export function getRoomSummary(hass, entityIds) {
     coversOpen: openCovers.length,
     coverPosition,
     climate,
+    climateCurrent: readNumber(climateAttrs.current_temperature) ?? temperature,
     climateTarget: readNumber(climateAttrs.temperature),
     climateActive: climate ? isEntityOn(states[climate]?.state, 'climate') : false,
+    carbonDioxide: carbon?.value ?? null,
+    carbonDioxideUnit: carbon?.unit || 'ppm',
+    scenes,
+    sceneLabel: scenes[0] ? getEntity(hass, scenes[0]).name : '',
+    activeDevices,
     media,
     mediaPlaying: media ? states[media]?.state === 'playing' : false,
   };

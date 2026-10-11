@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  ArrowLeft, Armchair, Baby, Bath, BedDouble, Blinds, ChevronDown, ChevronUp, CookingPot,
-  DoorClosed, Droplets, Dumbbell, Flame, Home, Laptop, Lightbulb, Minus, Pause, Play, Plus,
-  Shirt, Sofa, Square, Trees, UtensilsCrossed, Warehouse, AppWindow,
+  ArrowLeft, Armchair, Baby, Bath, BedDouble, Blinds, ChevronDown, ChevronRight, ChevronUp,
+  CookingPot, DoorClosed, Droplets, Dumbbell, Home, Laptop, Leaf, Lightbulb, Minus, Pause,
+  Play, Plus, Shirt, Sofa, Sparkles, Square, Thermometer, Trees, UtensilsCrossed, Warehouse,
 } from 'lucide-react';
 import EntityIcon from './EntityIcon';
 import { getOverlayRoot, useOverlayLock } from '../lib/overlayPortal';
@@ -22,6 +22,7 @@ import {
   describeRoomSummary,
   formatRoomNumber,
   getRoomAccent,
+  getRoomImage,
   getRoomKind,
   getRoomName,
   getRoomSummary,
@@ -51,18 +52,42 @@ function RoomIcon({ widget, name, size }) {
   return <Icon size={size} strokeWidth={1.75} />;
 }
 
-function RoomChip({ icon: Icon, children, active }) {
+function RoomStat({ icon: Icon, value, unit, label, tone }) {
   return (
-    <span className={`tm-room-chip${active ? ' tm-room-chip--active' : ''}`}>
-      <Icon size={14} strokeWidth={2.25} />
-      {children}
-    </span>
+    <div className={`tm-room-stat tm-room-stat--${tone}`}>
+      <Icon className="tm-room-stat-icon" size={18} strokeWidth={2.2} />
+      <div className="tm-room-stat-text">
+        <span className="tm-room-stat-value">
+          {value}
+          {unit && <span className="tm-room-stat-unit">{unit}</span>}
+        </span>
+        <span className="tm-room-stat-label">{label}</span>
+      </div>
+    </div>
+  );
+}
+
+function RoomAction({ kind, icon: Icon, title, detail, active, onClick }) {
+  return (
+    <button
+      type="button"
+      className={`tm-room-action tm-room-action--${kind}${active ? ' is-on' : ''}`}
+      onClick={onClick}
+    >
+      <Icon className="tm-room-action-icon" size={26} strokeWidth={1.8} />
+      <span className="tm-room-action-copy">
+        <span className="tm-room-action-title">{title}</span>
+        <span className="tm-room-action-detail">{detail}</span>
+      </span>
+      <ChevronRight className="tm-room-action-chevron" size={18} strokeWidth={2.2} />
+    </button>
   );
 }
 
 export default function RoomWidget({ widget, hass, onConfigure, onOpen, editMode }) {
   const name = getRoomName(hass, widget);
   const accent = getRoomAccent(widget, name);
+  const image = getRoomImage(hass, widget);
   const entityIds = resolveRoomEntityIds(hass, widget);
 
   if (!widget.area_id && !entityIds.length) {
@@ -75,9 +100,17 @@ export default function RoomWidget({ widget, hass, onConfigure, onOpen, editMode
   }
 
   const summary = getRoomSummary(hass, entityIds);
-  const activeCount = summary.lightsOn + (summary.mediaPlaying ? 1 : 0) + (summary.climateActive ? 1 : 0);
+  const activeCount = summary.activeDevices;
+  const coverLabel = !summary.coversTotal
+    ? ''
+    : summary.coversOpen === 0
+      ? 'Geschlossen'
+      : summary.coversOpen === summary.coversTotal
+        ? 'Geöffnet'
+        : `${summary.coversOpen} offen`;
 
-  const handleClick = () => {
+  const openRoom = (event) => {
+    event?.stopPropagation();
     if (editMode) {
       onConfigure?.();
       return;
@@ -86,66 +119,99 @@ export default function RoomWidget({ widget, hass, onConfigure, onOpen, editMode
   };
 
   return (
-    <button
-      type="button"
-      className={`tm-quick-action tm-room-card${summary.lightsOn ? ' tm-room-card--lit' : ''}`}
-      style={{ '--tm-room-accent': accent }}
-      onClick={handleClick}
-      aria-label={`${name} öffnen`}
+    <div
+      className={`tm-quick-action tm-room-card${summary.lightsOn ? ' tm-room-card--lit' : ''}${editMode ? ' tm-room-card--edit' : ''}`}
+      style={{ '--tm-room-accent': accent, '--tm-room-title-chars': Math.max(8, name.length) }}
     >
-      <div
-        className="tm-room-card-inner"
-        style={{
-          '--tm-room-title-chars': Math.max(8, name.length),
-        }}
-      >
-        <div className="tm-room-card-head">
-          <span className="tm-room-card-titles">
-            <span className="tm-room-card-title">{name}</span>
-            <span className="tm-room-card-sub">
-              {activeCount ? `${activeCount} aktiv` : `${entityIds.length} Geräte`}
-            </span>
+      <div className="tm-room-card-inner">
+        <button type="button" className="tm-room-card-info" onClick={openRoom} aria-label={`${name} öffnen`}>
+          <span className="tm-room-card-title">{name}</span>
+          <span className="tm-room-card-sub">
+            {activeCount ? `${activeCount} ${activeCount === 1 ? 'Gerät' : 'Geräte'} an` : 'Alles aus'}
           </span>
-          {summary.motion && <span className="tm-room-card-motion" aria-label="Bewegung" />}
-        </div>
+          <span className="tm-room-card-stats">
+            {summary.temperature != null && (
+              <RoomStat
+                icon={Thermometer}
+                value={`${formatRoomNumber(summary.temperature)}°`}
+                label="Temperatur"
+                tone="temp"
+              />
+            )}
+            {summary.humidity != null && (
+              <RoomStat
+                icon={Droplets}
+                value={`${formatRoomNumber(summary.humidity, 0)} %`}
+                label="Luftfeuchtigkeit"
+                tone="humidity"
+              />
+            )}
+            {summary.carbonDioxide != null && (
+              <RoomStat
+                icon={Leaf}
+                value={formatRoomNumber(summary.carbonDioxide, 0)}
+                unit={summary.carbonDioxideUnit}
+                label="Luftqualität"
+                tone="air"
+              />
+            )}
+          </span>
+        </button>
 
-        <div className="tm-room-card-hero">
-          {summary.temperature != null && (
-            <span className="tm-room-card-temp">
-              {formatRoomNumber(summary.temperature)}
-              <span className="tm-room-card-temp-unit">°</span>
-            </span>
-          )}
-          {summary.humidity != null && (
-            <span className="tm-room-card-humidity">
-              <Droplets size={16} strokeWidth={2.25} />
-              {`${formatRoomNumber(summary.humidity, 0)} %`}
-            </span>
-          )}
-        </div>
+        <button type="button" className="tm-room-card-photo" onClick={openRoom} aria-label={`${name} öffnen`}>
+          {image
+            ? <img src={image} alt="" draggable={false} />
+            : <span className="tm-room-card-photo-fallback"><RoomIcon widget={widget} name={name} size={72} /></span>}
+          <span className={`tm-room-card-badge${activeCount ? ' tm-room-card-badge--on' : ''}`}>
+            {activeCount > 0 && <span className="tm-room-card-motion" aria-hidden="true" />}
+            {activeCount ? `${activeCount} an` : 'Aus'}
+            <ChevronRight size={14} strokeWidth={2.4} />
+          </span>
+        </button>
 
-        <div className="tm-room-card-art" aria-hidden="true">
-          <RoomIcon widget={widget} name={name} size={128} />
-        </div>
-
-        <div className="tm-room-card-chips">
+        <div className="tm-room-card-actions">
           {summary.lightsTotal > 0 && (
-            <RoomChip icon={Lightbulb} active={summary.lightsOn > 0}>
-              {summary.lightsOn ? `${summary.lightsOn}/${summary.lightsTotal}` : 'Aus'}
-            </RoomChip>
+            <RoomAction
+              kind="light"
+              icon={Lightbulb}
+              title="Licht"
+              detail={summary.lightsOn ? `${summary.lightsOn} an` : 'Aus'}
+              active={summary.lightsOn > 0}
+              onClick={openRoom}
+            />
           )}
-          {summary.openContacts > 0 && (
-            <RoomChip icon={AppWindow} active>{`${summary.openContacts} offen`}</RoomChip>
+          {summary.climate && (
+            <RoomAction
+              kind="climate"
+              icon={Thermometer}
+              title={summary.climateCurrent != null ? `${formatRoomNumber(summary.climateCurrent)}°` : 'Klima'}
+              detail={summary.climateTarget != null ? `Soll: ${formatRoomNumber(summary.climateTarget)}°` : (summary.climateActive ? 'An' : 'Aus')}
+              active={summary.climateActive}
+              onClick={openRoom}
+            />
           )}
           {summary.coversTotal > 0 && (
-            <RoomChip icon={Blinds} active={summary.coversOpen > 0}>{`${summary.coverPosition} %`}</RoomChip>
+            <RoomAction
+              kind="cover"
+              icon={Blinds}
+              title="Rollläden"
+              detail={coverLabel}
+              active={summary.coversOpen > 0}
+              onClick={openRoom}
+            />
           )}
-          {summary.climate && summary.climateTarget != null && (
-            <RoomChip icon={Flame} active={summary.climateActive}>{`${formatRoomNumber(summary.climateTarget)}°`}</RoomChip>
+          {summary.scenes.length > 0 && (
+            <RoomAction
+              kind="scene"
+              icon={Sparkles}
+              title="Szenen"
+              detail={summary.sceneLabel || `${summary.scenes.length}`}
+              onClick={openRoom}
+            />
           )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 

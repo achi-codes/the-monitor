@@ -1,7 +1,7 @@
 import { isMockHass } from './hass';
 
 export const MOCK_AREAS = [
-  { area_id: 'wohnzimmer', name: 'Wohnzimmer' },
+  { area_id: 'wohnzimmer', name: 'Wohnzimmer', picture: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=1200' },
   { area_id: 'kueche', name: 'Küche' },
   { area_id: 'schlafzimmer', name: 'Schlafzimmer' },
   { area_id: 'bad', name: 'Bad' },

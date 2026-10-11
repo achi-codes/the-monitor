@@ -28,13 +28,16 @@ export const MOCK_ROOM_STATES = {
   'sensor.kueche_temperatur': createState('sensor.kueche_temperatur', '22.1', {
     friendly_name: 'Temperatur', unit_of_measurement: '°C', device_class: 'temperature',
   }),
+  'sensor.wohnzimmer_co2': createState('sensor.wohnzimmer_co2', '620', {
+    friendly_name: 'Luftqualität', unit_of_measurement: 'ppm', device_class: 'carbon_dioxide',
+  }),
 };
 
 const MOCK_ENTITY_AREAS = {
   wohnzimmer: [
     'light.wohnzimmer', 'light.stehlampe', 'switch.steckdose', 'cover.wohnzimmer', 'climate.wohnzimmer',
     'media_player.wohnzimmer', 'scene.filmabend', 'scene.kino', 'binary_sensor.terrassentuer',
-    'sensor.wohnzimmer_temperatur', 'sensor.wohnzimmer_luftfeuchte',
+    'sensor.wohnzimmer_temperatur', 'sensor.wohnzimmer_luftfeuchte', 'sensor.wohnzimmer_co2',
   ],
   kueche: ['light.kueche', 'cover.kueche', 'binary_sensor.kueche_fenster', 'sensor.kueche_temperatur', 'scene.essen', 'media_player.kueche'],
   schlafzimmer: [

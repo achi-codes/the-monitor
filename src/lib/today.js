@@ -48,6 +48,11 @@ export function computeSolarTimes(date = new Date(), latitude = SAARBRUECKEN.lat
   };
 }
 
+function formatLocalDateTime(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
 function parseDate(value) {
   if (!value) return null;
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
@@ -56,12 +61,16 @@ function parseDate(value) {
       const [year, month, day] = value.split('-').map(Number);
       return new Date(year, month - 1, day);
     }
+    if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(value)) {
+      const date = new Date(value.replace(' ', 'T'));
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? null : date;
   }
   if (value.dateTime) return parseDate(value.dateTime);
   if (value.date) {
-    const [year, month, day] = value.date.split('-').map(Number);
+    const [year, month, day] = String(value.date).split('-').map(Number);
     if (!year || !month || !day) return null;
     return new Date(year, month - 1, day);
   }
@@ -180,18 +189,85 @@ export function eventsForDay(events, day = new Date()) {
     });
 }
 
-function collectServiceEvents(payload) {
-  const body = payload?.response || payload;
+function collectServiceEvents(payload, fallbackEntityId = '') {
+  if (!payload) return [];
+  if (Array.isArray(payload)) {
+    return payload.map((raw) => normalizeCalendarEvent(raw, fallbackEntityId)).filter(Boolean);
+  }
+
+  const body = payload.response || payload.result || payload;
+  if (Array.isArray(body)) {
+    return body.map((raw) => normalizeCalendarEvent(raw, fallbackEntityId)).filter(Boolean);
+  }
   if (!body || typeof body !== 'object') return [];
+
+  if (Array.isArray(body.events)) {
+    return body.events.map((raw) => normalizeCalendarEvent(raw, fallbackEntityId)).filter(Boolean);
+  }
+
   const events = [];
   Object.entries(body).forEach(([entityId, data]) => {
-    const list = data?.events || (Array.isArray(data) ? data : []);
+    if (!data || typeof data !== 'object' || entityId === 'context') return;
+    const list = data.events || (Array.isArray(data) ? data : []);
     list.forEach((raw) => {
-      const event = normalizeCalendarEvent(raw, entityId);
+      const event = normalizeCalendarEvent(raw, entityId.startsWith('calendar.') ? entityId : fallbackEntityId);
       if (event) events.push(event);
     });
   });
   return events;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    globalThis.setTimeout(resolve, ms);
+  });
+}
+
+async function fetchOneCalendar(hass, entityId, start, end) {
+  const windows = [
+    { start_date_time: formatLocalDateTime(start), end_date_time: formatLocalDateTime(end) },
+    { start_date_time: start.toISOString(), end_date_time: end.toISOString() },
+  ];
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    let succeededEmpty = false;
+    for (const window of windows) {
+      try {
+        const response = await callService(
+          hass,
+          'calendar',
+          'get_events',
+          { entity_id: entityId, ...window },
+          true,
+        );
+        if (response == null) throw new Error('no calendar response');
+        const events = collectServiceEvents(response, entityId);
+        if (events.length) return events;
+        succeededEmpty = true;
+      } catch {
+        // try next window / attempt
+      }
+    }
+    if (succeededEmpty) return [];
+    if (attempt === 0) await sleep(400);
+  }
+
+  if (hass.connection?.sendMessagePromise) {
+    try {
+      const result = await hass.connection.sendMessagePromise({
+        type: 'calendar/events',
+        entity_id: entityId,
+        start: start.toISOString(),
+        end: end.toISOString(),
+      });
+      const list = Array.isArray(result) ? result : result?.events || [];
+      return list.map((raw) => normalizeCalendarEvent(raw, entityId)).filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+
+  return [];
 }
 
 export async function fetchCalendarEvents(hass, entityIds, day = new Date(), until = null) {
@@ -199,48 +275,8 @@ export async function fetchCalendarEvents(hass, entityIds, day = new Date(), unt
 
   const start = startOfDay(day);
   const end = until ? startOfDay(until) : addDays(start, 1);
-
-  if (hass.connection?.sendMessagePromise) {
-    try {
-      let wsSupported = true;
-      const batches = await Promise.all(entityIds.map(async (entityId) => {
-        try {
-          const result = await hass.connection.sendMessagePromise({
-            type: 'calendar/events',
-            entity_id: entityId,
-            start: start.toISOString(),
-            end: end.toISOString(),
-          });
-          const list = Array.isArray(result) ? result : result?.events || [];
-          return list
-            .map((raw) => normalizeCalendarEvent(raw, entityId))
-            .filter(Boolean);
-        } catch (error) {
-          const message = `${error?.code || ''} ${error?.message || error}`;
-          if (/unknown_command/i.test(message)) wsSupported = false;
-          return null;
-        }
-      }));
-      if (wsSupported) return batches.flatMap((batch) => batch || []);
-    } catch {
-      // fall through to service call
-    }
-  }
-
-  try {
-    const response = await callService(
-      hass,
-      'calendar',
-      'get_events',
-      {
-        entity_id: entityIds,
-        start_date_time: start.toISOString(),
-        end_date_time: end.toISOString(),
-      },
-      true,
-    );
-    return collectServiceEvents(response);
-  } catch {
-    return [];
-  }
+  const batches = await Promise.all(
+    entityIds.filter(Boolean).map((entityId) => fetchOneCalendar(hass, entityId, start, end)),
+  );
+  return batches.flat();
 }

@@ -1,5 +1,6 @@
 import { MOCK_ROOM_STATES, attachMockRegistries } from './mockRooms';
 import { computeSolarTimes, getMockTodayEvents } from './today';
+import { getMockWastePickups } from './waste';
 
 function createState(entityId, state, attributes = {}) {
   return { entity_id: entityId, state, attributes, last_changed: new Date().toISOString(), last_updated: new Date().toISOString() };
@@ -123,6 +124,17 @@ const MOCK_STATES = {
   'calendar.familie': createState('calendar.familie', 'on', {
     friendly_name: 'Familie',
     message: 'Teammeeting',
+  }),
+  'calendar.mull': createState('calendar.mull', 'off', {
+    friendly_name: 'Müll',
+    message: 'Restmüll',
+    all_day: true,
+    start_time: (() => {
+      const date = new Date();
+      date.setDate(date.getDate() + 1);
+      date.setHours(0, 0, 0, 0);
+      return date.toISOString().slice(0, 19).replace('T', ' ');
+    })(),
   }),
   'sensor.abfall_restmuell': createState('sensor.abfall_restmuell', '3', {
     friendly_name: 'Restmüll',
@@ -341,13 +353,21 @@ export function createMockHass() {
       if (domain === 'calendar' && service === 'get_events') {
         const ids = (Array.isArray(data.entity_id) ? data.entity_id : [data.entity_id]).filter(Boolean);
         const targets = ids.length ? ids : ['calendar.familie'];
-        const events = getMockTodayEvents().map((event) => ({
+        const todayEvents = getMockTodayEvents().map((event) => ({
           start: event.start.toISOString(),
           end: event.end.toISOString(),
           summary: event.summary,
           location: event.location,
         }));
-        const response = Object.fromEntries(targets.map((id) => [id, { events }]));
+        const wasteEvents = getMockWastePickups().map((pickup) => ({
+          start: pickup.date.toISOString().slice(0, 10),
+          end: new Date(pickup.date.getTime() + 86400000).toISOString().slice(0, 10),
+          summary: pickup.name,
+        }));
+        const response = Object.fromEntries(targets.map((id) => [
+          id,
+          { events: /mull|zke|abfall|waste/.test(id) ? wasteEvents : todayEvents },
+        ]));
         return { response, context: { id: 'mock' } };
       }
       if (domain === 'cover' && entityId) {

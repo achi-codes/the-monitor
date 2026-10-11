@@ -476,9 +476,9 @@ export default function WidgetInspector({
 
       {isWaste && (
         <div className="tm-widget-inspector-section">
-          <label className="tm-widget-inspector-label">Tonnen (max. {SLOT_LIMITS.wasteEntities})</label>
+          <label className="tm-widget-inspector-label">Kalender / Tonnen (max. {SLOT_LIMITS.wasteEntities})</label>
           <p className="tm-widget-inspector-hint">
-            Sensoren oder Kalender der Abfuhrtermine. Ohne Auswahl werden passende Entitäten automatisch erkannt.
+            Am besten ein Abfall-Kalender (z. B. Müll oder ZKE). Sensoren gehen auch. Ohne Auswahl wird automatisch erkannt.
           </p>
           <EntityPicker
             value=""
@@ -486,8 +486,8 @@ export default function WidgetInspector({
               const patch = appendEntity(widget, entityId, SLOT_LIMITS.wasteEntities);
               if (patch) onUpdate(pageIndex, widget.id, patch);
             }}
-            domains={meta.domains}
-            placeholder="Tonne oder Kalender hinzufügen…"
+            domains={['calendar', 'sensor']}
+            placeholder="Kalender oder Tonne hinzufügen…"
           />
           <div className="tm-widget-inspector-entity-list">
             {entityList(widget).map((entityId) => (

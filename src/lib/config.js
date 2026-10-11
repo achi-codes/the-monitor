@@ -322,10 +322,7 @@ function ensureDevTodayWidget(config) {
 }
 
 const MOCK_WASTE_IDS = [
-  'sensor.abfall_gelber_sack',
-  'sensor.abfall_papier',
-  'sensor.abfall_restmuell',
-  'sensor.abfall_biomuell',
+  'calendar.mull',
 ];
 
 function ensureDevWasteWidget(config) {

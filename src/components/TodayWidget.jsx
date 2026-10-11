@@ -126,22 +126,23 @@ export default function TodayWidget({ widget, editMode = false, onConfigure }) {
       setEvents(getMockTodayEvents());
       return;
     }
-    if (!isConnected || !calendarIds.length) {
-      setEvents([]);
-      return;
-    }
+    if (!isConnected || !calendarIds.length) return;
     try {
-      const result = await fetchCalendarEvents(hass, calendarIds);
-      setEvents(eventsForDay(result));
+      const result = eventsForDay(await fetchCalendarEvents(hass, calendarIds));
+      setEvents((prev) => (result.length ? result : prev));
     } catch {
-      setEvents([]);
+      // keep last successful events
     }
   }, [calendarIds, hass, isConnected, isMock]);
 
   useEffect(() => {
     loadEvents();
+    const retries = [800, 2500, 6000].map((ms) => window.setTimeout(loadEvents, ms));
     const timer = window.setInterval(loadEvents, 5 * 60 * 1000);
-    return () => window.clearInterval(timer);
+    return () => {
+      retries.forEach((id) => window.clearTimeout(id));
+      window.clearInterval(timer);
+    };
   }, [loadEvents, revision]);
 
   const clock = formatClock(now);

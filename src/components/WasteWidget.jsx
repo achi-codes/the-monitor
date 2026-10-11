@@ -72,24 +72,31 @@ export default function WasteWidget({ widget, editMode = false, onConfigure }) {
 
   const load = useCallback(async () => {
     if (isMock) {
+      if (entityIds.some((id) => id.startsWith('calendar.'))) {
+        const next = await loadWastePickups(hass, entityIds);
+        setPickups((prev) => (next.length ? next : prev.length ? prev : getMockWastePickups()));
+        return;
+      }
       setPickups(getMockWastePickups());
       return;
     }
-    if (!isConnected || !entityIds.length) {
-      setPickups([]);
-      return;
-    }
+    if (!isConnected || !entityIds.length) return;
     try {
-      setPickups(await loadWastePickups(hass, entityIds));
+      const next = await loadWastePickups(hass, entityIds);
+      setPickups((prev) => (next.length ? next : prev));
     } catch {
-      setPickups([]);
+      // keep last successful pickups
     }
   }, [entityIds, hass, isConnected, isMock]);
 
   useEffect(() => {
     load();
+    const retries = [800, 2500, 6000].map((ms) => window.setTimeout(load, ms));
     const timer = window.setInterval(load, 15 * 60 * 1000);
-    return () => window.clearInterval(timer);
+    return () => {
+      retries.forEach((id) => window.clearTimeout(id));
+      window.clearInterval(timer);
+    };
   }, [load, revision]);
 
   const { next, upcoming } = useMemo(() => groupWastePickups(pickups), [pickups]);

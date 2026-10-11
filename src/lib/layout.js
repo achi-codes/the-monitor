@@ -27,7 +27,7 @@ export const SLOT_LIMITS = {
 export const WIDGET_TYPES = {
   weather: { label: 'Wetter', icon: 'mdi:weather-partly-cloudy', domains: ['weather'] },
   today: { label: 'Heute', icon: 'mdi:calendar-today', domains: ['calendar'] },
-  waste: { label: 'Müll', icon: 'mdi:trash-can', domains: ['sensor', 'calendar'] },
+  waste: { label: 'Müll', icon: 'mdi:trash-can', domains: ['calendar', 'sensor'] },
   media: { label: 'Medien', icon: 'mdi:play-circle', domains: ['media_player'] },
   camera: { label: 'Kamera', icon: 'mdi:camera', domains: ['camera'] },
   shopping: { label: 'Einkaufsliste', icon: 'mdi:cart', domains: ['todo'] },

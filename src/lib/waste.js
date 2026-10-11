@@ -51,6 +51,10 @@ function parseFlexibleDate(value, now = new Date()) {
     const date = new Date(year, month - 1, day);
     return isValid(date) ? startOfDay(date) : null;
   }
+  if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(raw)) {
+    const parsed = new Date(raw.replace(' ', 'T'));
+    return isValid(parsed) ? startOfDay(parsed) : null;
+  }
   const iso = parseISO(raw);
   if (isValid(iso)) return startOfDay(iso);
   const parsed = new Date(raw);
@@ -59,6 +63,24 @@ function parseFlexibleDate(value, now = new Date()) {
 
 function firstDefined(...values) {
   return values.find((value) => value != null && value !== '');
+}
+
+export function parseWasteCalendarState(entity, now = new Date()) {
+  if (!entity) return null;
+  const attrs = entity.attributes || {};
+  const name = String(attrs.message || '').trim();
+  const date = parseFlexibleDate(firstDefined(attrs.start_time, attrs.start, attrs.next_date), now);
+  if (!date || !name) return null;
+  const days = differenceInCalendarDays(date, startOfDay(now));
+  if (days < 0 || days > 90) return null;
+  const type = classifyWasteType(name, entity.entity_id || entity.id || '');
+  return {
+    id: `${entity.entity_id || entity.id || type}:${date.toISOString()}`,
+    type,
+    name,
+    date,
+    days,
+  };
 }
 
 export function parseWasteSensor(entity, now = new Date()) {
@@ -112,10 +134,17 @@ export function resolveWasteEntityIds(widget, hass) {
     ? widget.entity_ids.filter(Boolean)
     : (widget?.entity_id ? [widget.entity_id] : []);
   if (configured.length) return configured;
-  return Object.entries(hass?.states || {})
-    .filter(([id, state]) => isWasteEntity(id, state))
-    .map(([id]) => id)
-    .slice(0, 8);
+  const matches = Object.entries(hass?.states || {})
+    .filter(([id, state]) => (
+      id.startsWith('calendar.') || id.startsWith('sensor.')
+    ) && isWasteEntity(id, state))
+    .sort(([a], [b]) => {
+      const aCal = a.startsWith('calendar.') ? 0 : 1;
+      const bCal = b.startsWith('calendar.') ? 0 : 1;
+      return aCal - bCal || a.localeCompare(b);
+    })
+    .map(([id]) => id);
+  return matches.slice(0, 8);
 }
 
 export function groupWastePickups(pickups) {
@@ -135,6 +164,16 @@ export function pickupLabel(pickup) {
   return WASTE_TYPES[pickup.type]?.label || pickup.name || 'Abfall';
 }
 
+function dedupePickups(pickups) {
+  const seen = new Set();
+  return pickups.filter((pickup) => {
+    const key = `${pickup.type}:${pickup.date.toISOString().slice(0, 10)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export async function loadWastePickups(hass, entityIds, now = new Date()) {
   if (!entityIds?.length) return [];
 
@@ -144,8 +183,16 @@ export async function loadWastePickups(hass, entityIds, now = new Date()) {
     .map((id) => parseWasteSensor(hass?.states?.[id] ? { ...hass.states[id], entity_id: id } : null, now))
     .filter(Boolean);
 
+  calendars.forEach((id) => {
+    const fromState = parseWasteCalendarState(
+      hass?.states?.[id] ? { ...hass.states[id], entity_id: id } : null,
+      now,
+    );
+    if (fromState) pickups.push(fromState);
+  });
+
   if (calendars.length) {
-    const events = await fetchCalendarEvents(hass, calendars, now, addDays(now, 21));
+    const events = await fetchCalendarEvents(hass, calendars, now, addDays(now, 45));
     events.forEach((event) => {
       const type = classifyWasteType(event.summary, event.entityId);
       const date = startOfDay(event.start);
@@ -161,5 +208,5 @@ export async function loadWastePickups(hass, entityIds, now = new Date()) {
     });
   }
 
-  return pickups;
+  return dedupePickups(pickups);
 }

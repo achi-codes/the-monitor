@@ -15,6 +15,7 @@ export async function callService(hass, domain, service, data = {}, returnRespon
       service_data: data,
       return_response: true,
     };
+    if (data?.entity_id) message.target = { entity_id: data.entity_id };
     if (typeof hass.callWS === 'function') return hass.callWS(message);
     if (hass.connection?.sendMessagePromise) return hass.connection.sendMessagePromise(message);
     return hass.callService(domain, service, data, undefined, false, true);

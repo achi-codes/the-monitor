@@ -80,7 +80,7 @@ const DEFAULT_SIZE_BY_TYPE = {
   ev: 'L',
   vacuum: 'L',
   today: 'XL',
-  waste: 'L',
+  waste: 'XL',
   haCard: 'XL',
 };
 

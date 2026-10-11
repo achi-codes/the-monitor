@@ -4,7 +4,7 @@ import { fetchCalendarEvents } from './today';
 
 export const WASTE_TYPES = {
   rest: { id: 'rest', label: 'Restmüll', color: '#3a3a3c', lid: '#1f1f21', kind: 'bin' },
-  bio: { id: 'bio', label: 'Bio', color: '#6b4a28', lid: '#4a3219', kind: 'bin' },
+  bio: { id: 'bio', label: 'Bioabfall', color: '#8b6b3d', lid: '#6b4a28', kind: 'bin' },
   paper: { id: 'paper', label: 'Papier', color: '#2f6db5', lid: '#1e4d86', kind: 'bin' },
   yellow: { id: 'yellow', label: 'Gelbe Tonne', color: '#e6c234', lid: '#c9a41c', kind: 'bin' },
   glass: { id: 'glass', label: 'Glas', color: '#2f8a58', lid: '#1f6140', kind: 'bin' },
@@ -119,6 +119,32 @@ export function formatWasteDate(date) {
   return format(date, 'd. MMM', { locale: de });
 }
 
+export function formatWasteWeekday(date) {
+  return format(date, 'EEEE', { locale: de });
+}
+
+export function formatWasteMonth(date) {
+  return format(date, 'MMMM', { locale: de });
+}
+
+export function formatWasteListDate(date) {
+  return format(date, 'EEEEEE, d. MMMM', { locale: de });
+}
+
+export function formatWasteInDays(days) {
+  if (days === 0) return 'Heute';
+  if (days === 1) return 'Morgen';
+  return `in ${days} Tagen`;
+}
+
+export function wasteLocation(widget, pickups = []) {
+  if (widget?.location) return widget.location;
+  const raw = pickups.find((pickup) => pickup.location)?.location || '';
+  const city = raw.split(',').pop()?.trim().replace(/^\d+\s*/, '') || '';
+  if (city) return city.replace(/Saarbruecken/i, 'Saarbrücken');
+  return 'Saarbrücken';
+}
+
 export function getMockWastePickups(now = new Date()) {
   const start = startOfDay(now);
   return [
@@ -204,6 +230,7 @@ export async function loadWastePickups(hass, entityIds, now = new Date()) {
         name: event.summary,
         date,
         days,
+        location: event.location || '',
       });
     });
   }

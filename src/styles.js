@@ -3657,29 +3657,39 @@ export const styles = `
   height: 58%;
   color: var(--tm-media-thumb);
 }
-.tm-media-device-select {
+.tm-media-device-picker {
   grid-area: device;
   align-self: start;
   justify-self: end;
   z-index: 8;
-  box-sizing: border-box;
   max-width: min(16rem, 46cqw);
-  min-height: 2.1rem;
-  margin: 0;
-  padding: 0.35rem 0.85rem;
-  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
-  border-radius: 999px;
-  background: var(--tm-media-chip);
-  color: inherit;
-  font: inherit;
-  font-size: clamp(0.75rem, 3.6cqmin, 1.05rem);
-  line-height: 1.2;
-  cursor: pointer;
 }
-.tm-media-device-select:disabled,
-.tm-media-device-select--static {
-  cursor: default;
-  opacity: 0.85;
+.tm-media-device-picker .tm-room-selector-trigger {
+  max-width: 100%;
+  background: var(--tm-media-chip);
+  border-color: color-mix(in srgb, currentColor 10%, transparent);
+  font-size: clamp(0.75rem, 3.6cqmin, 1.05rem);
+}
+.tm-media-device-picker .tm-room-selector-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tm-media-device-menu {
+  left: auto;
+  right: 0;
+  min-width: 12rem;
+  background: color-mix(in srgb, var(--tm-surface, #ffffff) 94%, transparent);
+  color: inherit;
+  border-color: color-mix(in srgb, currentColor 12%, transparent);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+}
+.tm-media-device-menu .tm-room-selector-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .tm-media-progress {
@@ -3826,13 +3836,16 @@ export const styles = `
 .tm-dashboard-grid-item:has(.tm-media-widget) .tm-dashboard-grid-content {
   overflow: visible;
 }
+.tm-dashboard-grid-item:has(.tm-media-device-picker [aria-expanded="true"]) {
+  z-index: 12;
+}
 
 @container tm-media (max-width: 30rem) {
   .tm-media-volume-value { display: none; }
   .tm-media-volume { padding: 0 0.9em; }
 }
 @container tm-media (max-width: 24rem) {
-  .tm-media-device-select { max-width: 9.5rem; }
+  .tm-media-device-picker .tm-room-selector-label { max-width: 7rem; }
   .tm-media-controls { grid-template-columns: auto minmax(0, 1fr); }
   .tm-media-controls-side:first-child { display: none; }
   .tm-media-transport { order: -1; }
@@ -3855,7 +3868,7 @@ export const styles = `
   .tm-media-meta { align-self: end; }
   .tm-media-title { font-size: clamp(0.95rem, 10cqh, 1.6rem); }
   .tm-media-artist { font-size: clamp(0.8rem, 8cqh, 1.2rem); }
-  .tm-media-device-select { font-size: clamp(0.7rem, 7cqh, 1rem); }
+  .tm-media-device-picker .tm-room-selector-trigger { font-size: clamp(0.7rem, 7cqh, 1rem); }
   .tm-media-controls {
     display: flex;
     --tm-media-btn: clamp(2.1rem, 19cqh, 3.25rem);
@@ -7228,23 +7241,26 @@ export const styles = `
   to { transform: translateX(-2.25rem); opacity: 0; }
 }
 @keyframes tmMetroTurnstileOut {
-  from { opacity: 1; transform: none; }
-  to { opacity: 0; transform: perspective(60rem) rotateY(70deg) translateX(0.5rem); }
+  from { opacity: 1; transform: perspective(80rem) rotateY(0deg); }
+  to { opacity: 0; transform: perspective(80rem) rotateY(78deg) translateX(0.75rem); }
 }
 .tm-metro-overlay.is-leaving {
-  animation: tmMetroOverlayOut 0.42s ease-in forwards;
+  animation: tmMetroOverlayOut 0.28s ease-in 0.62s both;
   pointer-events: none;
 }
 .tm-metro-overlay.is-leaving .tm-metro-band {
-  animation: tmMetroBandOut 0.36s var(--tm-metro-ease) forwards;
+  animation: tmMetroBandOut 0.34s var(--tm-metro-ease) 0.42s both;
 }
 .tm-metro-overlay.is-leaving .tm-metro-header,
 .tm-metro-overlay.is-leaving .tm-metro-footer {
-  animation: tmMetroLeave 0.28s var(--tm-metro-ease) forwards;
+  animation: tmMetroLeave 0.32s var(--tm-metro-ease) both;
+}
+.tm-metro-overlay.is-leaving .tm-metro-hub {
+  overflow: visible;
 }
 .tm-metro-overlay.is-leaving .tm-metro-card {
-  animation: tmMetroTurnstileOut 0.28s var(--tm-metro-ease) both;
-  animation-delay: calc(var(--tm-metro-i, 0) * 0.02s);
+  animation: tmMetroTurnstileOut 0.4s var(--tm-metro-ease) both;
+  animation-delay: calc(var(--tm-metro-i, 0) * 0.05s);
 }
 .tm-metro-header {
   display: flex;
@@ -7308,6 +7324,8 @@ export const styles = `
   gap: 0.75rem;
   width: max-content;
   padding: 0 var(--tm-metro-pad) 0.75rem 0;
+  perspective: 80rem;
+  transform-style: preserve-3d;
 }
 .tm-metro-card {
   flex: 0 0 var(--tm-metro-card-w);
@@ -7316,6 +7334,7 @@ export const styles = `
   overflow: hidden;
   border-radius: var(--tm-radius-xl, 1.5rem);
   transform-origin: left center;
+  transform-style: preserve-3d;
   animation: tmMetroTurnstile 0.55s var(--tm-metro-ease) backwards;
   animation-delay: calc(0.12s + var(--tm-metro-i, 0) * 0.04s);
 }

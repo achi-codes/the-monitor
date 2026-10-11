@@ -260,7 +260,7 @@ export function RoomPopup({ data, hass, onClose }) {
 
   useEffect(() => {
     if (!leaving) return undefined;
-    const timer = window.setTimeout(onClose, 480);
+    const timer = window.setTimeout(onClose, 880);
     return () => window.clearTimeout(timer);
   }, [leaving, onClose]);
 

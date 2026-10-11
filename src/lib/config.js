@@ -162,14 +162,14 @@ export function loadConfig() {
 export function loadDevConfig() {
   const stored = loadConfig();
   if (configHasWidgetEntities(stored)) {
-    return ensureSankeyPage(ensureDevCameraWidgets(ensureDevAlarmWidget(stored)));
+    return ensureSankeyPage(ensureDevMediaWidgets(ensureDevCameraWidgets(ensureDevAlarmWidget(stored))));
   }
 
   const mock = normalizeConfig(MOCK_DEV_CONFIG);
-  if (!stored.rooms?.[0]?.layout?.pages?.length) return ensureSankeyPage(mock);
+  if (!stored.rooms?.[0]?.layout?.pages?.length) return ensureSankeyPage(ensureDevMediaWidgets(mock));
 
   const entities = extractLegacyEntities(mock);
-  return ensureSankeyPage(ensureDevCameraWidgets(ensureDevAlarmWidget(normalizeConfig({
+  return ensureSankeyPage(ensureDevMediaWidgets(ensureDevCameraWidgets(ensureDevAlarmWidget(normalizeConfig({
     ...stored,
     weather: mock.weather,
     mediaPlayer: mock.mediaPlayer,
@@ -194,7 +194,7 @@ export function loadDevConfig() {
         }
         : room
     )),
-  }))));
+  })))));
 }
 
 function ensureDevAlarmWidget(config) {
@@ -228,6 +228,29 @@ function ensureDevAlarmWidget(config) {
   });
 
   return normalizeConfig(next);
+}
+
+function ensureDevMediaWidgets(config) {
+  const devices = ['media_player.wohnzimmer', 'media_player.kueche', 'media_player.schlafzimmer'];
+  const next = structuredClone(config);
+  let changed = false;
+
+  next.rooms?.forEach((room) => {
+    room.layout?.pages?.forEach((page) => {
+      page.widgets = page.widgets.map((widget) => {
+        if (widget.type !== 'media') return widget;
+        if (widget.entity_ids?.length > 1) return widget;
+        changed = true;
+        return {
+          ...widget,
+          entity_id: widget.entity_id || devices[0],
+          entity_ids: [...devices],
+        };
+      });
+    });
+  });
+
+  return changed ? normalizeConfig(next) : config;
 }
 
 function ensureDevCameraWidgets(config) {

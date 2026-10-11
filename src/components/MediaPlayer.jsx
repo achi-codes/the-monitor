@@ -1,12 +1,10 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef, useState } from 'react';
 import {
-  Check,
   ChevronDown,
+  Heart,
   Music2,
   Pause,
   Play,
-  Power,
   Settings,
   SkipBack,
   SkipForward,
@@ -23,11 +21,8 @@ import {
   mediaPrevious,
   mediaSeek,
   mediaSetVolume,
-  turnOnEntity,
-  turnOffEntity,
 } from '../lib/services';
 import { resolveHassUrl } from '../lib/hass';
-import { getOverlayRoot } from '../lib/overlayPortal';
 import {
   MEDIA_FEATURES,
   formatMediaTime,
@@ -38,7 +33,6 @@ import {
 } from '../lib/mediaPlayer';
 
 const DEVICE_STORAGE_PREFIX = 'tm-media-device:';
-const MENU_THEME_VARS = ['--tm-media-menu-bg', '--tm-media-menu-fg', '--tm-media-accent'];
 
 function useStoredDevice(widgetId) {
   const key = `${DEVICE_STORAGE_PREFIX}${widgetId || 'default'}`;
@@ -89,66 +83,78 @@ function getStatusLabel(state) {
   return 'Nicht verfügbar';
 }
 
-function DeviceMenu({ anchorRef, devices, activeId, onPick, onClose }) {
-  const [layout, setLayout] = useState(null);
-
-  useLayoutEffect(() => {
-    const measure = () => {
-      const anchor = anchorRef.current;
-      if (!anchor) return;
-      const rect = anchor.getBoundingClientRect();
-      const card = anchor.closest('.tm-media-card') || anchor;
-      const computed = window.getComputedStyle(card);
-      const vars = Object.fromEntries(MENU_THEME_VARS.map((name) => [name, computed.getPropertyValue(name).trim()]));
-      const estimatedHeight = devices.length * 52 + 16;
-      const openUp = rect.bottom + estimatedHeight + 12 > window.innerHeight && rect.top > estimatedHeight;
-      setLayout({
-        ...vars,
-        right: Math.max(8, window.innerWidth - rect.right),
-        minWidth: Math.max(rect.width, 200),
-        ...(openUp ? { bottom: window.innerHeight - rect.top + 8 } : { top: rect.bottom + 8 }),
-      });
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, [anchorRef, devices.length]);
+function DeviceDropdown({ devices, activeId, activeLabel, disabled, onChange }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const multi = devices.length > 1;
 
   useEffect(() => {
-    const onKey = (event) => { if (event.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+    if (!open) return undefined;
 
-  if (!layout) return null;
+    const handleClickOutside = (event) => {
+      const path = typeof event.composedPath === 'function' ? event.composedPath() : [event.target];
+      if (rootRef.current && path.includes(rootRef.current)) return;
+      setOpen(false);
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
 
-  return createPortal(
-    <div className="tm-media-menu-layer">
-      <button type="button" className="tm-media-menu-backdrop" onClick={onClose} aria-label="Schließen" />
-      <div className="tm-media-menu" role="listbox" aria-label="Gerät wählen" style={layout}>
-        {devices.map((device) => {
-          const active = device.id === activeId;
-          return (
-            <button
-              key={device.id}
-              type="button"
-              role="option"
-              aria-selected={active}
-              className={`tm-media-menu-item${active ? ' active' : ''}`}
-              onClick={() => onPick(device.id)}
-            >
-              <Speaker className="tm-media-menu-icon" />
-              <span className="tm-media-menu-text">
-                <span className="tm-media-menu-label">{device.label}</span>
-                {device.detail && <span className="tm-media-menu-detail">{device.detail}</span>}
-              </span>
-              {active && <Check className="tm-media-menu-check" />}
-            </button>
-          );
-        })}
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
+
+  if (!multi) {
+    return (
+      <div className="tm-room-selector tm-media-device-picker">
+        <span className="tm-room-selector-trigger" aria-label={`Gerät: ${activeLabel}`}>
+          <Speaker size={16} />
+          <span className="tm-room-selector-label">{activeLabel}</span>
+        </span>
       </div>
-    </div>,
-    getOverlayRoot(anchorRef.current),
+    );
+  }
+
+  return (
+    <div className="tm-room-selector tm-media-device-picker" ref={rootRef}>
+      <button
+        type="button"
+        className="tm-room-selector-trigger"
+        onClick={() => setOpen((value) => !value)}
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Gerät wechseln"
+      >
+        <Speaker size={16} />
+        <span className="tm-room-selector-label">{activeLabel}</span>
+        <ChevronDown size={18} className={`tm-room-selector-chevron${open ? ' open' : ''}`} />
+      </button>
+
+      {open && (
+        <ul className="tm-room-selector-menu" role="listbox" aria-label="Geräte">
+          {devices.map((device) => (
+            <li key={device.id} role="option" aria-selected={device.id === activeId}>
+              <button
+                type="button"
+                className={`tm-room-selector-option${device.id === activeId ? ' active' : ''}`}
+                disabled={disabled}
+                onClick={() => {
+                  onChange(device.id);
+                  setOpen(false);
+                }}
+              >
+                {device.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -156,10 +162,8 @@ export default function MediaPlayer({ widget = {}, editMode = false, onConfigure
   const { hass, getEntity } = useHass();
   const { config } = useConfig();
   const [storedId, setStoredId] = useStoredDevice(widget.id);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [pendingVolume, updateVolume] = usePendingValue(200);
   const [pendingSeek, updateSeek] = usePendingValue(350);
-  const deviceRef = useRef(null);
 
   const configuredIds = getMediaDeviceIds(widget);
   const deviceIds = configuredIds.length
@@ -171,10 +175,6 @@ export default function MediaPlayer({ widget = {}, editMode = false, onConfigure
   const entity = entityId ? getEntity(entityId) : null;
   const isPlaying = entity?.state === 'playing';
   const now = useTicker(isPlaying && !editMode);
-
-  useEffect(() => {
-    if (editMode) setMenuOpen(false);
-  }, [editMode]);
 
   if (!entityId) {
     return (
@@ -193,7 +193,6 @@ export default function MediaPlayer({ widget = {}, editMode = false, onConfigure
   const title = attributes.media_title || (isOn ? 'Keine Wiedergabe' : 'Ausgeschaltet');
   const artist = attributes.media_artist || attributes.media_album_name || '';
   const artwork = resolveHassUrl(hass, attributes.entity_picture);
-  const source = [attributes.app_name || attributes.source, entity.name].filter(Boolean).join(' · ');
   const timing = getLivePosition(attributes, isPlaying, now);
   const position = pendingSeek ?? timing?.position ?? 0;
   const progress = timing ? (position / timing.duration) * 100 : 0;
@@ -203,31 +202,18 @@ export default function MediaPlayer({ widget = {}, editMode = false, onConfigure
   const VolumeIcon = muted ? VolumeX : volumePercent != null && volumePercent < 50 ? Volume1 : Volume2;
   const canSeek = Boolean(timing) && mediaSupports(attributes, MEDIA_FEATURES.seek);
   const canVolume = volumeLevel != null && mediaSupports(attributes, MEDIA_FEATURES.volume);
-  const canPower = mediaSupports(attributes, MEDIA_FEATURES.power);
   const locked = editMode || offline;
 
-  const devices = deviceIds.map((id) => {
-    const deviceState = hass?.states?.[id];
-    const playing = deviceState?.state === 'playing';
-    return {
-      id,
-      label: getMediaDeviceLabel(hass, widget, id),
-      detail: playing && deviceState.attributes?.media_title
-        ? `Spielt: ${deviceState.attributes.media_title}`
-        : getStatusLabel(deviceState?.state),
-    };
-  });
+  const devices = deviceIds.map((id) => ({
+    id,
+    label: getMediaDeviceLabel(hass, widget, id),
+  }));
   const activeLabel = devices.find((device) => device.id === entityId)?.label || entity.name;
-  const multiDevice = devices.length > 1;
+  const sourceLabel = activeLabel;
 
   const run = (action, ...args) => {
     if (locked) return;
     action(hass, entityId, ...args);
-  };
-  const handlePower = () => {
-    if (editMode) return;
-    if (isOn) turnOffEntity(hass, entityId);
-    else turnOnEntity(hass, entityId);
   };
 
   return (
@@ -245,30 +231,19 @@ export default function MediaPlayer({ widget = {}, editMode = false, onConfigure
           <div className="tm-media-eyebrow">{getStatusLabel(state)}</div>
           <div className="tm-media-title">{title}</div>
           {artist && <div className="tm-media-artist">{artist}</div>}
-          {source && (
-            <div className="tm-media-source">
-              <span className="tm-media-source-icon"><Music2 /></span>
-              <span className="tm-media-source-text">{source}</span>
-            </div>
-          )}
+          <div className="tm-media-source">
+            <span className="tm-media-source-icon"><Music2 /></span>
+            <span className="tm-media-source-text">{sourceLabel}</span>
+          </div>
         </div>
 
-        <button
-          type="button"
-          ref={deviceRef}
-          className={`tm-media-device${multiDevice ? '' : ' tm-media-device--static'}`}
-          onClick={(event) => {
-            event.stopPropagation();
-            if (!editMode && multiDevice) setMenuOpen((open) => !open);
-          }}
-          aria-haspopup={multiDevice ? 'listbox' : undefined}
-          aria-expanded={multiDevice ? menuOpen : undefined}
-          aria-label={`Gerät: ${activeLabel}`}
-        >
-          <Speaker className="tm-media-device-icon" />
-          <span className="tm-media-device-label">{activeLabel}</span>
-          {multiDevice && <ChevronDown className={`tm-media-device-chevron${menuOpen ? ' open' : ''}`} />}
-        </button>
+        <DeviceDropdown
+          devices={devices}
+          activeId={entityId}
+          activeLabel={activeLabel}
+          disabled={editMode}
+          onChange={setStoredId}
+        />
 
         <div className={`tm-media-progress${canSeek ? '' : ' tm-media-progress--static'}`}>
           <input
@@ -291,16 +266,9 @@ export default function MediaPlayer({ widget = {}, editMode = false, onConfigure
 
         <div className="tm-media-controls">
           <div className="tm-media-controls-side">
-            {canPower && (
-              <button
-                type="button"
-                className={`tm-media-btn tm-media-btn--square tm-media-power${isOn ? ' on' : ''}`}
-                onClick={handlePower}
-                aria-label={isOn ? 'Ausschalten' : 'Einschalten'}
-              >
-                <Power />
-              </button>
-            )}
+            <span className="tm-media-btn" aria-hidden>
+              <Heart />
+            </span>
           </div>
 
           <div className="tm-media-transport">
@@ -311,7 +279,7 @@ export default function MediaPlayer({ widget = {}, editMode = false, onConfigure
               disabled={offline || !mediaSupports(attributes, MEDIA_FEATURES.previous)}
               aria-label="Zurück"
             >
-              <SkipBack className="tm-media-icon-fill" />
+              <SkipBack />
             </button>
             <button
               type="button"
@@ -329,7 +297,7 @@ export default function MediaPlayer({ widget = {}, editMode = false, onConfigure
               disabled={offline || !mediaSupports(attributes, MEDIA_FEATURES.next)}
               aria-label="Weiter"
             >
-              <SkipForward className="tm-media-icon-fill" />
+              <SkipForward />
             </button>
           </div>
 
@@ -355,19 +323,6 @@ export default function MediaPlayer({ widget = {}, editMode = false, onConfigure
           </div>
         </div>
       </div>
-
-      {menuOpen && (
-        <DeviceMenu
-          anchorRef={deviceRef}
-          devices={devices}
-          activeId={entityId}
-          onClose={() => setMenuOpen(false)}
-          onPick={(id) => {
-            setStoredId(id);
-            setMenuOpen(false);
-          }}
-        />
-      )}
     </div>
   );
 }

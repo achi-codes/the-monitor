@@ -149,7 +149,7 @@ export function getWidgetLabel(widget) {
 export function getWidgetEntities(widget) {
   if (widget.type === 'popup' || widget.type === 'coverPopup') return widget.entity_ids || [];
   if (widget.type === 'camera') return resolveCameraEntityIds(widget);
-  if (widget.type === 'sensor' || widget.type === 'scene') {
+  if (widget.type === 'sensor' || widget.type === 'scene' || widget.type === 'media') {
     if (widget.entity_ids?.length) return widget.entity_ids;
     return widget.entity_id ? [widget.entity_id] : [];
   }

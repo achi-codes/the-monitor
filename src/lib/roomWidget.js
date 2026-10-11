@@ -184,6 +184,35 @@ export function getRoomSummary(hass, entityIds) {
   };
 }
 
+const HEADER_SENSOR_CLASSES = new Set(['temperature', 'humidity', 'carbon_dioxide']);
+
+export function buildRoomPopupWidget(entityId, hass) {
+  const domain = getDomain(entityId);
+  const deviceClass = hass?.states?.[entityId]?.attributes?.device_class;
+  if (domain === 'sensor' && HEADER_SENSOR_CLASSES.has(deviceClass)) return null;
+
+  const base = {
+    id: `room-card-${entityId}`,
+    entity_id: entityId,
+    entity_ids: [entityId],
+    label: '',
+    icon: '',
+  };
+
+  if (domain === 'light') return { ...base, type: 'quickAction', mode: 'brightness', wide: true };
+  if (['switch', 'fan', 'input_boolean', 'lock', 'climate'].includes(domain)) {
+    return { ...base, type: 'quickAction', mode: 'toggle' };
+  }
+  if (domain === 'cover') return { ...base, type: 'cover', wide: true };
+  if (domain === 'scene' || domain === 'script') return { ...base, type: 'scene', wide: true };
+  if (domain === 'media_player') return { ...base, type: 'media', wide: true };
+  if (domain === 'binary_sensor') return { ...base, type: 'sensorStatus', wide: true };
+  if (domain === 'sensor') return { ...base, type: 'sensor' };
+  if (domain === 'vacuum') return { ...base, type: 'vacuum', wide: true };
+  if (domain === 'alarm_control_panel') return { ...base, type: 'alarm' };
+  return { ...base, type: 'quickAction', mode: 'toggle' };
+}
+
 export function formatRoomNumber(value, digits = 1) {
   if (value == null) return '';
   return value.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: digits });

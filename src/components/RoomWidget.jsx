@@ -1,24 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  ArrowLeft, Armchair, Baby, Bath, BedDouble, Blinds, ChevronDown, ChevronRight, ChevronUp,
-  CookingPot, DoorClosed, Droplets, Dumbbell, Home, Laptop, Leaf, Lightbulb, Minus, Pause,
-  Play, Plus, Shirt, Sofa, Sparkles, Square, Thermometer, Trees, UtensilsCrossed, Warehouse,
+  ArrowLeft, Armchair, Baby, Bath, BedDouble, Blinds, ChevronRight, CookingPot, DoorClosed,
+  Droplets, Dumbbell, Home, Laptop, Leaf, Lightbulb, Shirt, Sofa, Sparkles, Thermometer,
+  Trees, UtensilsCrossed, Warehouse,
 } from 'lucide-react';
 import EntityIcon from './EntityIcon';
 import { getOverlayRoot, useOverlayLock } from '../lib/overlayPortal';
+import { turnOffEntity, turnOnEntity } from '../lib/services';
+import { useHass } from '../context/HassContext';
+import { getPastelCardVars, isBlackColorfulMode } from '../lib/colorThemes';
+import { useConfig } from '../context/ConfigContext';
+import { AlarmWidget, CoverWidget, QuickActionWidget, SceneWidget } from './widgets/ActionWidgets';
+import MediaPlayer from './MediaPlayer';
+import SensorWidget from './SensorWidget';
+import SensorStatusWidget from './SensorStatusWidget';
+import VacuumWidget from './VacuumWidget';
 import {
-  activateScene,
-  closeCover,
-  mediaPlayPause,
-  openCover,
-  setClimateTemperature,
-  stopCover,
-  toggleEntity,
-  turnOffEntity,
-  turnOnEntity,
-} from '../lib/services';
-import {
+  buildRoomPopupWidget,
   describeRoomSummary,
   formatRoomNumber,
   getRoomAccent,
@@ -26,7 +25,6 @@ import {
   getRoomKind,
   getRoomName,
   getRoomSummary,
-  getRoomTileModel,
   resolveRoomEntityIds,
 } from '../lib/roomWidget';
 
@@ -45,6 +43,30 @@ const ROOM_ICONS = {
   gym: Dumbbell,
   home: Home,
 };
+
+function renderRoomEntityCard(card, hass, getEntity) {
+  const props = { widget: card, hass, getEntity, editMode: false };
+  switch (card.type) {
+    case 'quickAction':
+      return <QuickActionWidget {...props} />;
+    case 'cover':
+      return <CoverWidget {...props} />;
+    case 'scene':
+      return <SceneWidget {...props} />;
+    case 'media':
+      return <MediaPlayer widget={card} />;
+    case 'sensor':
+      return <SensorWidget {...props} />;
+    case 'sensorStatus':
+      return <SensorStatusWidget {...props} />;
+    case 'vacuum':
+      return <VacuumWidget widget={card} hass={hass} />;
+    case 'alarm':
+      return <AlarmWidget {...props} />;
+    default:
+      return <QuickActionWidget {...props} />;
+  }
+}
 
 function RoomIcon({ widget, name, size }) {
   if (widget.icon) return <EntityIcon overrideIcon={widget.icon} size={size} />;
@@ -215,138 +237,18 @@ export default function RoomWidget({ widget, hass, onConfigure, onOpen, editMode
   );
 }
 
-function stop(event) {
-  event.stopPropagation();
-}
-
-function MetroTile({ model, hass, index }) {
-  const [flash, setFlash] = useState(false);
-  const { domain, entityId } = model;
-
-  useEffect(() => {
-    if (!flash) return undefined;
-    const timer = setTimeout(() => setFlash(false), 900);
-    return () => clearTimeout(timer);
-  }, [flash]);
-
-  const togglable = ['light', 'switch', 'fan', 'input_boolean'].includes(domain);
-  const tappable = !model.unavailable && (
-    togglable || domain === 'scene' || domain === 'script' || (domain === 'lock' && model.active)
-  );
-
-  const handleTap = () => {
-    if (!tappable) return;
-    if (domain === 'scene' || domain === 'script') {
-      activateScene(hass, entityId);
-      setFlash(true);
-      return;
-    }
-    if (domain === 'lock') {
-      turnOnEntity(hass, entityId);
-      return;
-    }
-    toggleEntity(hass, entityId);
-  };
-
-  const className = [
-    'tm-metro-tile',
-    `tm-metro-tile--${domain}`,
-    model.wide && 'tm-metro-tile--wide',
-    (model.active || flash) && 'tm-metro-tile--on',
-    model.unavailable && 'tm-metro-tile--unavailable',
-    tappable && 'tm-metro-tile--tappable',
-  ].filter(Boolean).join(' ');
-
-  return (
-    <div
-      className={className}
-      style={{ '--tm-metro-i': index }}
-      role={tappable ? 'button' : undefined}
-      tabIndex={tappable ? 0 : undefined}
-      onClick={handleTap}
-      onKeyDown={tappable ? (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          handleTap();
-        }
-      } : undefined}
-      aria-label={tappable ? `${model.name}: ${model.detail}` : undefined}
-    >
-      <div className="tm-metro-tile-top">
-        <EntityIcon hass={hass} entity={model.entity} size={30} className="tm-metro-tile-icon" />
-        {model.detail && !model.wide && <span className="tm-metro-tile-detail">{model.detail}</span>}
-      </div>
-
-      {model.value !== '' && (
-        <div className="tm-metro-tile-value">
-          {model.value}
-          {model.unit && <span className="tm-metro-tile-unit">{model.unit}</span>}
-        </div>
-      )}
-
-      <div className="tm-metro-tile-name">
-        {model.name}
-        {model.wide && model.detail && <span className="tm-metro-tile-wide-detail">{model.detail}</span>}
-      </div>
-
-      {domain === 'light' && model.active && (
-        <span className="tm-metro-tile-level" style={{ width: `${model.brightness}%` }} aria-hidden="true" />
-      )}
-
-      {domain === 'cover' && !model.unavailable && (
-        <div className="tm-metro-tile-actions" onClick={stop}>
-          <button type="button" onClick={() => openCover(hass, entityId)} aria-label={`${model.name} öffnen`}>
-            <ChevronUp size={22} />
-          </button>
-          <button type="button" onClick={() => stopCover(hass, entityId)} aria-label={`${model.name} stoppen`}>
-            <Square size={14} fill="currentColor" />
-          </button>
-          <button type="button" onClick={() => closeCover(hass, entityId)} aria-label={`${model.name} schließen`}>
-            <ChevronDown size={22} />
-          </button>
-        </div>
-      )}
-
-      {domain === 'climate' && model.target != null && !model.unavailable && (
-        <div className="tm-metro-tile-actions" onClick={stop}>
-          <button
-            type="button"
-            onClick={() => setClimateTemperature(hass, entityId, model.target - model.step)}
-            aria-label="Zieltemperatur senken"
-          >
-            <Minus size={20} />
-          </button>
-          <span className="tm-metro-tile-target">{`${formatRoomNumber(model.target)}°`}</span>
-          <button
-            type="button"
-            onClick={() => setClimateTemperature(hass, entityId, model.target + model.step)}
-            aria-label="Zieltemperatur erhöhen"
-          >
-            <Plus size={20} />
-          </button>
-        </div>
-      )}
-
-      {domain === 'media_player' && !model.unavailable && (
-        <div className="tm-metro-tile-actions" onClick={stop}>
-          <button type="button" onClick={() => mediaPlayPause(hass, entityId)} aria-label={model.active ? 'Pause' : 'Abspielen'}>
-            {model.active ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function RoomPopup({ data, hass, onClose }) {
   const { widget } = data;
   const hubRef = useRef(null);
+  const { getEntity } = useHass();
+  const { config } = useConfig();
+  const pastel = isBlackColorfulMode(config.appearance);
   const name = getRoomName(hass, widget);
   const accent = getRoomAccent(widget, name);
   const entityIds = resolveRoomEntityIds(hass, widget);
   const summary = getRoomSummary(hass, entityIds);
   const facts = describeRoomSummary(summary);
-  const tiles = entityIds.map((id) => getRoomTileModel(hass, id));
+  const cards = entityIds.map((id) => buildRoomPopupWidget(id, hass)).filter(Boolean);
 
   useOverlayLock(true);
 
@@ -406,10 +308,19 @@ export function RoomPopup({ data, hass, onClose }) {
         </header>
 
         <div className="tm-metro-hub" ref={hubRef}>
-          {tiles.length ? (
+          {cards.length ? (
             <div className="tm-metro-grid">
-              {tiles.map((model, index) => (
-                <MetroTile key={model.entityId} model={model} hass={hass} index={index} />
+              {cards.map((card, index) => (
+                <div
+                  key={card.id}
+                  className={`tm-metro-card${card.wide ? ' tm-metro-card--wide' : ''}`}
+                  style={{
+                    '--tm-metro-i': index,
+                    ...(pastel ? getPastelCardVars(card.id, card.type) : null),
+                  }}
+                >
+                  {renderRoomEntityCard(card, hass, getEntity)}
+                </div>
               ))}
             </div>
           ) : (

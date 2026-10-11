@@ -7330,119 +7330,42 @@ export const styles = `
   scrollbar-color: rgba(255, 255, 255, 0.55) transparent;
 }
 .tm-metro-grid {
-  --tm-metro-tile: clamp(7rem, 17vh, 10rem);
-  display: grid;
-  grid-template-rows: repeat(2, var(--tm-metro-tile));
-  grid-auto-columns: var(--tm-metro-tile);
-  grid-auto-flow: column dense;
-  gap: 0.5rem;
+  --tm-metro-card-h: clamp(16.5rem, 42vh, 21.5rem);
+  --tm-metro-card-w: clamp(13.5rem, 24vh, 17rem);
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
   width: max-content;
   padding: 0 var(--tm-metro-pad) 0.75rem 0;
 }
-.tm-metro-tile {
-  position: relative;
-  display: flex;
-  flex-direction: column;
+.tm-metro-card {
+  flex: 0 0 var(--tm-metro-card-w);
+  height: var(--tm-metro-card-h);
   min-width: 0;
-  padding: 0.75rem 0.85rem;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-  user-select: none;
-  -webkit-user-select: none;
+  border-radius: var(--tm-radius-xl, 1.5rem);
   transform-origin: left center;
-  transition: background 0.2s, color 0.2s, transform 0.12s;
   animation: tmMetroTurnstile 0.55s var(--tm-metro-ease) backwards;
-  animation-delay: calc(0.12s + var(--tm-metro-i, 0) * 0.035s);
+  animation-delay: calc(0.12s + var(--tm-metro-i, 0) * 0.04s);
 }
+.tm-metro-card--wide { flex-basis: clamp(17.5rem, 34vh, 23rem); }
 @keyframes tmMetroTurnstile {
   from { opacity: 0; transform: perspective(60rem) rotateY(-70deg) translateX(-0.5rem); }
   to { opacity: 1; transform: none; }
 }
-.tm-metro-tile--wide { grid-column: span 2; padding-right: 3.75rem; }
-.tm-metro-tile--tappable { cursor: pointer; }
-.tm-metro-tile--tappable:active { transform: perspective(40rem) rotateX(5deg) scale(0.96); }
-.tm-metro-tile--on { background: #fff; color: var(--tm-room-accent); }
-.tm-metro-tile--unavailable { opacity: 0.45; }
-.tm-metro-tile-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.5rem;
+.tm-metro-card > * { height: 100%; min-height: 0; }
+.tm-metro-card .tm-quick-action,
+.tm-metro-card .tm-scenes,
+.tm-metro-card .tm-scene-card,
+.tm-metro-card .tm-contact-widget,
+.tm-metro-card .tm-contact-card,
+.tm-metro-card .tm-sensor-widget,
+.tm-metro-card .tm-vacuum-card,
+.tm-metro-card .tm-alarm-widget,
+.tm-metro-card .tm-media-widget,
+.tm-metro-card .tm-media-card {
+  height: 100%;
 }
-.tm-metro-tile-icon {
-  color: currentColor;
-  --state-icon-color: currentColor;
-  --state-icon-active-color: currentColor;
-  --state-light-active-color: currentColor;
-  --state-active-color: currentColor;
-  --state-inactive-color: currentColor;
-}
-.tm-metro-tile-detail {
-  font-size: 0.8rem;
-  font-weight: 600;
-  opacity: 0.85;
-  white-space: nowrap;
-}
-.tm-metro-tile-value {
-  margin-top: auto;
-  font-size: calc(var(--tm-metro-tile) * 0.3);
-  font-weight: 200;
-  line-height: 1;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.tm-metro-tile-unit { font-size: 0.45em; margin-left: 0.1em; font-weight: 400; }
-.tm-metro-tile-name {
-  margin-top: auto;
-  font-size: 0.875rem;
-  line-height: 1.25;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.tm-metro-tile-value + .tm-metro-tile-name { margin-top: 0.3rem; }
-.tm-metro-tile-wide-detail {
-  display: block;
-  font-size: 0.75rem;
-  opacity: 0.8;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.tm-metro-tile-level {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 0.3rem;
-  background: currentColor;
-  transition: width 0.3s;
-}
-.tm-metro-tile-actions {
-  position: absolute;
-  top: 50%;
-  right: 0.6rem;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-}
-.tm-metro-tile--climate .tm-metro-tile-actions { flex-direction: column-reverse; }
-.tm-metro-tile-actions button {
-  display: grid;
-  place-items: center;
-  width: 2.4rem;
-  height: 2.4rem;
-  padding: 0;
-  border: 2px solid currentColor;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-.tm-metro-tile-actions button:active { background: color-mix(in srgb, currentColor 25%, transparent); }
-.tm-metro-tile-target { font-size: 0.85rem; font-weight: 600; }
 .tm-metro-empty {
   margin: 0;
   padding: 2rem 0;
@@ -7473,7 +7396,7 @@ export const styles = `
 .tm-metro-button--primary,
 .tm-metro-button:active { background: #fff; color: var(--tm-room-accent); }
 @media (prefers-reduced-motion: reduce) {
-  .tm-metro-band, .tm-metro-header, .tm-metro-tile, .tm-room-card-motion { animation: none; }
+  .tm-metro-band, .tm-metro-header, .tm-metro-card, .tm-room-card-motion { animation: none; }
 }
 
 .tm-vacuum-card {

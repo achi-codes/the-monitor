@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   ArrowLeft, Armchair, Baby, Bath, BedDouble, Blinds, ChevronRight, CookingPot, DoorClosed,
@@ -240,6 +240,8 @@ export default function RoomWidget({ widget, hass, onConfigure, onOpen, editMode
 export function RoomPopup({ data, hass, onClose }) {
   const { widget } = data;
   const hubRef = useRef(null);
+  const leavingRef = useRef(false);
+  const [leaving, setLeaving] = useState(false);
   const { getEntity } = useHass();
   const { config } = useConfig();
   const pastel = isBlackColorfulMode(config.appearance);
@@ -250,15 +252,31 @@ export function RoomPopup({ data, hass, onClose }) {
   const facts = describeRoomSummary(summary);
   const cards = entityIds.map((id) => buildRoomPopupWidget(id, hass)).filter(Boolean);
 
+  const requestClose = useCallback(() => {
+    if (leavingRef.current) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onClose();
+      return;
+    }
+    leavingRef.current = true;
+    setLeaving(true);
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!leaving) return undefined;
+    const timer = window.setTimeout(onClose, 380);
+    return () => window.clearTimeout(timer);
+  }, [leaving, onClose]);
+
   useOverlayLock(true);
 
   useEffect(() => {
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') requestClose();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [onClose]);
+  }, [requestClose]);
 
   useEffect(() => {
     const hub = hubRef.current;
@@ -283,8 +301,14 @@ export function RoomPopup({ data, hass, onClose }) {
   ].filter(Boolean).join('   ');
 
   return createPortal(
-    <div className="tm-metro-overlay" role="presentation">
-      <button type="button" className="tm-metro-backdrop" onClick={onClose} aria-label="Schließen" />
+    <div
+      className={`tm-metro-overlay${leaving ? ' is-leaving' : ''}`}
+      role="presentation"
+      onAnimationEnd={(event) => {
+        if (leaving && event.target === event.currentTarget) onClose();
+      }}
+    >
+      <button type="button" className="tm-metro-backdrop" onClick={requestClose} aria-label="Schließen" />
       <section
         className="tm-metro-band"
         style={{ '--tm-room-accent': accent }}
@@ -293,7 +317,7 @@ export function RoomPopup({ data, hass, onClose }) {
         aria-label={name}
       >
         <header className="tm-metro-header">
-          <button type="button" className="tm-metro-back" onClick={onClose} aria-label="Zurück">
+          <button type="button" className="tm-metro-back" onClick={requestClose} aria-label="Zurück">
             <ArrowLeft size={22} strokeWidth={2.25} />
           </button>
           <div className="tm-metro-titles">
@@ -334,7 +358,7 @@ export function RoomPopup({ data, hass, onClose }) {
               {summary.lightsOn ? 'Alle Lichter aus' : 'Alle Lichter an'}
             </button>
           )}
-          <button type="button" className="tm-metro-button tm-metro-button--primary" onClick={onClose}>
+          <button type="button" className="tm-metro-button tm-metro-button--primary" onClick={requestClose}>
             Schließen
           </button>
         </footer>

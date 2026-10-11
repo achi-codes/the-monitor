@@ -147,6 +147,8 @@ const FIXED_PASTEL_BY_WIDGET_TYPE = {
   ev: PASTEL_CARD_COLORS[0],
   vacuum: PASTEL_CARD_COLORS[0],
   weather: PASTEL_CARD_COLORS[3],
+  today: PASTEL_CARD_COLORS[5],
+  waste: PASTEL_CARD_COLORS[1],
 };
 
 export function getPastelCardVars(key = '0', widgetType = '') {

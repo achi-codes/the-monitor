@@ -1,4 +1,5 @@
 import { MOCK_ROOM_STATES, attachMockRegistries } from './mockRooms';
+import { computeSolarTimes, getMockTodayEvents } from './today';
 
 function createState(entityId, state, attributes = {}) {
   return { entity_id: entityId, state, attributes, last_changed: new Date().toISOString(), last_updated: new Date().toISOString() };
@@ -119,6 +120,42 @@ const MOCK_STATES = {
   'todo.einkaufsliste': createState('todo.einkaufsliste', '0', {
     friendly_name: 'Einkaufsliste',
   }),
+  'calendar.familie': createState('calendar.familie', 'on', {
+    friendly_name: 'Familie',
+    message: 'Teammeeting',
+  }),
+  'sensor.abfall_restmuell': createState('sensor.abfall_restmuell', '3', {
+    friendly_name: 'Restmüll',
+    days: 3,
+    next_date: (() => {
+      const date = new Date();
+      date.setDate(date.getDate() + 3);
+      date.setHours(0, 0, 0, 0);
+      return date.toISOString();
+    })(),
+  }),
+  'sensor.abfall_biomuell': createState('sensor.abfall_biomuell', '4', {
+    friendly_name: 'Biomüll',
+    days: 4,
+  }),
+  'sensor.abfall_papier': createState('sensor.abfall_papier', '1', {
+    friendly_name: 'Altpapier',
+    days: 1,
+  }),
+  'sensor.abfall_gelber_sack': createState('sensor.abfall_gelber_sack', '1', {
+    friendly_name: 'Gelber Sack',
+    days: 1,
+  }),
+  'sun.sun': (() => {
+    const now = new Date();
+    const { sunrise, sunset } = computeSolarTimes(now);
+    const above = now >= sunrise && now < sunset;
+    return createState('sun.sun', above ? 'above_horizon' : 'below_horizon', {
+      friendly_name: 'Sonne',
+      next_rising: (now < sunrise ? sunrise : new Date(sunrise.getTime() + 86400000)).toISOString(),
+      next_setting: (now < sunset ? sunset : new Date(sunset.getTime() + 86400000)).toISOString(),
+    });
+  })(),
   'person.papa': createState('person.papa', 'home', { friendly_name: 'Papa' }),
   'person.mama': createState('person.mama', 'home', { friendly_name: 'Mama' }),
   'person.max': createState('person.max', 'not_home', { friendly_name: 'Max' }),
@@ -300,6 +337,18 @@ export function createMockHass() {
           s.state = 'cleaning';
           s.attributes = { ...s.attributes, status: 'Reinigt Wohnzimmer …' };
         }
+      }
+      if (domain === 'calendar' && service === 'get_events') {
+        const ids = (Array.isArray(data.entity_id) ? data.entity_id : [data.entity_id]).filter(Boolean);
+        const targets = ids.length ? ids : ['calendar.familie'];
+        const events = getMockTodayEvents().map((event) => ({
+          start: event.start.toISOString(),
+          end: event.end.toISOString(),
+          summary: event.summary,
+          location: event.location,
+        }));
+        const response = Object.fromEntries(targets.map((id) => [id, { events }]));
+        return { response, context: { id: 'mock' } };
       }
       if (domain === 'cover' && entityId) {
         const s = states[entityId];

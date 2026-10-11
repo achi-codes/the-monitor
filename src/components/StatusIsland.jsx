@@ -57,7 +57,13 @@ function ProgressRing({ progress, size = 36, stroke = 3, className = '' }) {
   const offset = circumference - (progress / 100) * circumference;
 
   return (
-    <svg width={size} height={size} className={`tm-vi-ring ${className}`.trim()} aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      className={`tm-vi-ring ${className}`.trim()}
+      aria-hidden="true"
+    >
       <circle
         cx={size / 2}
         cy={size / 2}
@@ -297,27 +303,31 @@ export default function StatusIsland() {
           aria-label={collapsedLabel}
         >
           <div className="tm-vi-bar">
-            <span className={`tm-vi-thumb${thumbAlertClass}`}>
-              {showEvCharging ? (
-                <BatteryCharging size={22} strokeWidth={2.25} />
-              ) : hasWindows ? (
-                <DoorOpen size={22} strokeWidth={2.25} />
-              ) : (
-                <VacuumIcon size={28} />
-              )}
-            </span>
-            <span className={`tm-vi-text${textAlertClass}`}>{collapsedLabel}</span>
-            {showEvCharging ? (
-              <span className="tm-vi-ring-wrap tm-vi-ring-wrap-sm tm-vi-ring-ev">
-                <MemoProgressRing progress={evBatteryPercent ?? 0} size={36} className="tm-vi-ring-sm" />
-              </span>
-            ) : showVacuum ? (
-              <span className="tm-vi-ring-wrap tm-vi-ring-wrap-sm">
-                <MemoProgressRing progress={progress} size={36} className="tm-vi-ring-sm" />
-              </span>
-            ) : (
-              <span className={`tm-vi-badge${hasLongOpenWindow ? ' tm-vi-badge-alert' : ''}`}>{activeWindows.length}</span>
-            )}
+            <div className="tm-vi-bar-clip">
+              <div className="tm-vi-bar-inner">
+                <span className={`tm-vi-thumb${thumbAlertClass}`}>
+                  {showEvCharging ? (
+                    <BatteryCharging size={22} strokeWidth={2.25} />
+                  ) : hasWindows ? (
+                    <DoorOpen size={22} strokeWidth={2.25} />
+                  ) : (
+                    <VacuumIcon size={28} />
+                  )}
+                </span>
+                <span className={`tm-vi-text${textAlertClass}`}>{collapsedLabel}</span>
+                {showEvCharging ? (
+                  <span className="tm-vi-ring-wrap tm-vi-ring-wrap-sm tm-vi-ring-ev">
+                    <MemoProgressRing progress={evBatteryPercent ?? 0} size={36} className="tm-vi-ring-sm" />
+                  </span>
+                ) : showVacuum ? (
+                  <span className="tm-vi-ring-wrap tm-vi-ring-wrap-sm">
+                    <MemoProgressRing progress={progress} size={36} className="tm-vi-ring-sm" />
+                  </span>
+                ) : (
+                  <span className={`tm-vi-badge${hasLongOpenWindow ? ' tm-vi-badge-alert' : ''}`}>{activeWindows.length}</span>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="tm-vi-detail">

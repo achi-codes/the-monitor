@@ -4,6 +4,8 @@ import {
   createDefaultLayout,
   createWidget,
   extractLegacyEntities,
+  findBestPlacement,
+  findCollisions,
   normalizeLayout,
   collectEntitiesFromLayout,
   fillEmptyWidgetEntities,
@@ -161,15 +163,24 @@ export function loadConfig() {
 
 export function loadDevConfig() {
   const stored = loadConfig();
+  const persist = (config) => {
+    try {
+      saveConfig(config);
+    } catch {
+      /* ignore quota / private mode */
+    }
+    return config;
+  };
+
   if (configHasWidgetEntities(stored)) {
-    return ensureSankeyPage(ensureDevMediaWidgets(ensureDevCameraWidgets(ensureDevAlarmWidget(stored))));
+    return persist(ensureSankeyPage(ensureDevMediaWidgets(ensureDevCameraWidgets(ensureDevWasteWidget(ensureDevTodayWidget(ensureDevAlarmWidget(stored)))))));
   }
 
   const mock = normalizeConfig(MOCK_DEV_CONFIG);
-  if (!stored.rooms?.[0]?.layout?.pages?.length) return ensureSankeyPage(ensureDevMediaWidgets(mock));
+  if (!stored.rooms?.[0]?.layout?.pages?.length) return persist(ensureSankeyPage(ensureDevMediaWidgets(mock)));
 
   const entities = extractLegacyEntities(mock);
-  return ensureSankeyPage(ensureDevMediaWidgets(ensureDevCameraWidgets(ensureDevAlarmWidget(normalizeConfig({
+  const merged = normalizeConfig({
     ...stored,
     weather: mock.weather,
     mediaPlayer: mock.mediaPlayer,
@@ -194,7 +205,8 @@ export function loadDevConfig() {
         }
         : room
     )),
-  })))));
+  });
+  return persist(ensureSankeyPage(ensureDevMediaWidgets(ensureDevCameraWidgets(ensureDevWasteWidget(ensureDevTodayWidget(ensureDevAlarmWidget(merged)))))));
 }
 
 function ensureDevAlarmWidget(config) {
@@ -228,6 +240,96 @@ function ensureDevAlarmWidget(config) {
   });
 
   return normalizeConfig(next);
+}
+
+function placeWasteOnPage(page, existing, entityIds = []) {
+  const others = page.widgets.filter((widget) => widget.id !== existing?.id);
+  const overlapping = existing ? findCollisions(others, existing).length > 0 : false;
+  if (existing && !overlapping) return false;
+
+  const placement = findBestPlacement(others, [
+    { w: 4, h: 2 },
+    { w: 3, h: 2 },
+    { w: 2, h: 2 },
+    { w: 4, h: 1 },
+    { w: 3, h: 1 },
+    { w: 2, h: 1 },
+  ], { allowPlaceholders: true });
+
+  let pos = placement ? { x: placement.x, y: placement.y, w: placement.w, h: placement.h } : null;
+  let nextWidgets = others.filter((widget) => !(placement?.replaceIds || []).includes(widget.id));
+
+  if (!pos) {
+    const today = nextWidgets.find((widget) => widget.type === 'today' && widget.w >= 5);
+    if (!today) return false;
+    const wasteW = today.w >= 6 ? 3 : 2;
+    today.w -= wasteW;
+    pos = { x: today.x + today.w, y: today.y, w: wasteW, h: today.h || 2 };
+  }
+
+  nextWidgets.push({
+    ...(existing || createWidget('waste')),
+    ...pos,
+    type: 'waste',
+    label: existing?.label || 'Müll',
+    entity_id: existing?.entity_id || entityIds[0] || '',
+    entity_ids: existing?.entity_ids?.length ? existing.entity_ids : entityIds,
+  });
+  page.widgets = nextWidgets;
+  return true;
+}
+
+function ensureWasteWidget(config, entityIds = []) {
+  const next = structuredClone(config);
+  const page = next.rooms?.[0]?.layout?.pages?.[0];
+  if (!page) return config;
+  if (!placeWasteOnPage(page, page.widgets.find((widget) => widget.type === 'waste'), entityIds)) {
+    return config;
+  }
+  return normalizeConfig(next);
+}
+
+function ensureDevTodayWidget(config) {
+  const hasToday = config.rooms?.some((room) => room.layout?.pages?.some((page) => (
+    page.widgets?.some((widget) => widget.type === 'today')
+  )));
+  if (hasToday) return config;
+
+  const next = structuredClone(config);
+  const page = next.rooms?.[0]?.layout?.pages?.[0];
+  if (!page) return config;
+
+  const candidate = createWidget('today', {
+    x: 8,
+    y: 2,
+    w: 4,
+    h: 2,
+    entity_id: 'calendar.familie',
+    entity_ids: ['calendar.familie'],
+    sun_entity: 'sun.sun',
+    label: 'Heute',
+  });
+  const blocked = page.widgets.some((widget) => (
+    candidate.x < widget.x + widget.w
+    && candidate.x + candidate.w > widget.x
+    && candidate.y < widget.y + widget.h
+    && candidate.y + candidate.h > widget.y
+  ));
+  if (blocked) return config;
+
+  page.widgets.push(candidate);
+  return normalizeConfig(next);
+}
+
+const MOCK_WASTE_IDS = [
+  'sensor.abfall_gelber_sack',
+  'sensor.abfall_papier',
+  'sensor.abfall_restmuell',
+  'sensor.abfall_biomuell',
+];
+
+function ensureDevWasteWidget(config) {
+  return ensureWasteWidget(config, MOCK_WASTE_IDS);
 }
 
 function ensureDevMediaWidgets(config) {
@@ -384,13 +486,10 @@ export function mergeInitialConfig(yamlConfig = {}, { embedded = false } = {}) {
   const storedHasData = Boolean(localStorage.getItem(CONFIG_KEY));
 
   if (embedded) {
-    if (storedHasData) {
-      return normalizeConfig({ ...embeddedHaConfig, ...yaml, ...stored });
-    }
-    if (yamlHasEntities) {
-      return normalizeConfig({ ...embeddedHaConfig, ...stored, ...yaml });
-    }
-    return normalizeConfig({ ...embeddedHaConfig, ...stored, ...yaml });
+    const merged = storedHasData
+      ? normalizeConfig({ ...embeddedHaConfig, ...yaml, ...stored })
+      : normalizeConfig({ ...embeddedHaConfig, ...stored, ...yaml });
+    return ensureWasteWidget(merged);
   }
 
   if (yamlHasEntities) {

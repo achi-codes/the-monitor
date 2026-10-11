@@ -23,6 +23,8 @@ import SensorStatusWidget from '../SensorStatusWidget';
 import HaCardWidget from '../HaCardWidget';
 import VacuumWidget from '../VacuumWidget';
 import RoomWidget from '../RoomWidget';
+import TodayWidget from '../TodayWidget';
+import WasteWidget from '../WasteWidget';
 import { WIDGET_TYPES, getWidgetLabel } from '../../lib/layout';
 
 export function renderDashboardWidget({
@@ -176,6 +178,22 @@ export function renderDashboardWidget({
         <VacuumWidget
           widget={widget}
           hass={hass}
+          editMode={editMode}
+          onConfigure={handleConfigure}
+        />
+      );
+    case 'today':
+      return (
+        <TodayWidget
+          widget={widget}
+          editMode={editMode}
+          onConfigure={handleConfigure}
+        />
+      );
+    case 'waste':
+      return (
+        <WasteWidget
+          widget={widget}
           editMode={editMode}
           onConfigure={handleConfigure}
         />

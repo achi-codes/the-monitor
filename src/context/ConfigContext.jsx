@@ -11,8 +11,10 @@ import {
 import {
   clampWidget,
   createWidget,
+  findBestPlacement,
   findCollisions,
   findFreePosition,
+  getFallbackSizes,
   collectEntitiesFromLayout,
   createPage,
 } from '../lib/layout';
@@ -219,10 +221,25 @@ export function ConfigProvider({ initialConfig, onConfigSaved, children }) {
   const addWidget = useCallback((pageIndex, type) => {
     setConfig((prev) => updateActiveRoomLayout(prev, activeRoomId, pageIndex, (page) => {
       const widget = createWidget(type);
-      const pos = findFreePosition(page.widgets, { w: widget.w, h: widget.h });
+      const placement = findBestPlacement(
+        page.widgets,
+        getFallbackSizes(widget.w, widget.h),
+        { allowPlaceholders: true },
+      );
+      if (!placement) {
+        const pos = findFreePosition(page.widgets, { w: widget.w, h: widget.h });
+        return {
+          ...page,
+          widgets: [...page.widgets, clampWidget({ ...widget, ...pos })],
+        };
+      }
+      const { replaceIds, ...pos } = placement;
       return {
         ...page,
-        widgets: [...page.widgets, clampWidget({ ...widget, ...pos })],
+        widgets: [
+          ...page.widgets.filter((item) => !replaceIds.includes(item.id)),
+          clampWidget({ ...widget, ...pos }),
+        ],
       };
     }));
   }, [activeRoomId, setConfig]);

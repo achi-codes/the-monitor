@@ -2,11 +2,28 @@ import { getDomain } from './entities';
 import { getHassBaseUrl, resolveHassUrl, isMockHass, getHassAccessToken } from './hass';
 
 export async function callService(hass, domain, service, data = {}, returnResponse = false) {
-  if (!hass?.callService) {
+  if (!hass?.callService && !hass?.connection?.sendMessagePromise) {
     console.warn('HA not connected, service call skipped:', domain, service, data);
     return null;
   }
-  return hass.callService(domain, service, data, undefined, returnResponse);
+
+  if (returnResponse && hass.connection?.sendMessagePromise) {
+    return hass.connection.sendMessagePromise({
+      type: 'call_service',
+      domain,
+      service,
+      service_data: data,
+      return_response: true,
+    });
+  }
+
+  if (returnResponse) {
+    // Current HA frontend: (domain, service, data, target, notifyOnError, returnResponse).
+    // Older hass.callService used the 5th argument as returnResponse.
+    return hass.callService(domain, service, data, undefined, true, true);
+  }
+
+  return hass.callService(domain, service, data);
 }
 
 export async function turnOnEntity(hass, entityId) {

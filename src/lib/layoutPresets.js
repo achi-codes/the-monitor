@@ -57,6 +57,12 @@ function buildClassicWidgets(entities = {}) {
       label: 'Alarmanlage',
       icon: 'mdi:shield-home',
     }),
+    w('today', 8, 2, 4, 2, {
+      entity_id: entities.calendar || 'calendar.familie',
+      entity_ids: entities.calendars || ['calendar.familie'],
+      sun_entity: 'sun.sun',
+      label: 'Heute',
+    }),
   ];
 }
 

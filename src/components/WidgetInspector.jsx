@@ -102,6 +102,8 @@ export default function WidgetInspector({
   const isRoom = widget.type === 'room';
   const isVacuum = widget.type === 'vacuum';
   const isMedia = widget.type === 'media';
+  const isToday = widget.type === 'today';
+  const isWaste = widget.type === 'waste';
 
   return (
     <div className="tm-widget-inspector">
@@ -425,7 +427,87 @@ export default function WidgetInspector({
         </div>
       )}
 
-      {!isPopup && !isCoverPopup && !isCamera && !isSensor && !isSensorStatus && !isHaCard && !isScene && !isEv && !isRoom && !isMedia && widget.type !== 'shopping' && !isSankey && !isEnergyTile && (
+      {isToday && (
+        <>
+          <div className="tm-widget-inspector-section">
+            <label className="tm-widget-inspector-label">Kalender (max. {SLOT_LIMITS.calendarEntities})</label>
+            <p className="tm-widget-inspector-hint">
+              Termine von heute. Ohne Auswahl werden alle Kalender-Entitäten verwendet.
+            </p>
+            <EntityPicker
+              value=""
+              onChange={(entityId) => {
+                const patch = appendEntity(widget, entityId, SLOT_LIMITS.calendarEntities);
+                if (patch) onUpdate(pageIndex, widget.id, patch);
+              }}
+              domains={meta.domains}
+              placeholder="Kalender hinzufügen…"
+            />
+            <div className="tm-widget-inspector-entity-list">
+              {entityList(widget).map((entityId) => (
+                <EntityRow
+                  key={entityId}
+                  name={getFriendlyName(hass, entityId)}
+                  onRemove={() => {
+                    const nextIds = entityList(widget).filter((id) => id !== entityId);
+                    onUpdate(pageIndex, widget.id, {
+                      entity_ids: nextIds,
+                      entity_id: nextIds[0] || '',
+                    });
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="tm-widget-inspector-section">
+            <label className="tm-widget-inspector-label">Sonne</label>
+            <p className="tm-widget-inspector-hint">
+              Optional — sonst wird sun.sun verwendet, oder Sonnenzeiten werden berechnet.
+            </p>
+            <EntityPicker
+              value={widget.sun_entity || ''}
+              onChange={(sun_entity) => onUpdate(pageIndex, widget.id, { sun_entity })}
+              domains={['sun']}
+              placeholder="Automatisch: sun.sun"
+            />
+          </div>
+        </>
+      )}
+
+      {isWaste && (
+        <div className="tm-widget-inspector-section">
+          <label className="tm-widget-inspector-label">Tonnen (max. {SLOT_LIMITS.wasteEntities})</label>
+          <p className="tm-widget-inspector-hint">
+            Sensoren oder Kalender der Abfuhrtermine. Ohne Auswahl werden passende Entitäten automatisch erkannt.
+          </p>
+          <EntityPicker
+            value=""
+            onChange={(entityId) => {
+              const patch = appendEntity(widget, entityId, SLOT_LIMITS.wasteEntities);
+              if (patch) onUpdate(pageIndex, widget.id, patch);
+            }}
+            domains={meta.domains}
+            placeholder="Tonne oder Kalender hinzufügen…"
+          />
+          <div className="tm-widget-inspector-entity-list">
+            {entityList(widget).map((entityId) => (
+              <EntityRow
+                key={entityId}
+                name={getFriendlyName(hass, entityId)}
+                onRemove={() => {
+                  const nextIds = entityList(widget).filter((id) => id !== entityId);
+                  onUpdate(pageIndex, widget.id, {
+                    entity_ids: nextIds,
+                    entity_id: nextIds[0] || '',
+                  });
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!isPopup && !isCoverPopup && !isCamera && !isSensor && !isSensorStatus && !isHaCard && !isScene && !isEv && !isRoom && !isMedia && !isToday && !isWaste && widget.type !== 'shopping' && !isSankey && !isEnergyTile && (
         <div className="tm-widget-inspector-section">
           <label className="tm-widget-inspector-label">Entität</label>
           <EntityPicker

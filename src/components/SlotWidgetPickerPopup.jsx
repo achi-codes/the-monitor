@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   Activity,
   Bot,
+  CalendarDays,
   Camera,
   CarFront,
   CloudSun,
@@ -17,6 +18,7 @@ import {
   ShoppingCart,
   Sofa,
   Sparkles,
+  Trash2,
   Blinds,
   Zap,
   X,
@@ -42,6 +44,8 @@ const WIDGET_ICONS = {
   energyTile: Sparkles,
   ev: CarFront,
   vacuum: Bot,
+  today: CalendarDays,
+  waste: Trash2,
   haCard: LayoutTemplate,
 };
 

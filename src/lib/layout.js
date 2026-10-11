@@ -17,6 +17,8 @@ export const SLOT_LIMITS = {
   cameraEntities: 3,
   sensorEntities: 4,
   contactStatusEntities: 8,
+  calendarEntities: 6,
+  wasteEntities: 8,
   roomEntities: 16,
   widgetsPerPage: 24,
   pages: 6,
@@ -24,6 +26,8 @@ export const SLOT_LIMITS = {
 
 export const WIDGET_TYPES = {
   weather: { label: 'Wetter', icon: 'mdi:weather-partly-cloudy', domains: ['weather'] },
+  today: { label: 'Heute', icon: 'mdi:calendar-today', domains: ['calendar'] },
+  waste: { label: 'Müll', icon: 'mdi:trash-can', domains: ['sensor', 'calendar'] },
   media: { label: 'Medien', icon: 'mdi:play-circle', domains: ['media_player'] },
   camera: { label: 'Kamera', icon: 'mdi:camera', domains: ['camera'] },
   shopping: { label: 'Einkaufsliste', icon: 'mdi:cart', domains: ['todo'] },
@@ -75,6 +79,8 @@ const DEFAULT_SIZE_BY_TYPE = {
   energyTile: 'M',
   ev: 'L',
   vacuum: 'L',
+  today: 'XL',
+  waste: 'L',
   haCard: 'XL',
 };
 
@@ -141,6 +147,53 @@ export function findFreePosition(widgets, size, cols = GRID_COLS, rows = GRID_RO
   return { x: 0, y: 0 };
 }
 
+export function isPlaceholderWidget(widget) {
+  if (!widget || !['scene', 'quickAction', 'popup'].includes(widget.type)) return false;
+  return !widget.entity_id && !(widget.entity_ids || []).length;
+}
+
+export function getFallbackSizes(width, height) {
+  const seen = new Set();
+  return [
+    { w: width, h: height },
+    { w: 4, h: 2 },
+    { w: 3, h: 2 },
+    { w: 2, h: 2 },
+    { w: Math.min(width, 4), h: 1 },
+    { w: 2, h: 1 },
+  ].filter((size) => {
+    if (size.w < 1 || size.h < 1 || size.w > GRID_COLS || size.h > GRID_ROWS) return false;
+    const key = `${size.w}x${size.h}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+export function findBestPlacement(widgets, sizes, { allowPlaceholders = false, cols = GRID_COLS, rows = GRID_ROWS } = {}) {
+  for (const size of sizes) {
+    const pos = findFreePosition(widgets, size, cols, rows);
+    const candidate = { x: pos.x, y: pos.y, w: size.w, h: size.h };
+    if (findCollisions(widgets, candidate).length === 0) {
+      return { ...candidate, replaceIds: [] };
+    }
+
+    if (!allowPlaceholders) continue;
+
+    for (let y = 0; y <= rows - size.h; y += 1) {
+      for (let x = 0; x <= cols - size.w; x += 1) {
+        const next = { x, y, w: size.w, h: size.h };
+        const hits = widgets.filter((widget) => widgetsOverlap(widget, next));
+        if (hits.length && hits.every(isPlaceholderWidget)) {
+          return { ...next, replaceIds: hits.map((widget) => widget.id) };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 export function getWidgetLabel(widget) {
   if (widget.label) return widget.label;
   return WIDGET_TYPES[widget.type]?.label || widget.type;
@@ -149,7 +202,7 @@ export function getWidgetLabel(widget) {
 export function getWidgetEntities(widget) {
   if (widget.type === 'popup' || widget.type === 'coverPopup') return widget.entity_ids || [];
   if (widget.type === 'camera') return resolveCameraEntityIds(widget);
-  if (widget.type === 'sensor' || widget.type === 'scene' || widget.type === 'media') {
+  if (widget.type === 'sensor' || widget.type === 'scene' || widget.type === 'media' || widget.type === 'today' || widget.type === 'waste') {
     if (widget.entity_ids?.length) return widget.entity_ids;
     return widget.entity_id ? [widget.entity_id] : [];
   }
@@ -428,7 +481,11 @@ export function normalizeLayout(rawLayout, legacyConfig = null) {
                       ? SLOT_LIMITS.sceneEntities
                       : widget.type === 'room'
                         ? SLOT_LIMITS.roomEntities
-                        : SLOT_LIMITS.popupEntities,
+                        : widget.type === 'today'
+                          ? SLOT_LIMITS.calendarEntities
+                          : widget.type === 'waste'
+                            ? SLOT_LIMITS.wasteEntities
+                            : SLOT_LIMITS.popupEntities,
             )
             : [],
           disabled_entity_ids: (widget.type === 'popup' || widget.type === 'room') && Array.isArray(widget.disabled_entity_ids)
@@ -467,6 +524,9 @@ export function normalizeLayout(rawLayout, legacyConfig = null) {
         }
         if (widget.type === 'weather' && typeof widget.location === 'string') {
           normalized.location = widget.location;
+        }
+        if (widget.type === 'today' && typeof widget.sun_entity === 'string') {
+          normalized.sun_entity = widget.sun_entity;
         }
         if (widget.type === 'haCard') {
           normalized.card = sanitizeCardConfig(widget.card);

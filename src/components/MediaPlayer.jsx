@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  ChevronDown,
   Heart,
   Music2,
   Pause,
@@ -8,7 +7,6 @@ import {
   Settings,
   SkipBack,
   SkipForward,
-  Speaker,
   Volume1,
   Volume2,
   VolumeX,
@@ -83,78 +81,29 @@ function getStatusLabel(state) {
   return 'Nicht verfügbar';
 }
 
-function DeviceDropdown({ devices, activeId, activeLabel, disabled, onChange }) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef(null);
-  const multi = devices.length > 1;
-
-  useEffect(() => {
-    if (!open) return undefined;
-
-    const handleClickOutside = (event) => {
-      const path = typeof event.composedPath === 'function' ? event.composedPath() : [event.target];
-      if (rootRef.current && path.includes(rootRef.current)) return;
-      setOpen(false);
-    };
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [open]);
-
-  if (!multi) {
+function DeviceSelect({ devices, activeId, activeLabel, disabled, onChange }) {
+  if (devices.length <= 1) {
     return (
-      <div className="tm-room-selector tm-media-device-picker">
-        <span className="tm-room-selector-trigger" aria-label={`Gerät: ${activeLabel}`}>
-          <Speaker size={16} />
-          <span className="tm-room-selector-label">{activeLabel}</span>
-        </span>
-      </div>
+      <span className="tm-media-device-select tm-media-device-select--static" aria-label={`Gerät: ${activeLabel}`}>
+        {activeLabel}
+      </span>
     );
   }
 
   return (
-    <div className="tm-room-selector tm-media-device-picker" ref={rootRef}>
-      <button
-        type="button"
-        className="tm-room-selector-trigger"
-        onClick={() => setOpen((value) => !value)}
-        disabled={disabled}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label="Gerät wechseln"
-      >
-        <Speaker size={16} />
-        <span className="tm-room-selector-label">{activeLabel}</span>
-        <ChevronDown size={18} className={`tm-room-selector-chevron${open ? ' open' : ''}`} />
-      </button>
-
-      {open && (
-        <ul className="tm-room-selector-menu" role="listbox" aria-label="Geräte">
-          {devices.map((device) => (
-            <li key={device.id} role="option" aria-selected={device.id === activeId}>
-              <button
-                type="button"
-                className={`tm-room-selector-option${device.id === activeId ? ' active' : ''}`}
-                disabled={disabled}
-                onClick={() => {
-                  onChange(device.id);
-                  setOpen(false);
-                }}
-              >
-                {device.label}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <select
+      className="tm-media-device-select"
+      value={activeId}
+      disabled={disabled}
+      aria-label="Gerät wechseln"
+      onChange={(event) => onChange(event.target.value)}
+    >
+      {devices.map((device) => (
+        <option key={device.id} value={device.id}>
+          {device.label}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -237,7 +186,7 @@ export default function MediaPlayer({ widget = {}, editMode = false, onConfigure
           </div>
         </div>
 
-        <DeviceDropdown
+        <DeviceSelect
           devices={devices}
           activeId={entityId}
           activeLabel={activeLabel}

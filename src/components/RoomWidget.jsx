@@ -254,17 +254,13 @@ export function RoomPopup({ data, hass, onClose }) {
 
   const requestClose = useCallback(() => {
     if (leavingRef.current) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      onClose();
-      return;
-    }
     leavingRef.current = true;
     setLeaving(true);
-  }, [onClose]);
+  }, []);
 
   useEffect(() => {
     if (!leaving) return undefined;
-    const timer = window.setTimeout(onClose, 380);
+    const timer = window.setTimeout(onClose, 480);
     return () => window.clearTimeout(timer);
   }, [leaving, onClose]);
 
@@ -305,7 +301,9 @@ export function RoomPopup({ data, hass, onClose }) {
       className={`tm-metro-overlay${leaving ? ' is-leaving' : ''}`}
       role="presentation"
       onAnimationEnd={(event) => {
-        if (leaving && event.target === event.currentTarget) onClose();
+        if (!leaving || event.target !== event.currentTarget) return;
+        if (!/Out|Leave/i.test(event.animationName || '')) return;
+        onClose();
       }}
     >
       <button type="button" className="tm-metro-backdrop" onClick={requestClose} aria-label="Schließen" />

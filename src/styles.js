@@ -3657,27 +3657,29 @@ export const styles = `
   height: 58%;
   color: var(--tm-media-thumb);
 }
-.tm-media-device-picker {
+.tm-media-device-select {
   grid-area: device;
   align-self: start;
+  justify-self: end;
   z-index: 8;
-  max-width: min(16rem, 42cqw);
-}
-.tm-media-device-picker .tm-room-selector-trigger {
-  max-width: 100%;
+  box-sizing: border-box;
+  max-width: min(16rem, 46cqw);
+  min-height: 2.1rem;
+  margin: 0;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: 999px;
   background: var(--tm-media-chip);
-  border-color: color-mix(in srgb, currentColor 10%, transparent);
+  color: inherit;
+  font: inherit;
   font-size: clamp(0.75rem, 3.6cqmin, 1.05rem);
+  line-height: 1.2;
+  cursor: pointer;
 }
-.tm-media-device-picker .tm-room-selector-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.tm-media-device-picker .tm-room-selector-menu {
-  left: auto;
-  right: 0;
+.tm-media-device-select:disabled,
+.tm-media-device-select--static {
+  cursor: default;
+  opacity: 0.85;
 }
 
 .tm-media-progress {
@@ -3824,16 +3826,13 @@ export const styles = `
 .tm-dashboard-grid-item:has(.tm-media-widget) .tm-dashboard-grid-content {
   overflow: visible;
 }
-.tm-dashboard-grid-item:has(.tm-media-device-picker [aria-expanded="true"]) {
-  z-index: 12;
-}
 
 @container tm-media (max-width: 30rem) {
   .tm-media-volume-value { display: none; }
   .tm-media-volume { padding: 0 0.9em; }
 }
 @container tm-media (max-width: 24rem) {
-  .tm-media-device-picker .tm-room-selector-label { display: none; }
+  .tm-media-device-select { max-width: 9.5rem; }
   .tm-media-controls { grid-template-columns: auto minmax(0, 1fr); }
   .tm-media-controls-side:first-child { display: none; }
   .tm-media-transport { order: -1; }
@@ -3856,7 +3855,7 @@ export const styles = `
   .tm-media-meta { align-self: end; }
   .tm-media-title { font-size: clamp(0.95rem, 10cqh, 1.6rem); }
   .tm-media-artist { font-size: clamp(0.8rem, 8cqh, 1.2rem); }
-  .tm-media-device-picker .tm-room-selector-trigger { font-size: clamp(0.7rem, 7cqh, 1rem); }
+  .tm-media-device-select { font-size: clamp(0.7rem, 7cqh, 1rem); }
   .tm-media-controls {
     display: flex;
     --tm-media-btn: clamp(2.1rem, 19cqh, 3.25rem);
@@ -7216,6 +7215,10 @@ export const styles = `
   from { transform: scaleY(0.2); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
+@keyframes tmMetroOverlayOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
 @keyframes tmMetroBandOut {
   from { transform: none; opacity: 1; }
   to { transform: scaleY(0.18); opacity: 0; }
@@ -7229,18 +7232,19 @@ export const styles = `
   to { opacity: 0; transform: perspective(60rem) rotateY(70deg) translateX(0.5rem); }
 }
 .tm-metro-overlay.is-leaving {
-  animation: fadeIn 0.36s ease-in reverse forwards;
+  animation: tmMetroOverlayOut 0.42s ease-in forwards;
   pointer-events: none;
 }
 .tm-metro-overlay.is-leaving .tm-metro-band {
-  animation: tmMetroBandOut 0.28s var(--tm-metro-ease) 0.06s forwards;
+  animation: tmMetroBandOut 0.36s var(--tm-metro-ease) forwards;
 }
-.tm-metro-overlay.is-leaving .tm-metro-header {
-  animation: tmMetroLeave 0.22s var(--tm-metro-ease) forwards;
+.tm-metro-overlay.is-leaving .tm-metro-header,
+.tm-metro-overlay.is-leaving .tm-metro-footer {
+  animation: tmMetroLeave 0.28s var(--tm-metro-ease) forwards;
 }
 .tm-metro-overlay.is-leaving .tm-metro-card {
-  animation: tmMetroTurnstileOut 0.24s var(--tm-metro-ease) forwards;
-  animation-delay: calc(var(--tm-metro-i, 0) * 0.018s);
+  animation: tmMetroTurnstileOut 0.28s var(--tm-metro-ease) both;
+  animation-delay: calc(var(--tm-metro-i, 0) * 0.02s);
 }
 .tm-metro-header {
   display: flex;
@@ -7363,7 +7367,11 @@ export const styles = `
 .tm-metro-button--primary,
 .tm-metro-button:active { background: #fff; color: var(--tm-room-accent); }
 @media (prefers-reduced-motion: reduce) {
-  .tm-metro-band, .tm-metro-header, .tm-metro-card, .tm-metro-overlay, .tm-room-card-motion { animation: none; }
+  .tm-metro-overlay:not(.is-leaving),
+  .tm-metro-overlay:not(.is-leaving) .tm-metro-band,
+  .tm-metro-overlay:not(.is-leaving) .tm-metro-header,
+  .tm-metro-overlay:not(.is-leaving) .tm-metro-card,
+  .tm-room-card-motion { animation: none; }
 }
 
 .tm-vacuum-card {

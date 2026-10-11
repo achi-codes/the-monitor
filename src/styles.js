@@ -7001,42 +7001,32 @@ export const styles = `
   position: relative;
   padding: 0;
   overflow: hidden;
-  --tm-room-muted: color-mix(in srgb, currentColor 60%, transparent);
+  --tm-room-muted: color-mix(in srgb, currentColor 55%, transparent);
+  --tm-room-chip: color-mix(in srgb, currentColor 8%, transparent);
+  --tm-room-chip-on: color-mix(in srgb, currentColor 16%, transparent);
 }
-.tm-room-card:not(.empty)::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--tm-room-accent) 38%, transparent), transparent 62%);
-  pointer-events: none;
-  transition: opacity 0.3s;
-  opacity: 0.7;
-}
-.tm-room-card--lit::before { opacity: 1; }
+.tm-room-card:active { transform: none; }
 .tm-room-card-inner {
-  position: relative;
+  --tm-room-pad: clamp(0.85rem, 6cqmin, 2rem);
   height: 100%;
   box-sizing: border-box;
-  padding: clamp(0.8rem, 7cqmin, 1.6rem);
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.4rem, 4cqh, 1rem);
-  min-width: 0;
+  padding: var(--tm-room-pad);
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "head art"
+    "hero art"
+    "chips chips";
+  column-gap: clamp(0.5rem, 3cqw, 1.5rem);
+  row-gap: clamp(0.45rem, 3.6cqh, 1.2rem);
 }
 .tm-room-card-head {
+  grid-area: head;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.7rem;
   min-width: 0;
-}
-.tm-room-card-badge {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: clamp(2.25rem, 16cqmin, 3rem);
-  height: clamp(2.25rem, 16cqmin, 3rem);
-  background: var(--tm-room-accent);
-  color: #fff;
 }
 .tm-room-card-titles {
   display: flex;
@@ -7045,24 +7035,27 @@ export const styles = `
   flex: 1;
 }
 .tm-room-card-title {
-  font-size: clamp(1rem, 8cqmin, 1.5rem);
+  --tm-room-title-room: 78cqw;
+  font-size: max(0.95rem, min(clamp(1rem, 8cqmin, 2.5rem), calc(var(--tm-room-title-room) / var(--tm-room-title-chars, 10))));
   font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .tm-room-card-sub {
-  font-size: clamp(0.75rem, 4.5cqmin, 0.9rem);
+  margin-top: 0.3em;
+  font-size: clamp(0.8rem, 4.4cqmin, 1.45rem);
   color: var(--tm-room-muted);
   white-space: nowrap;
 }
 .tm-room-card-motion {
   align-self: flex-start;
   flex-shrink: 0;
-  width: 0.6rem;
-  height: 0.6rem;
+  width: 0.62rem;
+  height: 0.62rem;
+  margin-top: 0.35rem;
   border-radius: 50%;
   background: #4cd97b;
   box-shadow: 0 0 0 0 rgba(76, 217, 123, 0.6);
@@ -7072,60 +7065,88 @@ export const styles = `
   70% { box-shadow: 0 0 0 0.5rem rgba(76, 217, 123, 0); }
   100% { box-shadow: 0 0 0 0 rgba(76, 217, 123, 0); }
 }
-.tm-room-card-climate {
+.tm-room-card-hero {
+  grid-area: hero;
+  align-self: end;
   display: flex;
   align-items: baseline;
-  gap: 0.75rem;
-  margin-top: auto;
+  flex-wrap: wrap;
+  column-gap: 0.75rem;
+  row-gap: 0.2rem;
   min-width: 0;
 }
 .tm-room-card-temp {
-  font-size: clamp(2rem, 24cqmin, 4.5rem);
+  font-size: clamp(2.1rem, 22cqmin, 5.4rem);
   font-weight: 300;
   line-height: 0.95;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
-.tm-room-card-temp-unit { font-size: 0.55em; vertical-align: top; margin-left: 0.05em; }
+.tm-room-card-temp-unit { font-size: 0.52em; vertical-align: top; margin-left: 0.04em; }
 .tm-room-card-humidity {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: clamp(0.8rem, 5cqmin, 1rem);
+  gap: 0.3rem;
+  font-size: clamp(0.85rem, 5cqmin, 1.35rem);
   color: var(--tm-room-muted);
+  white-space: nowrap;
+}
+.tm-room-card-art {
+  grid-area: art;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, currentColor 22%, transparent);
+  pointer-events: none;
+}
+.tm-room-card-art svg {
+  width: min(72%, 9rem);
+  height: min(72%, 9rem);
+  max-width: 100%;
+  max-height: 100%;
 }
 .tm-room-card-chips {
+  grid-area: chips;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
-  margin-top: auto;
+  gap: 0.4rem;
   overflow: hidden;
-  max-height: 4.25rem;
+  max-height: 4.5rem;
 }
-.tm-room-card-climate + .tm-room-card-chips { margin-top: 0; }
 .tm-room-card-chips:empty { display: none; }
 .tm-room-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.55rem;
+  gap: 0.32rem;
+  padding: 0.32rem 0.65rem;
   border-radius: 9999px;
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: clamp(0.72rem, 3.8cqmin, 0.95rem);
+  font-weight: 650;
   white-space: nowrap;
-  background: color-mix(in srgb, currentColor 9%, transparent);
-  color: var(--tm-room-muted);
+  background: var(--tm-room-chip);
+  color: inherit;
 }
 .tm-room-chip--active {
-  background: color-mix(in srgb, var(--tm-room-accent) 80%, transparent);
-  color: #fff;
+  background: var(--tm-room-chip-on);
 }
-@container tm-room (max-height: 10rem) {
+.tm-room-chip svg { flex: none; }
+@container tm-room (max-width: 17rem) {
+  .tm-room-card-inner {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "head" "hero" "chips";
+  }
+  .tm-room-card-art { display: none; }
+}
+@container tm-room (max-height: 11rem) {
   .tm-room-card-chips { display: none; }
-  .tm-room-card-temp { font-size: clamp(1.6rem, 30cqh, 2.5rem); }
+  .tm-room-card-inner { grid-template-areas: "head art" "hero art"; grid-template-rows: auto minmax(0, 1fr); }
 }
-@container tm-room (max-height: 6.5rem) {
-  .tm-room-card-climate { display: none; }
+@container tm-room (max-height: 7.5rem) {
+  .tm-room-card-hero { display: none; }
+  .tm-room-card-art { display: none; }
+  .tm-room-card-inner { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head"; }
 }
 @container tm-room (max-width: 11rem) {
   .tm-room-card-sub, .tm-room-card-humidity { display: none; }

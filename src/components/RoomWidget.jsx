@@ -93,11 +93,13 @@ export default function RoomWidget({ widget, hass, onConfigure, onOpen, editMode
       onClick={handleClick}
       aria-label={`${name} öffnen`}
     >
-      <div className="tm-room-card-inner">
+      <div
+        className="tm-room-card-inner"
+        style={{
+          '--tm-room-title-chars': Math.max(8, name.length),
+        }}
+      >
         <div className="tm-room-card-head">
-          <span className="tm-room-card-badge" aria-hidden="true">
-            <RoomIcon widget={widget} name={name} size={22} />
-          </span>
           <span className="tm-room-card-titles">
             <span className="tm-room-card-title">{name}</span>
             <span className="tm-room-card-sub">
@@ -107,22 +109,24 @@ export default function RoomWidget({ widget, hass, onConfigure, onOpen, editMode
           {summary.motion && <span className="tm-room-card-motion" aria-label="Bewegung" />}
         </div>
 
-        {(summary.temperature != null || summary.humidity != null) && (
-          <div className="tm-room-card-climate">
-            {summary.temperature != null && (
-              <span className="tm-room-card-temp">
-                {formatRoomNumber(summary.temperature)}
-                <span className="tm-room-card-temp-unit">°</span>
-              </span>
-            )}
-            {summary.humidity != null && (
-              <span className="tm-room-card-humidity">
-                <Droplets size={14} strokeWidth={2.25} />
-                {`${formatRoomNumber(summary.humidity, 0)} %`}
-              </span>
-            )}
-          </div>
-        )}
+        <div className="tm-room-card-hero">
+          {summary.temperature != null && (
+            <span className="tm-room-card-temp">
+              {formatRoomNumber(summary.temperature)}
+              <span className="tm-room-card-temp-unit">°</span>
+            </span>
+          )}
+          {summary.humidity != null && (
+            <span className="tm-room-card-humidity">
+              <Droplets size={16} strokeWidth={2.25} />
+              {`${formatRoomNumber(summary.humidity, 0)} %`}
+            </span>
+          )}
+        </div>
+
+        <div className="tm-room-card-art" aria-hidden="true">
+          <RoomIcon widget={widget} name={name} size={128} />
+        </div>
 
         <div className="tm-room-card-chips">
           {summary.lightsTotal > 0 && (

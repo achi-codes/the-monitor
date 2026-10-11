@@ -1,5 +1,6 @@
 import { ArrowLeft, Sun, Volume2, Download, Upload, Wifi, LogIn, Unplug, Loader2, Monitor, Palette } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import ScreensaverRowEditor from './ScreensaverRowEditor';
 import WidgetConfig from './WidgetConfig';
 import { useConfig } from '../context/ConfigContext';
 import { useHass } from '../context/HassContext';
@@ -250,9 +251,11 @@ export default function Settings({ onBack }) {
                   <span>Wetter anzeigen</span>
                 </label>
 
+                {config.screensaver.style === 'sexy' && <ScreensaverRowEditor />}
+
                 <p className="tm-text-sm tm-opacity-70">
                   {config.screensaver.style === 'sexy'
-                    ? 'Sexy zeigt ein großes Foto mit Uhrzeit und darunter eine schmale Leiste mit Wetter, Musik und Status.'
+                    ? 'Sexy zeigt ein großes Foto mit Uhrzeit und darunter die Reihe mit den gewählten Kacheln.'
                     : 'Der Bildschirmschoner lässt sich jederzeit manuell über das Monitor-Symbol im Dashboard starten.'}
                 </p>
               </div>

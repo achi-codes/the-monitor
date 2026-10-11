@@ -28,7 +28,7 @@ export default defineConfig({
   ],
   build: {
     outDir: 'dist',
-    assetsInlineLimit: 32768,
+    assetsInlineLimit: 300000,
     rollupOptions: {
       output: {
         entryFileNames: 'the-monitor.js',

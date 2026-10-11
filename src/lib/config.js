@@ -13,6 +13,7 @@ import {
 import { buildLayoutFromPreset } from './layoutPresets';
 import { MOCK_DEV_CONFIG } from './mockHass';
 import { DEFAULT_APPEARANCE, normalizeAppearance } from './colorThemes';
+import { normalizeScreensaverRow } from './screensaverRow';
 import {
   configHasWidgetEntities,
   findWeatherEntityInRooms,
@@ -47,6 +48,8 @@ export const DEFAULT_CONFIG = {
     showDate: true,
     showWeather: true,
     style: 'classic',
+    rowMode: 'auto',
+    row: [],
   },
   appearance: { ...DEFAULT_APPEARANCE },
   hideHaSidebar: false,
@@ -115,6 +118,8 @@ export function normalizeConfig(raw = {}) {
       showDate: raw.screensaver.showDate !== false,
       showWeather: raw.screensaver.showWeather !== false,
       style: raw.screensaver.style === 'sexy' ? 'sexy' : 'classic',
+      rowMode: raw.screensaver.rowMode === 'custom' ? 'custom' : 'auto',
+      row: normalizeScreensaverRow(raw.screensaver.row),
     };
   }
 

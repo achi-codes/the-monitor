@@ -1,7 +1,7 @@
-import rest from '../assets/waste/rest.webp';
-import paper from '../assets/waste/paper.webp';
-import yellow from '../assets/waste/yellow.webp';
-import bio from '../assets/waste/bio.webp';
+import rest from '../assets/waste/rest.png';
+import paper from '../assets/waste/paper.png';
+import yellow from '../assets/waste/yellow.png';
+import bio from '../assets/waste/bio.png';
 
 const ART_BY_TYPE = {
   rest,

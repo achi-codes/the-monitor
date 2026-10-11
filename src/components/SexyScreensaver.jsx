@@ -3,7 +3,7 @@ import { de } from 'date-fns/locale';
 import { useConfig } from '../context/ConfigContext';
 import { useHass } from '../context/HassContext';
 import { resolveHassUrl } from '../lib/hass';
-import { formatSensorValue } from '../lib/sensorFormat';
+import { buildScreensaverTiles, screensaverStatReading } from '../lib/screensaverRow';
 import { getConditionIcon, getConditionMeta } from '../lib/weather.jsx';
 
 function formatTemp(value) {
@@ -12,117 +12,11 @@ function formatTemp(value) {
   return num.toLocaleString('de-DE', { maximumFractionDigits: 1 });
 }
 
-function roomWidgets(room) {
-  return (room?.layout?.pages || []).flatMap((page) => page.widgets || []);
-}
-
-function widgetEntityIds(widget) {
-  const ids = [];
-  if (widget?.entity_id) ids.push(widget.entity_id);
-  (widget?.entity_ids || []).forEach((id) => {
-    if (id) ids.push(id);
-  });
-  return ids;
-}
-
 function mediaProgress(attributes) {
   const position = attributes?.media_position;
   const duration = attributes?.media_duration;
   if (typeof position !== 'number' || typeof duration !== 'number' || duration <= 0) return null;
   return Math.min(100, Math.max(0, (position / duration) * 100));
-}
-
-function findAmbience(widgets, getEntity, config) {
-  for (const widget of widgets) {
-    if (widget.type !== 'sensor') continue;
-    const ids = widget.entity_ids?.length
-      ? widget.entity_ids
-      : (widget.entity_id ? [widget.entity_id] : []);
-    for (const id of ids) {
-      const entity = getEntity(id);
-      const deviceClass = entity.attributes?.device_class;
-      if (!['temperature', 'humidity', 'illuminance'].includes(deviceClass)) continue;
-      if (entity.state === 'unavailable' || entity.state === 'unknown') continue;
-      return {
-        kicker: widget.label || entity.name,
-        entityId: id,
-      };
-    }
-  }
-
-  for (const widget of widgets) {
-    for (const id of widgetEntityIds(widget)) {
-      if (!id.startsWith('climate.')) continue;
-      const entity = getEntity(id);
-      const temp = formatTemp(entity.attributes?.current_temperature);
-      if (!temp) continue;
-      return {
-        kicker: widget.label || entity.name,
-        value: temp,
-        unit: '°',
-        detail: 'Raumklima',
-      };
-    }
-  }
-
-  const batteryId = config.ev?.batteryEntity;
-  if (batteryId) {
-    const entity = getEntity(batteryId);
-    if (entity.state !== 'unavailable' && entity.state !== 'unknown') {
-      const charging = config.ev.stateEntity ? getEntity(config.ev.stateEntity) : null;
-      return {
-        kicker: config.ev.label || entity.name,
-        entityId: batteryId,
-        detail: charging?.state === 'on' ? 'Lädt' : 'Akku',
-        powerEntityId: charging?.state === 'on' ? config.ev.powerEntity : '',
-      };
-    }
-  }
-
-  return null;
-}
-
-function buildTiles({ config, room, hass, getEntity }) {
-  const widgets = roomWidgets(room);
-  const tiles = [];
-
-  if (config.screensaver.showWeather && config.weather?.entity_id) {
-    const entity = getEntity(config.weather.entity_id);
-    if (entity.state && entity.state !== 'unavailable' && entity.attributes?.temperature != null) {
-      tiles.push({ kind: 'weather', entity });
-    }
-  }
-
-  const mediaWidget = widgets.find((widget) => widget.type === 'media' && widget.entity_id);
-  const mediaId = mediaWidget?.entity_id || config.mediaPlayer?.entity_id;
-  if (mediaId) {
-    const entity = getEntity(mediaId);
-    const title = entity.attributes?.media_title;
-    const artist = entity.attributes?.media_artist;
-    const active = entity.state === 'playing' || entity.state === 'paused';
-    if (active || title || artist) {
-      tiles.push({ kind: 'media', entity, entityId: mediaId });
-    }
-  }
-
-  const people = (config.presence || [])
-    .map((person) => {
-      const entity = getEntity(person.entity_id);
-      if (!person.entity_id || entity.state === 'unavailable') return null;
-      return {
-        id: person.entity_id,
-        name: person.label || entity.name,
-        home: entity.state === 'home',
-        picture: resolveHassUrl(hass, entity.attributes?.entity_picture),
-      };
-    })
-    .filter(Boolean);
-  if (people.length) tiles.push({ kind: 'people', people });
-
-  const ambience = findAmbience(widgets, getEntity, config);
-  if (ambience) tiles.push({ kind: 'stat', ...ambience });
-
-  return tiles.slice(0, 4);
 }
 
 function WeatherTile({ entity }) {
@@ -157,7 +51,9 @@ function MediaTile({ entity, hass }) {
   const title = entity.attributes?.media_title || entity.name || 'Wiedergabe';
   const artist = entity.attributes?.media_artist || '';
   const progress = mediaProgress(entity.attributes);
-  const kicker = entity.state === 'paused' ? 'Pause' : 'Gerade läuft';
+  let kicker = 'Medien';
+  if (entity.state === 'paused') kicker = 'Pause';
+  else if (entity.state === 'playing') kicker = 'Gerade läuft';
 
   return (
     <div className="tm-ssx-tile">
@@ -208,22 +104,7 @@ function PeopleTile({ people }) {
 }
 
 function StatTile({ tile, hass }) {
-  let value = tile.value;
-  let unit = tile.unit || '';
-  let detail = tile.detail || '';
-
-  if (tile.entityId && value == null) {
-    const reading = formatSensorValue(hass, tile.entityId);
-    value = reading.value;
-    unit = reading.unit || '';
-  }
-
-  if (tile.powerEntityId) {
-    const power = formatSensorValue(hass, tile.powerEntityId);
-    if (power.value && power.value !== '—') {
-      detail = `${power.value}${power.unit ? ` ${power.unit}` : ''}`;
-    }
-  }
+  const { value, unit, detail } = screensaverStatReading(tile, hass);
 
   return (
     <div className="tm-ssx-tile tm-ssx-tile--stat">
@@ -242,7 +123,7 @@ function StatTile({ tile, hass }) {
 export default function SexyScreensaver({ time }) {
   const { config, activeRoom } = useConfig();
   const { hass, getEntity } = useHass();
-  const tiles = buildTiles({ config, room: activeRoom, hass, getEntity });
+  const tiles = buildScreensaverTiles({ config, room: activeRoom, hass, getEntity });
   const photo = config.backgroundImage;
 
   return (
@@ -265,12 +146,13 @@ export default function SexyScreensaver({ time }) {
       {tiles.length > 0 && (
         <div className="tm-ssx-dock">
           {tiles.map((tile) => {
-            if (tile.kind === 'weather') return <WeatherTile key="weather" entity={tile.entity} />;
+            const key = tile.key || tile.kind;
+            if (tile.kind === 'weather') return <WeatherTile key={key} entity={tile.entity} />;
             if (tile.kind === 'media') {
-              return <MediaTile key="media" entity={tile.entity} hass={hass} />;
+              return <MediaTile key={key} entity={tile.entity} hass={hass} />;
             }
-            if (tile.kind === 'people') return <PeopleTile key="people" people={tile.people} />;
-            return <StatTile key="stat" tile={tile} hass={hass} />;
+            if (tile.kind === 'people') return <PeopleTile key={key} people={tile.people} />;
+            return <StatTile key={key} tile={tile} hass={hass} />;
           })}
         </div>
       )}

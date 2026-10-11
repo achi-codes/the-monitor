@@ -5,6 +5,7 @@ import { useConfig } from '../context/ConfigContext';
 import { useHass } from '../context/HassContext';
 import { loadHassUrl } from '../lib/hassConnection';
 import { COLOR_MODES, COLOR_SETS } from '../lib/colorThemes';
+import { BUILD_ID } from '../lib/buildInfo';
 
 export default function Settings({ onBack }) {
   const [brightness, setBrightness] = useState(80);
@@ -381,6 +382,21 @@ export default function Settings({ onBack }) {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <h3 style={{ fontSize: '1.25rem', fontWeight: 500, opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Version
+              </h3>
+              <div className="tm-setting-group">
+                <div className="tm-flex-row tm-justify-between tm-items-center">
+                  <span>Build</span>
+                  <span className="tm-build-id">{BUILD_ID}</span>
+                </div>
+                <p className="tm-text-sm tm-opacity-70">
+                  Steht hier eine ältere Nummer, lädt das Gerät noch eine gecachte Datei — hart neu laden.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 500, opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Konfiguration sichern
               </h3>
               <div className="tm-setting-group">
@@ -404,8 +420,10 @@ export default function Settings({ onBack }) {
         {tab === 'dashboard' && <WidgetConfig />}
       </div>
 
-      <div style={{ marginTop: 'auto', textAlign: 'center', opacity: 0.2, fontSize: '0.875rem', flexShrink: 0, paddingTop: '1rem' }}>
-        The Monitor v0.1.0
+      <div className="tm-settings-build">
+        The Monitor
+        {' · '}
+        <span className="tm-build-id">{BUILD_ID}</span>
       </div>
     </div>
   );

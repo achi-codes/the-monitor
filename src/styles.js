@@ -4196,6 +4196,19 @@ export const styles = `
 @keyframes tmSpin { to { transform: rotate(360deg); } }
 .tm-spin { animation: tmSpin 1s linear infinite; }
 .tm-settings-scroll { flex: 1; overflow-y: auto; padding-bottom: 2rem; }
+.tm-settings-build {
+  margin-top: auto;
+  flex-shrink: 0;
+  padding-top: 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  opacity: 0.55;
+}
+.tm-build-id {
+  font-variant-numeric: tabular-nums;
+  user-select: text;
+  letter-spacing: 0.01em;
+}
 .tm-placeholder-widget {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   height: 100%; opacity: 0.4; gap: 0.5rem; text-align: center; padding: 1rem;

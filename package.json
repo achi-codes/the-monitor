@@ -10,6 +10,7 @@
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "deploy:ha": "npm run build && node scripts/upload-via-samba.mjs && node scripts/ha_setup.mjs && node scripts/generate-config.mjs",
+    "deploy:ha:file": "npm run build:hacs && node scripts/upload-via-file-editor.mjs",
     "docker:build": "npm run build && docker compose build",
     "docker:up": "docker compose up -d"
   },

@@ -8487,6 +8487,148 @@ export const styles = `
   --tm-waste-fg: #111111;
 }
 
+/* —— Glas: liquid glass cards over a color field —— */
+.tm-glass-bg {
+  position: absolute;
+  inset: -14%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: linear-gradient(165deg, var(--tm-glass-base-top, #1a2140), var(--tm-glass-base-bottom, #070b16));
+}
+.tm-glass-bg::before,
+.tm-glass-bg::after {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  background:
+    radial-gradient(46% 50% at 20% 28%, var(--tm-glass-orb-a, #818cf8) 0%, transparent 72%),
+    radial-gradient(44% 48% at 80% 20%, var(--tm-glass-orb-b, #22d3ee) 0%, transparent 70%);
+  filter: blur(28px);
+  animation: tm-glass-drift 34s ease-in-out infinite alternate;
+}
+.tm-glass-bg::after {
+  background:
+    radial-gradient(48% 46% at 70% 74%, var(--tm-glass-orb-c, #f472b6) 0%, transparent 72%),
+    radial-gradient(42% 44% at 26% 78%, var(--tm-glass-orb-d, #fbbf24) 0%, transparent 70%);
+  animation-name: tm-glass-drift-alt;
+  animation-duration: 46s;
+}
+@keyframes tm-glass-drift {
+  from { transform: translate3d(-3%, -2%, 0) scale(1); }
+  to { transform: translate3d(4%, 3%, 0) scale(1.08); }
+}
+@keyframes tm-glass-drift-alt {
+  from { transform: translate3d(3%, 2%, 0) scale(1.06); }
+  to { transform: translate3d(-4%, -3%, 0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tm-glass-bg::before,
+  .tm-glass-bg::after { animation: none; }
+}
+
+[data-tm-theme="glass"] .tm-overlay-gradient { display: none; }
+[data-tm-theme="glass"] .tm-z-10 > .tm-full-screen { background: transparent; }
+
+[data-tm-theme="glass"] :is(
+  .tm-card,
+  .tm-quick-action,
+  .tm-sensor-widget,
+  .tm-alarm-widget,
+  .tm-contact-widget,
+  .tm-cover-action,
+  .tm-scene-btn,
+  .tm-scene-card,
+  .tm-energy-device-card,
+  .tm-room-sidebar,
+  .tm-setting-group,
+  .tm-qa-popup-panel,
+  .tm-vi
+):not(.empty) {
+  position: relative;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.12) 18%, rgba(255, 255, 255, 0.04) 42%, rgba(255, 255, 255, 0.16) 100%);
+  color: var(--tm-tile-fg, #f7f8ff);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-top-color: rgba(255, 255, 255, 0.72);
+  border-left-color: rgba(255, 255, 255, 0.5);
+  border-radius: var(--tm-radius-xl, 1.75rem);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+    0 18px 42px rgba(5, 8, 22, 0.28);
+  backdrop-filter: blur(28px) saturate(1.8);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+}
+
+[data-tm-theme="glass"] :is(
+  .tm-quick-action.empty,
+  .tm-scene-btn.empty,
+  .tm-sensor-widget.empty,
+  .tm-alarm-widget.empty,
+  .tm-card.empty
+) {
+  opacity: 1;
+  color: rgba(255, 255, 255, 0.82);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05));
+  border: 1px dashed rgba(255, 255, 255, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(22px) saturate(1.6);
+  -webkit-backdrop-filter: blur(22px) saturate(1.6);
+}
+
+[data-tm-theme="glass"] .tm-card-dark:not(.empty) {
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.22) 0%, rgba(8, 12, 24, 0.28) 46%, rgba(255, 255, 255, 0.08) 100%);
+}
+
+[data-tm-theme="glass"] .tm-weather-card.tm-weather-card {
+  --tm-wx-fg: #f7f8ff;
+  --tm-wx-muted: rgba(247, 248, 255, 0.68);
+  --tm-wx-chip: rgba(255, 255, 255, 0.14);
+  --tm-wx-divider: rgba(255, 255, 255, 0.16);
+  color: var(--tm-wx-fg);
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.48) 0%, rgba(255, 255, 255, 0.08) 34%, transparent 52%),
+    radial-gradient(78% 58% at 86% 0%, rgba(var(--tm-wx-glow), 0.42), transparent 70%),
+    rgba(255, 255, 255, 0.1);
+}
+
+[data-tm-theme="glass"] .tm-history-card--toned {
+  color: #f7f8ff;
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.06) 36%, transparent 54%),
+    color-mix(in srgb, var(--tm-tone) 26%, rgba(255, 255, 255, 0.08));
+}
+
+[data-tm-theme="glass"] .tm-scene-gradient {
+  opacity: 0.3 !important;
+  mix-blend-mode: screen;
+}
+
+[data-tm-theme="glass"] .tm-vi-wrap {
+  --tm-vi-text: #f7f8ff;
+  --tm-vi-muted: rgba(247, 248, 255, 0.66);
+  --tm-vi-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 16px 40px rgba(5, 8, 22, 0.28);
+}
+
+[data-tm-theme="glass"] .tm-btn-round {
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+}
+
+[data-tm-theme="glass"] .tm-settings-panel {
+  backdrop-filter: blur(22px) saturate(1.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+}
+
+[data-tm-theme="glass"] .tm-title-xl,
+[data-tm-theme="glass"] .tm-title-lg {
+  text-shadow: 0 1px 12px rgba(5, 8, 22, 0.28);
+}
+
 `;
 
 export const haShellStyles = `

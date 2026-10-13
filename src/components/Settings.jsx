@@ -165,9 +165,11 @@ export default function Settings({ onBack }) {
                   <span className="tm-text-sm tm-opacity-70">
                     {config.appearance.mode === 'colorful'
                       ? 'Wähle eine Farbe – alles wird in abstufenden Tönen dargestellt:'
-                      : config.appearance.mode === 'blackColorful'
-                        ? 'Pastell-Karten auf schwarzem Hintergrund – jede Kachel bekommt eine eigene Farbe.'
-                        : 'Farbwahl gilt nur im Bunt-Modus.'}
+                      : config.appearance.mode === 'glass'
+                        ? 'Liquid Glass: das Farbset färbt den Hintergrund, die Karten bleiben durchsichtig.'
+                        : config.appearance.mode === 'blackColorful'
+                          ? 'Pastell-Karten auf schwarzem Hintergrund – jede Kachel bekommt eine eigene Farbe.'
+                          : 'Farbwahl gilt für Bunt und Glas.'}
                   </span>
                   <div className="tm-color-set-grid">
                     {COLOR_SETS.map((set) => (
@@ -175,7 +177,7 @@ export default function Settings({ onBack }) {
                         key={set.id}
                         type="button"
                         className={`tm-color-set-btn${config.appearance.colorSet === set.id ? ' active' : ''}`}
-                        disabled={config.appearance.mode !== 'colorful'}
+                        disabled={config.appearance.mode !== 'colorful' && config.appearance.mode !== 'glass'}
                         onClick={() => updateAppearance({ colorSet: set.id })}
                       >
                         <span className="tm-color-set-swatch" style={{ background: set.preview }} />

@@ -3,6 +3,7 @@ export const COLOR_MODES = {
   light: { id: 'light', label: 'Weiß' },
   colorful: { id: 'colorful', label: 'Bunt' },
   blackColorful: { id: 'blackColorful', label: 'Schwarz bunt' },
+  glass: { id: 'glass', label: 'Glas' },
 };
 
 /** Soft pastel card palette for "Schwarz bunt" (black + colorful cards). */
@@ -102,6 +103,43 @@ function mixRgb(rgb, target, amount) {
   return rgb.map((channel, index) => Math.round(channel + (target[index] - channel) * amount));
 }
 
+function rgbToHsl([r, g, b]) {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const l = (max + min) / 2;
+  const delta = max - min;
+  if (delta === 0) return { h: 0, s: 0, l };
+  const s = delta / (1 - Math.abs(2 * l - 1));
+  let h = 0;
+  if (max === rn) h = ((gn - bn) / delta) % 6;
+  else if (max === gn) h = (bn - rn) / delta + 2;
+  else h = (rn - gn) / delta + 4;
+  h *= 60;
+  if (h < 0) h += 360;
+  return { h, s, l };
+}
+
+function hslToHex(h, s, l) {
+  const a = s * Math.min(l, 1 - l);
+  const channel = (n) => {
+    const k = (n + h / 30) % 12;
+    return l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+  };
+  return rgbToHex([
+    Math.round(channel(0) * 255),
+    Math.round(channel(8) * 255),
+    Math.round(channel(4) * 255),
+  ]);
+}
+
+function glassOrb(hex, hueShift, lightness) {
+  const { h } = rgbToHsl(hexToRgb(hex));
+  return hslToHex((h + hueShift + 360) % 360, 0.78, lightness);
+}
+
 export function buildShadePalette(hex) {
   const rgb = hexToRgb(hex);
   return [
@@ -125,7 +163,7 @@ function buildColorfulSceneGradients(hex) {
 }
 
 function migrateMode(mode) {
-  if (mode === 'light' || mode === 'colorful' || mode === 'dark' || mode === 'blackColorful') return mode;
+  if (mode === 'light' || mode === 'colorful' || mode === 'dark' || mode === 'blackColorful' || mode === 'glass') return mode;
   if (mode === 'monochrome') return 'dark';
   return DEFAULT_APPEARANCE.mode;
 }
@@ -208,6 +246,10 @@ export function resolveColorTheme(appearance = DEFAULT_APPEARANCE) {
       accentRgb: '26, 26, 26',
     };
   }
+  if (normalized.mode === 'glass') {
+    const set = getColorSet(normalized.colorSet);
+    return { mode: 'glass', colorSet: set.id, accent: set.accent, accentRgb: set.accentRgb };
+  }
   return {
     mode: 'dark',
     colorSet: normalized.colorSet,
@@ -281,6 +323,35 @@ function buildColorfulThemeVars(accent, accentRgb) {
   };
 }
 
+function buildGlassThemeVars(accent, accentRgb) {
+  const rgb = hexToRgb(accent);
+  return {
+    '--tm-bg': '#070b16',
+    '--tm-fg': '#f5f7ff',
+    '--tm-surface': 'rgba(255, 255, 255, 0.14)',
+    '--tm-surface-2': 'rgba(255, 255, 255, 0.08)',
+    '--tm-surface-border': 'rgba(255, 255, 255, 0.42)',
+    '--tm-tile-fg': '#f7f8ff',
+    '--tm-overlay': 'none',
+    '--tm-screensaver-gradient': `linear-gradient(135deg, rgba(${accentRgb}, 0.45), #070b16, rgba(${accentRgb}, 0.16))`,
+    '--tm-bg-image-opacity': '0',
+    '--tm-settings-bg': 'rgba(7, 11, 22, 0.34)',
+    '--tm-settings-surface': 'rgba(255, 255, 255, 0.12)',
+    '--tm-settings-surface-border': 'rgba(255, 255, 255, 0.34)',
+    '--tm-accent': accent,
+    '--tm-accent-rgb': accentRgb,
+    '--tm-vi-accent': accent,
+    '--tm-vi-track': 'rgba(255, 255, 255, 0.35)',
+    '--tm-radius-xl': '1.75rem',
+    '--tm-glass-base-top': rgbToHex(mixRgb(rgb, [18, 24, 52], 0.42)),
+    '--tm-glass-base-bottom': rgbToHex(mixRgb(rgb, [10, 14, 32], 0.58)),
+    '--tm-glass-orb-a': glassOrb(accent, -16, 0.64),
+    '--tm-glass-orb-b': glassOrb(accent, 46, 0.7),
+    '--tm-glass-orb-c': glassOrb(accent, 132, 0.6),
+    '--tm-glass-orb-d': glassOrb(accent, 208, 0.58),
+  };
+}
+
 function buildBlackColorfulThemeVars() {
   const mint = PASTEL_CARD_COLORS[0];
   return {
@@ -309,6 +380,7 @@ export function getThemeCssVars(appearance = DEFAULT_APPEARANCE) {
   if (theme.mode === 'light') return buildLightThemeVars();
   if (theme.mode === 'colorful') return buildColorfulThemeVars(theme.accent, theme.accentRgb);
   if (theme.mode === 'blackColorful') return buildBlackColorfulThemeVars();
+  if (theme.mode === 'glass') return buildGlassThemeVars(theme.accent, theme.accentRgb);
   return buildDarkThemeVars();
 }
 
@@ -327,6 +399,7 @@ export function getSceneGradients(appearance = DEFAULT_APPEARANCE) {
   if (mode === 'light') return LIGHT_SCENE_GRADIENTS;
   if (mode === 'colorful') return buildColorfulSceneGradients(getColorSet(colorSet).accent);
   if (mode === 'blackColorful') return BLACK_COLORFUL_SCENE_GRADIENTS;
+  if (mode === 'glass') return buildColorfulSceneGradients(getColorSet(colorSet).accent);
   return DARK_SCENE_GRADIENTS;
 }
 
@@ -344,4 +417,8 @@ export function isColorfulMode(appearance = DEFAULT_APPEARANCE) {
 
 export function isBlackColorfulMode(appearance = DEFAULT_APPEARANCE) {
   return normalizeAppearance(appearance).mode === 'blackColorful';
+}
+
+export function isGlassMode(appearance = DEFAULT_APPEARANCE) {
+  return normalizeAppearance(appearance).mode === 'glass';
 }

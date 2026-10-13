@@ -4,7 +4,7 @@ import Dashboard from './components/Dashboard';
 import Settings from './components/Settings';
 import StatusIsland from './components/StatusIsland';
 import { useConfig } from './context/ConfigContext';
-import { getThemeAttributes } from './lib/colorThemes';
+import { getThemeAttributes, isGlassMode } from './lib/colorThemes';
 import { readUiSession, saveUiSession } from './lib/uiSession';
 
 const DEFAULT_PROFILE = { id: 0, name: 'Zuhause', color: '#6366f1' };
@@ -15,7 +15,9 @@ function App() {
     () => getThemeAttributes(config.appearance),
     [config.appearance],
   );
-  const showBackgroundImage = config.appearance?.mode !== 'light'
+  const glass = isGlassMode(config.appearance);
+  const showBackgroundImage = !glass
+    && config.appearance?.mode !== 'light'
     && config.appearance?.mode !== 'blackColorful';
   const [view, setView] = useState(() => (readUiSession().view === 'settings' ? 'settings' : 'dashboard'));
   const [activeProfile] = useState(DEFAULT_PROFILE);
@@ -60,6 +62,7 @@ function App() {
 
   return (
     <div className="tm-full-screen" {...themeAttrs}>
+      {glass && <div className="tm-glass-bg" aria-hidden="true" />}
       {showBackgroundImage && (
         <div
           className="tm-absolute-fill tm-z-0 tm-bg-cover"

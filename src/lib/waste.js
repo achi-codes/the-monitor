@@ -128,7 +128,7 @@ export function formatWasteMonth(date) {
 }
 
 export function formatWasteListDate(date) {
-  return format(date, 'EEEEEE, d. MMMM', { locale: de });
+  return format(date, 'EEEEEE, d. MMM', { locale: de });
 }
 
 export function formatWasteInDays(days) {

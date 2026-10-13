@@ -204,7 +204,7 @@ export function buildRoomPopupWidget(entityId, hass) {
     return { ...base, type: 'quickAction', mode: 'toggle' };
   }
   if (domain === 'cover') return { ...base, type: 'cover', wide: true };
-  if (domain === 'scene' || domain === 'script') return { ...base, type: 'scene', wide: true };
+  if (domain === 'scene' || domain === 'script') return { ...base, type: 'scene', wide: true, half: true };
   if (domain === 'media_player') return { ...base, type: 'media', wide: true };
   if (domain === 'binary_sensor') return { ...base, type: 'sensorStatus', wide: true };
   if (domain === 'sensor') return { ...base, type: 'sensor' };

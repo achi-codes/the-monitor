@@ -35,10 +35,12 @@ function PickupRow({ pickup }) {
         <WasteBin type={pickup.type} className="tm-waste-row-bin" />
       </span>
       <span className="tm-waste-row-copy">
-        <span className="tm-waste-row-name">{pickupLabel(pickup)}</span>
+        <span className="tm-waste-row-line">
+          <span className="tm-waste-row-name">{pickupLabel(pickup)}</span>
+          <span className="tm-waste-row-eta" style={{ color: meta.color }}>{formatWasteInDays(pickup.days)}</span>
+        </span>
         <span className="tm-waste-row-date">{formatWasteListDate(pickup.date)}</span>
       </span>
-      <span className="tm-waste-row-eta" style={{ color: meta.color }}>{formatWasteInDays(pickup.days)}</span>
     </div>
   );
 }

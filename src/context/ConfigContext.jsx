@@ -1,10 +1,6 @@
-import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
-  loadConfig,
-  saveConfig,
   normalizeConfig,
-  exportConfig,
-  importConfig,
   SLOT_LIMITS,
   DEFAULT_CONFIG,
 } from '../lib/config';
@@ -27,6 +23,21 @@ import {
   ROOM_LIMIT,
   saveActiveRoomId,
 } from '../lib/rooms';
+import {
+  addSetupToStore,
+  exportSetupStore,
+  getSetupById,
+  importSetupStore,
+  loadActiveSetupId,
+  normalizeSetupStore,
+  removeSetupFromStore,
+  renameSetupInStore,
+  resolveInitialSetupState,
+  saveActiveSetupId,
+  saveSetupStore,
+  setupToConfig,
+  updateActiveSetupConfig,
+} from '../lib/setups';
 
 const ConfigContext = createContext(null);
 
@@ -56,18 +67,46 @@ function updateActiveRoomLayout(prev, activeRoomId, pageIndex, updater) {
   return syncDerivedFields(next, roomIndex);
 }
 
-export function ConfigProvider({ initialConfig, onConfigSaved, children }) {
-  const [config, setConfigState] = useState(() => {
-    if (initialConfig) return initialConfig;
-    return normalizeConfig(loadConfig());
-  });
+export function ConfigProvider({
+  initialConfig,
+  initialSetupStore,
+  initialActiveSetupId,
+  onConfigSaved,
+  children,
+}) {
+  const boot = useMemo(() => {
+    if (initialSetupStore?.setups?.length) {
+      const store = normalizeSetupStore(initialSetupStore);
+      const activeSetupId = initialActiveSetupId
+        || loadActiveSetupId(store.setups, store.defaultSetupId);
+      return {
+        setupStore: store,
+        activeSetupId,
+        config: initialConfig || setupToConfig(getSetupById(store.setups, activeSetupId)),
+      };
+    }
+    if (initialConfig) {
+      const resolved = resolveInitialSetupState(initialConfig, { embedded: false });
+      return resolved;
+    }
+    return resolveInitialSetupState({}, { embedded: false });
+  }, [initialConfig, initialSetupStore, initialActiveSetupId]);
 
+  const [setupStore, setSetupStoreState] = useState(boot.setupStore);
+  const [activeSetupId, setActiveSetupIdState] = useState(boot.activeSetupId);
+  const [config, setConfigState] = useState(() => normalizeConfig(boot.config));
   const [activeRoomId, setActiveRoomIdState] = useState(() => loadActiveRoomId(config.rooms));
+  const setupStoreRef = useRef(setupStore);
+  const activeSetupIdRef = useRef(activeSetupId);
+  setupStoreRef.current = setupStore;
+  activeSetupIdRef.current = activeSetupId;
 
   const activeRoom = useMemo(
     () => getRoomById(config.rooms, activeRoomId),
     [config.rooms, activeRoomId],
   );
+
+  const setups = setupStore.setups;
 
   useEffect(() => {
     if (!config.rooms.some((room) => room.id === activeRoomId)) {
@@ -77,20 +116,93 @@ export function ConfigProvider({ initialConfig, onConfigSaved, children }) {
     }
   }, [config.rooms, activeRoomId]);
 
+  const persistStore = useCallback((nextStore, nextActiveSetupId = activeSetupIdRef.current) => {
+    const normalized = normalizeSetupStore(nextStore);
+    saveSetupStore(normalized);
+    saveActiveSetupId(nextActiveSetupId);
+    onConfigSaved?.(normalized);
+    return normalized;
+  }, [onConfigSaved]);
+
   const setConfig = useCallback((next) => {
     setConfigState((prev) => {
       const raw = typeof next === 'function' ? next(prev) : next;
       const normalized = normalizeConfig(raw);
-      saveConfig(normalized);
-      onConfigSaved?.(normalized);
+      const nextStore = updateActiveSetupConfig(
+        setupStoreRef.current,
+        activeSetupIdRef.current,
+        normalized,
+      );
+      setupStoreRef.current = nextStore;
+      setSetupStoreState(nextStore);
+      persistStore(nextStore, activeSetupIdRef.current);
       return normalized;
     });
-  }, [onConfigSaved]);
+  }, [persistStore]);
 
   const setActiveRoomId = useCallback((roomId) => {
     setActiveRoomIdState(roomId);
     saveActiveRoomId(roomId);
   }, []);
+
+  const setActiveSetupId = useCallback((setupId) => {
+    const setup = getSetupById(setupStore.setups, setupId);
+    if (!setup || setup.id === activeSetupId) return;
+    const nextConfig = setupToConfig(setup);
+    setActiveSetupIdState(setup.id);
+    saveActiveSetupId(setup.id);
+    setConfigState(nextConfig);
+    const nextRoomId = loadActiveRoomId(nextConfig.rooms);
+    setActiveRoomIdState(nextRoomId);
+    saveActiveRoomId(nextRoomId);
+  }, [activeSetupId, setupStore.setups]);
+
+  const addSetup = useCallback((name, { duplicateActive = false } = {}) => {
+    const fromSetup = duplicateActive ? getSetupById(setupStore.setups, activeSetupId) : null;
+    const nextStore = addSetupToStore(setupStore, name, fromSetup);
+    if (nextStore === setupStore) return null;
+    const created = nextStore.setups[nextStore.setups.length - 1];
+    const normalized = persistStore(nextStore, activeSetupId);
+    setSetupStoreState(normalized);
+    return created;
+  }, [activeSetupId, persistStore, setupStore]);
+
+  const duplicateSetup = useCallback((setupId) => {
+    const source = getSetupById(setupStore.setups, setupId);
+    if (!source) return null;
+    const nextStore = addSetupToStore(setupStore, `${source.name} Kopie`, source);
+    if (nextStore === setupStore) return null;
+    const created = nextStore.setups[nextStore.setups.length - 1];
+    setSetupStoreState(persistStore(nextStore, activeSetupId));
+    return created;
+  }, [activeSetupId, persistStore, setupStore]);
+
+  const renameSetup = useCallback((setupId, name) => {
+    const nextStore = renameSetupInStore(setupStore, setupId, name);
+    setSetupStoreState(persistStore(nextStore, activeSetupId));
+  }, [activeSetupId, persistStore, setupStore]);
+
+  const removeSetup = useCallback((setupId) => {
+    if (setupStore.setups.length <= 1) return;
+    const nextStore = removeSetupFromStore(setupStore, setupId);
+    let nextActiveId = activeSetupId;
+    if (setupId === activeSetupId) {
+      nextActiveId = nextStore.setups[0].id;
+      const nextConfig = setupToConfig(nextStore.setups[0]);
+      setActiveSetupIdState(nextActiveId);
+      setConfigState(nextConfig);
+      const nextRoomId = loadActiveRoomId(nextConfig.rooms);
+      setActiveRoomIdState(nextRoomId);
+      saveActiveRoomId(nextRoomId);
+    }
+    setSetupStoreState(persistStore(nextStore, nextActiveId));
+  }, [activeSetupId, persistStore, setupStore]);
+
+  const setDefaultSetupId = useCallback((setupId) => {
+    if (!setupStore.setups.some((setup) => setup.id === setupId)) return;
+    const nextStore = { ...setupStore, defaultSetupId: setupId };
+    setSetupStoreState(persistStore(nextStore, activeSetupId));
+  }, [activeSetupId, persistStore, setupStore]);
 
   const updateEv = useCallback((updates) => {
     setConfig((prev) => ({
@@ -358,28 +470,59 @@ export function ConfigProvider({ initialConfig, onConfigSaved, children }) {
     setConfig((prev) => ({ ...prev, ...updates }));
   }, [setConfig]);
 
-  const exportToJson = useCallback(() => exportConfig(config), [config]);
+  const exportToJson = useCallback(
+    () => exportSetupStore(setupStore, activeSetupId),
+    [activeSetupId, setupStore],
+  );
 
   const importFromJson = useCallback((json) => {
     try {
-      const parsed = importConfig(json);
-      setConfig(parsed);
-      const nextActiveRoomId = loadActiveRoomId(parsed.rooms);
-      setActiveRoomIdState(nextActiveRoomId);
-      saveActiveRoomId(nextActiveRoomId);
+      const parsed = typeof json === 'string' ? JSON.parse(json) : json;
+      let nextStore;
+      let nextActiveId = activeSetupId;
+
+      if (Array.isArray(parsed?.setups) && parsed.setups.length) {
+        nextStore = importSetupStore(parsed);
+        nextActiveId = parsed.activeSetupId
+          && nextStore.setups.some((setup) => setup.id === parsed.activeSetupId)
+          ? parsed.activeSetupId
+          : loadActiveSetupId(nextStore.setups, nextStore.defaultSetupId);
+      } else {
+        // Flat backup replaces the active setup contents.
+        const nextConfig = normalizeConfig(parsed);
+        nextStore = updateActiveSetupConfig(setupStore, activeSetupId, nextConfig);
+      }
+
+      nextStore = persistStore(nextStore, nextActiveId);
+      setSetupStoreState(nextStore);
+      setActiveSetupIdState(nextActiveId);
+      const nextConfig = setupToConfig(getSetupById(nextStore.setups, nextActiveId));
+      setConfigState(nextConfig);
+      const nextRoomId = loadActiveRoomId(nextConfig.rooms);
+      setActiveRoomIdState(nextRoomId);
+      saveActiveRoomId(nextRoomId);
       return true;
     } catch {
       return false;
     }
-  }, [setConfig]);
+  }, [activeSetupId, persistStore, setupStore]);
 
   return (
     <ConfigContext.Provider
       value={{
         config,
+        setups,
+        setupStore,
+        activeSetupId,
         activeRoom,
         activeRoomId,
         setActiveRoomId,
+        setActiveSetupId,
+        setDefaultSetupId,
+        addSetup,
+        duplicateSetup,
+        renameSetup,
+        removeSetup,
         setConfig,
         setSingleEntity,
         updateEv,

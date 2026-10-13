@@ -1,5 +1,5 @@
-import { normalizeConfig } from './config';
 import { markConfigPersisted } from './uiSession';
+import { normalizeSetupStore, setupToConfig } from './setups';
 
 const CARD_TYPE = 'custom:the-monitor-dashboard';
 
@@ -8,21 +8,30 @@ export function getDashboardUrlPath() {
   return match?.[1] ?? 'the-monitor';
 }
 
-export function configToCardYaml(config) {
-  const normalized = normalizeConfig(config);
-  const primaryRoom = normalized.rooms?.[0];
+function setupToYaml(setup) {
+  const config = setupToConfig(setup);
+  return {
+    id: setup.id,
+    name: setup.name,
+    rooms: config.rooms,
+    vacuum: config.vacuum,
+    ev: config.ev,
+    windows: config.windows,
+    presence: config.presence,
+    backgroundImage: config.backgroundImage,
+    screensaver: config.screensaver,
+    appearance: config.appearance,
+    hideHaSidebar: config.hideHaSidebar,
+    roomSidebar: config.roomSidebar,
+  };
+}
+
+export function configToCardYaml(setupStore) {
+  const store = normalizeSetupStore(setupStore);
   return {
     type: CARD_TYPE,
-    rooms: normalized.rooms,
-    layout: primaryRoom?.layout,
-    layoutPreset: primaryRoom?.layoutPreset,
-    vacuum: normalized.vacuum,
-    ev: normalized.ev,
-    windows: normalized.windows,
-    presence: normalized.presence,
-    backgroundImage: normalized.backgroundImage,
-    screensaver: normalized.screensaver,
-    appearance: normalized.appearance,
+    setups: store.setups.map(setupToYaml),
+    defaultSetupId: store.defaultSetupId,
   };
 }
 

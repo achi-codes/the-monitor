@@ -68,6 +68,27 @@ function renderRoomEntityCard(card, hass, getEntity) {
   }
 }
 
+function packMetroColumns(cards) {
+  const columns = [];
+  let stack = [];
+  const flushStack = () => {
+    if (!stack.length) return;
+    columns.push({ type: 'stack', cards: stack });
+    stack = [];
+  };
+  cards.forEach((card) => {
+    if (card.half) {
+      stack.push(card);
+      if (stack.length === 2) flushStack();
+    } else {
+      flushStack();
+      columns.push({ type: 'single', card });
+    }
+  });
+  flushStack();
+  return columns;
+}
+
 function RoomIcon({ widget, name, size }) {
   if (widget.icon) return <EntityIcon overrideIcon={widget.icon} size={size} />;
   const Icon = ROOM_ICONS[getRoomKind(name)] || Armchair;
@@ -251,6 +272,7 @@ export function RoomPopup({ data, hass, onClose }) {
   const summary = getRoomSummary(hass, entityIds);
   const facts = describeRoomSummary(summary);
   const cards = entityIds.map((id) => buildRoomPopupWidget(id, hass)).filter(Boolean);
+  const columns = packMetroColumns(cards);
 
   const requestClose = useCallback(() => {
     if (leavingRef.current) return;
@@ -332,18 +354,39 @@ export function RoomPopup({ data, hass, onClose }) {
         <div className="tm-metro-hub" ref={hubRef}>
           {cards.length ? (
             <div className="tm-metro-grid">
-              {cards.map((card, index) => (
-                <div
-                  key={card.id}
-                  className={`tm-metro-card${card.wide ? ' tm-metro-card--wide' : ''}`}
-                  style={{
-                    '--tm-metro-i': index,
-                    ...(pastel ? getPastelCardVars(card.id, card.type) : null),
-                  }}
-                >
-                  {renderRoomEntityCard(card, hass, getEntity)}
-                </div>
-              ))}
+              {columns.map((column, columnIndex) => {
+                if (column.type === 'stack') {
+                  return (
+                    <div key={column.cards.map((card) => card.id).join('-')} className="tm-metro-stack">
+                      {column.cards.map((card, stackIndex) => (
+                        <div
+                          key={card.id}
+                          className={`tm-metro-card${card.wide ? ' tm-metro-card--wide' : ''} tm-metro-card--half`}
+                          style={{
+                            '--tm-metro-i': columnIndex + stackIndex * 0.4,
+                            ...(pastel ? getPastelCardVars(card.id, card.type) : null),
+                          }}
+                        >
+                          {renderRoomEntityCard(card, hass, getEntity)}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+                const { card } = column;
+                return (
+                  <div
+                    key={card.id}
+                    className={`tm-metro-card${card.wide ? ' tm-metro-card--wide' : ''}`}
+                    style={{
+                      '--tm-metro-i': columnIndex,
+                      ...(pastel ? getPastelCardVars(card.id, card.type) : null),
+                    }}
+                  >
+                    {renderRoomEntityCard(card, hass, getEntity)}
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="tm-metro-empty">Diesem Raum sind keine passenden Geräte zugeordnet.</p>

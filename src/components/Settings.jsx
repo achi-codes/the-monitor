@@ -1,7 +1,8 @@
-import { ArrowLeft, Sun, Volume2, Download, Upload, Wifi, LogIn, Unplug, Loader2, Monitor, Palette } from 'lucide-react';
+import { ArrowLeft, Sun, Volume2, Download, Upload, Wifi, LogIn, Unplug, Loader2, Monitor, Palette, LayoutTemplate } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import ScreensaverRowEditor from './ScreensaverRowEditor';
 import WidgetConfig from './WidgetConfig';
+import SetupsPanel from './SetupsPanel';
 import { useConfig } from '../context/ConfigContext';
 import { useHass } from '../context/HassContext';
 import { loadHassUrl } from '../lib/hassConnection';
@@ -12,7 +13,8 @@ export default function Settings({ onBack }) {
   const [brightness, setBrightness] = useState(80);
   const [volume, setVolume] = useState(60);
   const [tab, setTab] = useState('display');
-  const { exportToJson, importFromJson, config, updateScreensaver, updateAppearance } = useConfig();
+  const { exportToJson, importFromJson, config, setups, activeSetupId, updateScreensaver, updateAppearance } = useConfig();
+  const activeSetupName = setups.find((setup) => setup.id === activeSetupId)?.name || 'Setup';
   const {
     isConnected,
     isMock,
@@ -80,7 +82,7 @@ export default function Settings({ onBack }) {
         <h2 className="tm-title-xl">Einstellungen</h2>
       </div>
 
-      <div className="tm-flex-row tm-gap-3" style={{ marginBottom: '1.5rem', flexShrink: 0 }}>
+      <div className="tm-flex-row tm-gap-3" style={{ marginBottom: '1.5rem', flexShrink: 0, flexWrap: 'wrap' }}>
         <button
           type="button"
           className="tm-btn-secondary"
@@ -88,6 +90,17 @@ export default function Settings({ onBack }) {
           onClick={() => setTab('display')}
         >
           Bildschirm & Ton
+        </button>
+        <button
+          type="button"
+          className="tm-btn-secondary"
+          style={{ background: tab === 'setups' ? 'rgba(var(--tm-accent-rgb), 0.4)' : undefined }}
+          onClick={() => setTab('setups')}
+        >
+          <span className="tm-flex-center tm-gap-2">
+            <LayoutTemplate size={18} />
+            Setups
+          </span>
         </button>
         <button
           type="button"
@@ -287,8 +300,8 @@ export default function Settings({ onBack }) {
                 {isEmbedded ? (
                   <>
                     <p className="tm-text-sm tm-opacity-70">
-                      Änderungen werden automatisch im Home-Assistant-Dashboard gespeichert
-                      und gelten auf allen Geräten (iPad, Mac, Wanddisplay).
+                      Alle Setups werden in Home Assistant gespeichert. Auf diesem Gerät ist
+                      „{activeSetupName}“ aktiv — andere Geräte können ein anderes Setup wählen.
                     </p>
                     <p className="tm-text-sm tm-opacity-70">
                       Die Home-Assistant-Seitenleiste und die obere Leiste bleiben erreichbar.
@@ -404,7 +417,8 @@ export default function Settings({ onBack }) {
               </h3>
               <div className="tm-setting-group">
                 <p className="tm-text-sm tm-opacity-70">
-                  Exportiere die Dashboard-Konfiguration als JSON-Backup oder importiere eine gespeicherte Konfiguration.
+                  Exportiert alle Setups als JSON-Backup. Ein Import mit Setups ersetzt die Liste;
+                  ein altes Einzel-Backup überschreibt nur das aktive Setup.
                 </p>
                 <div className="tm-flex-row tm-gap-3">
                   <button type="button" className="tm-btn-secondary tm-flex-center tm-gap-2" onClick={handleExport}>
@@ -420,6 +434,7 @@ export default function Settings({ onBack }) {
           </div>
         )}
 
+        {tab === 'setups' && <SetupsPanel />}
         {tab === 'dashboard' && <WidgetConfig />}
       </div>
 

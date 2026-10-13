@@ -284,7 +284,7 @@ function placeWasteOnPage(page, existing, entityIds = []) {
   return true;
 }
 
-function ensureWasteWidget(config, entityIds = []) {
+export function ensureWasteWidget(config, entityIds = []) {
   const next = structuredClone(config);
   const page = next.rooms?.[0]?.layout?.pages?.[0];
   if (!page) return config;
@@ -481,6 +481,7 @@ export function getWeatherEntityId(config) {
   return findWeatherEntityInRooms(config.rooms);
 }
 
+/** @deprecated Prefer resolveInitialSetupState from ./setups — kept for legacy callers. */
 export function mergeInitialConfig(yamlConfig = {}, { embedded = false } = {}) {
   const stored = loadConfig();
   const yaml = normalizeConfig(yamlConfig);

@@ -4221,6 +4221,14 @@ export const styles = `
   background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
   color: white; font-size: 0.875rem; outline: none;
 }
+.tm-bg-preview {
+  height: 7.5rem;
+  border-radius: 1rem;
+  background-color: rgba(255, 255, 255, 0.06);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
 .tm-input:focus { border-color: rgba(var(--tm-accent-rgb),0.6); }
 .tm-btn-primary {
   padding: 0.75rem 1.5rem; border-radius: 0.75rem; border: none;

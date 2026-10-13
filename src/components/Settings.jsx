@@ -1,4 +1,4 @@
-import { ArrowLeft, Sun, Volume2, Download, Upload, Wifi, LogIn, Unplug, Loader2, Monitor, Palette, LayoutTemplate } from 'lucide-react';
+import { ArrowLeft, Sun, Volume2, Download, Upload, Wifi, LogIn, Unplug, Loader2, Monitor, Palette, LayoutTemplate, Image } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import ScreensaverRowEditor from './ScreensaverRowEditor';
 import WidgetConfig from './WidgetConfig';
@@ -13,7 +13,7 @@ export default function Settings({ onBack }) {
   const [brightness, setBrightness] = useState(80);
   const [volume, setVolume] = useState(60);
   const [tab, setTab] = useState('display');
-  const { exportToJson, importFromJson, config, setups, activeSetupId, updateScreensaver, updateAppearance } = useConfig();
+  const { exportToJson, importFromJson, config, setups, activeSetupId, updateScreensaver, updateAppearance, updateDisplay } = useConfig();
   const activeSetupName = setups.find((setup) => setup.id === activeSetupId)?.name || 'Setup';
   const {
     isConnected,
@@ -185,6 +185,46 @@ export default function Settings({ onBack }) {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div className="tm-flex-col tm-gap-3">
+                  <div className="tm-flex-center tm-gap-3">
+                    <Image size={24} />
+                    <span>Hintergrundbild</span>
+                  </div>
+                  <span className="tm-text-sm tm-opacity-70">
+                    {config.appearance.mode === 'glass'
+                      ? 'Bild-URL. Sie ersetzt die Farbflächen hinter dem Glas.'
+                      : config.appearance.mode === 'dark'
+                        ? 'Bild-URL. Liegt gedimmt hinter den Karten.'
+                        : 'Bild-URL. Sichtbar in Schwarz und Glas.'}
+                  </span>
+                  <input
+                    className="tm-input"
+                    type="text"
+                    inputMode="url"
+                    placeholder="https://… oder /local/hintergrund.jpg"
+                    value={config.backgroundImage || ''}
+                    onChange={(e) => updateDisplay({ backgroundImage: e.target.value })}
+                    aria-label="Hintergrundbild URL"
+                  />
+                  {config.backgroundImage?.trim() && (
+                    <>
+                      <div
+                        className="tm-bg-preview"
+                        style={{ backgroundImage: `url("${config.backgroundImage.trim().replace(/"/g, '%22')}")` }}
+                        role="img"
+                        aria-label="Vorschau des Hintergrundbilds"
+                      />
+                      <button
+                        type="button"
+                        className="tm-btn-secondary"
+                        onClick={() => updateDisplay({ backgroundImage: '' })}
+                      >
+                        Bild entfernen
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

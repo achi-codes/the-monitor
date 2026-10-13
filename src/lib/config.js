@@ -81,7 +81,7 @@ function migrateLegacyToLayout(raw) {
 export function normalizeConfig(raw = {}) {
   const config = structuredClone(DEFAULT_CONFIG);
 
-  if (raw.backgroundImage) config.backgroundImage = raw.backgroundImage;
+  if (typeof raw.backgroundImage === 'string') config.backgroundImage = raw.backgroundImage.trim();
   if (raw.vacuum?.entity_id) config.vacuum = { entity_id: raw.vacuum.entity_id };
   if (raw.ev) {
     config.ev = {

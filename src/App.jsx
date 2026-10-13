@@ -16,7 +16,8 @@ function App() {
     [config.appearance],
   );
   const glass = isGlassMode(config.appearance);
-  const showBackgroundImage = !glass
+  const backgroundImage = (config.backgroundImage || '').trim();
+  const showBackgroundImage = Boolean(backgroundImage)
     && config.appearance?.mode !== 'light'
     && config.appearance?.mode !== 'blackColorful';
   const [view, setView] = useState(() => (readUiSession().view === 'settings' ? 'settings' : 'dashboard'));
@@ -62,12 +63,12 @@ function App() {
 
   return (
     <div className="tm-full-screen" {...themeAttrs}>
-      {glass && <div className="tm-glass-bg" aria-hidden="true" />}
+      {glass && !backgroundImage && <div className="tm-glass-bg" aria-hidden="true" />}
       {showBackgroundImage && (
         <div
           className="tm-absolute-fill tm-z-0 tm-bg-cover"
           style={{
-            backgroundImage: `url("${config.backgroundImage}")`,
+            backgroundImage: `url("${backgroundImage.replace(/"/g, '%22')}")`,
             opacity: 'var(--tm-bg-image-opacity)',
           }}
         />

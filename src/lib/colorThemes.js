@@ -334,7 +334,7 @@ function buildGlassThemeVars(accent, accentRgb) {
     '--tm-tile-fg': '#f7f8ff',
     '--tm-overlay': 'none',
     '--tm-screensaver-gradient': `linear-gradient(135deg, rgba(${accentRgb}, 0.45), #070b16, rgba(${accentRgb}, 0.16))`,
-    '--tm-bg-image-opacity': '0',
+    '--tm-bg-image-opacity': '1',
     '--tm-settings-bg': 'rgba(7, 11, 22, 0.34)',
     '--tm-settings-surface': 'rgba(255, 255, 255, 0.12)',
     '--tm-settings-surface-border': 'rgba(255, 255, 255, 0.34)',

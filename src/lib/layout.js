@@ -26,6 +26,7 @@ export const SLOT_LIMITS = {
 
 export const WIDGET_TYPES = {
   weather: { label: 'Wetter', icon: 'mdi:weather-partly-cloudy', domains: ['weather'] },
+  thermostat: { label: 'Thermostat', icon: 'mdi:thermostat', domains: ['climate'] },
   today: { label: 'Heute', icon: 'mdi:calendar-today', domains: ['calendar'] },
   waste: { label: 'Müll', icon: 'mdi:trash-can', domains: ['calendar', 'sensor'] },
   media: { label: 'Medien', icon: 'mdi:play-circle', domains: ['media_player'] },
@@ -48,7 +49,6 @@ export const WIDGET_TYPES = {
   energyTile: { label: 'Energie-Kachel', icon: 'mdi:lightning-bolt', domains: [] },
   ev: { label: 'E-Auto', icon: 'mdi:car-electric', domains: [] },
   vacuum: { label: 'Saugroboter', icon: 'mdi:robot-vacuum', domains: ['vacuum'] },
-  thermostat: { label: 'Thermostat', icon: 'mdi:thermostat', domains: ['climate'] },
   haCard: { label: 'HA-Karte', icon: 'mdi:card-bulleted', domains: [] },
 };
 

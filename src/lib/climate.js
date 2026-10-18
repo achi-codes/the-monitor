@@ -15,6 +15,11 @@ const PRESET_META = {
   abwesend: { label: 'Abwesend', icon: 'luggage' },
   boost: { label: 'Boost', icon: 'flame' },
   activity: { label: 'Aktiv', icon: 'flame' },
+  frost: { label: 'Frostschutz', icon: 'snowflake' },
+  comfort: { label: 'Komfort', icon: 'home' },
+  manual: { label: 'Manuell', icon: 'thermometer' },
+  holiday: { label: 'Urlaub', icon: 'luggage' },
+  auto: { label: 'Auto', icon: 'thermometer' },
 };
 
 const HVAC_META = {
@@ -172,10 +177,8 @@ function readSegments(attributes) {
   }).filter(Boolean);
 }
 
-function readSchedule(attributes) {
-  const segments = readSegments(attributes);
-  const next = parseDate(attributes.next_change ?? attributes.next_change_time ?? attributes.next_schedule);
-  if (!segments.length && !next) return null;
+function finishSchedule(segments, nextDate) {
+  if (!segments.length && !nextDate) return null;
   const earliest = segments.reduce((min, segment) => Math.min(min, segment.start), 24 * 60);
   const startHour = earliest < 6 * 60 ? 0 : 6;
   const endHour = 24;
@@ -189,8 +192,67 @@ function readSchedule(attributes) {
     startHour,
     endHour,
     ticks,
-    next: formatNextChange(next),
+    next: formatNextChange(nextDate),
   };
+}
+
+function readSchedule(attributes) {
+  const segments = readSegments(attributes);
+  const next = parseDate(attributes.next_change ?? attributes.next_change_time ?? attributes.next_schedule);
+  return finishSchedule(segments, next);
+}
+
+const DAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+
+function dayInRange(day, start, end) {
+  if (start <= end) return day >= start && day <= end;
+  return day >= start || day <= end;
+}
+
+export function parseScheduleSettings(text, now = new Date()) {
+  const raw = String(text || '').trim();
+  if (!raw || raw === 'unknown' || raw === 'unavailable' || raw.toLowerCase() === 'none') return null;
+  const blocks = [];
+  let current = null;
+  String(text).split('|').map((part) => part.trim()).filter(Boolean).forEach((chunk) => {
+    const day = chunk.match(/^([a-z]{3})(?:,([a-z]{3}))?$/i);
+    const startDay = day ? DAY_INDEX[day[1].toLowerCase()] : undefined;
+    if (startDay != null) {
+      current = {
+        start: startDay,
+        end: DAY_INDEX[(day[2] || day[1]).toLowerCase()] ?? startDay,
+        points: [],
+      };
+      blocks.push(current);
+      return;
+    }
+    const point = chunk.match(/^(\d{1,2}):(\d{2}),(-?\d+(?:[.,]\d+)?)$/);
+    if (!point || !current) return;
+    current.points.push({
+      minutes: Number(point[1]) * 60 + Number(point[2]),
+      temperature: Number(point[3].replace(',', '.')),
+    });
+  });
+  const block = blocks.find((item) => dayInRange(now.getDay(), item.start, item.end)) || blocks[0];
+  if (!block || block.points.length < 2) return null;
+  const points = [...block.points].sort((left, right) => left.minutes - right.minutes);
+  const segments = [];
+  for (let index = 0; index < points.length - 1; index += 1) {
+    if (points[index + 1].minutes <= points[index].minutes) continue;
+    segments.push({
+      start: points[index].minutes,
+      end: points[index + 1].minutes,
+      temperature: points[index].temperature,
+    });
+  }
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const upcoming = points.find((point) => point.minutes > nowMinutes) || points[0];
+  if (!upcoming) return finishSchedule(segments, null);
+  const nextDate = new Date(now);
+  nextDate.setSeconds(0, 0);
+  nextDate.setHours(Math.floor(upcoming.minutes / 60), upcoming.minutes % 60, 0, 0);
+  if (upcoming.minutes <= nowMinutes) nextDate.setDate(nextDate.getDate() + 1);
+  return finishSchedule(segments, nextDate);
 }
 
 function readPresetTemperatures(attributes) {
@@ -199,6 +261,71 @@ function readPresetTemperatures(attributes) {
   return Object.fromEntries(
     Object.entries(raw).map(([key, value]) => [key, readNumber(value)]),
   );
+}
+
+const PROFILE_MODES = new Set([
+  'none', 'home', 'comfort', 'normal', 'eco', 'economy', 'sleep', 'night', 'nacht',
+  'away', 'not_home', 'abwesend', 'boost', 'activity', 'frost', 'manual', 'holiday', 'auto',
+]);
+
+function lookupPresetTemperature(temperatures, mode) {
+  const keys = [mode, `${mode}_temp`, `${mode}_temperature`];
+  for (const key of keys) {
+    if (temperatures[key] != null) return temperatures[key];
+  }
+  return null;
+}
+
+function relatedEntityIds(hass, entityId) {
+  const deviceId = hass?.entities?.[entityId]?.device_id;
+  if (deviceId && hass?.entities) {
+    return Object.entries(hass.entities)
+      .filter(([, entry]) => entry.device_id === deviceId)
+      .map(([id]) => id);
+  }
+  const slug = String(entityId || '').split('.')[1] || '';
+  if (!slug || !hass?.states) return [];
+  const prefix = `${slug}_`;
+  return Object.keys(hass.states).filter((id) => {
+    const objectId = id.split('.')[1] || '';
+    return objectId === slug || objectId.startsWith(prefix);
+  });
+}
+
+function profileModeFromObjectId(objectId, slug) {
+  if (!objectId.startsWith(`${slug}_`)) return '';
+  return objectId
+    .slice(slug.length + 1)
+    .replace(/^preset_/, '')
+    .replace(/_preset_temperature$/, '')
+    .replace(/_temperature$/, '')
+    .replace(/_temp$/, '');
+}
+
+function temperaturesFromDevice(hass, entityId, temperatures) {
+  const slug = String(entityId || '').split('.')[1] || '';
+  if (!slug) return temperatures;
+  const merged = { ...temperatures };
+  relatedEntityIds(hass, entityId).forEach((id) => {
+    if (!id.startsWith('number.')) return;
+    const mode = profileModeFromObjectId(id.split('.')[1] || '', slug);
+    if (!PROFILE_MODES.has(mode) || merged[mode] != null) return;
+    const state = hass?.states?.[id];
+    if (!state || state.state === 'unknown' || state.state === 'unavailable') return;
+    const value = readNumber(state.state);
+    if (value != null) merged[mode] = value;
+  });
+  return merged;
+}
+
+function scheduleFromDevice(hass, entityId) {
+  const slug = String(entityId || '').split('.')[1] || '';
+  const match = relatedEntityIds(hass, entityId).find((id) => {
+    const objectId = id.split('.')[1] || '';
+    return id.startsWith('text.') && objectId === `${slug}_schedule_settings`;
+  });
+  if (!match) return null;
+  return parseScheduleSettings(hass?.states?.[match]?.state);
 }
 
 function meaningfulPresets(modes) {
@@ -243,7 +370,7 @@ function buildModes({ attributes, modeKind, activePreset, activeHvac, temperatur
 
   const modes = source.map((id) => {
     const info = meta[id] || { label: humanize(id), icon: 'thermometer' };
-    const temperature = kind === 'preset' ? temperatures[id] : null;
+    const temperature = kind === 'preset' ? lookupPresetTemperature(temperatures, id) : null;
     return {
       id,
       kind,
@@ -275,8 +402,8 @@ export function readClimate(hass, widget = {}) {
   const low = readNumber(attributes.target_temp_low);
   const high = readNumber(attributes.target_temp_high);
   const range = (state === 'heat_cool' || (single == null && low != null && high != null)) && low != null && high != null;
-  const schedule = readSchedule(attributes);
-  const temperatures = readPresetTemperatures(attributes);
+  const schedule = readSchedule(attributes) || scheduleFromDevice(hass, entityId);
+  const temperatures = temperaturesFromDevice(hass, entityId, readPresetTemperatures(attributes));
   const modeInfo = buildModes({
     attributes,
     modeKind: widget.modeKind,

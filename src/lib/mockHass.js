@@ -62,6 +62,24 @@ const MOCK_STATES = {
       { start: '16:00', end: '22:00' },
     ],
   }),
+  'climate.vtherm': createState('climate.vtherm', 'heat', {
+    friendly_name: 'VT Wohnzimmer',
+    current_temperature: 19.1,
+    temperature: 18,
+    min_temp: 5,
+    max_temp: 30,
+    target_temp_step: 0.5,
+    hvac_modes: ['off', 'heat'],
+    hvac_action: 'heating',
+    preset_mode: 'none',
+    preset_modes: ['none', 'frost', 'eco', 'comfort', 'boost'],
+    preset_temperatures: { frost_temp: 5, eco_temp: 18, boost_temp: 30, comfort_temp: 21 },
+  }),
+  'number.vtherm_preset_frost_temp': createState('number.vtherm_preset_frost_temp', '5.0', { friendly_name: 'Frostschutz' }),
+  'number.vtherm_preset_eco_temp': createState('number.vtherm_preset_eco_temp', '18.0', { friendly_name: 'Eco' }),
+  'number.vtherm_preset_comfort_temp': createState('number.vtherm_preset_comfort_temp', '21.0', { friendly_name: 'Komfort' }),
+  'number.vtherm_preset_boost_temp': createState('number.vtherm_preset_boost_temp', '30.0', { friendly_name: 'Boost' }),
+  'text.vtherm_schedule_settings': createState('text.vtherm_schedule_settings', 'mon,sun|0:00,21.0|12:00,17.0|18:00,21.0|23:59,21.0', { friendly_name: 'Zeitplan' }),
   'climate.klima': createState('climate.klima', 'cool', {
     friendly_name: 'Klimaanlage',
     current_temperature: 24.5,
@@ -324,7 +342,8 @@ export function createMockHass() {
           climate.state = data.hvac_mode;
         }
         if (service === 'set_preset_mode' && data.preset_mode) {
-          const presetTemp = climate.attributes.preset_temperatures?.[data.preset_mode];
+          const temps = climate.attributes.preset_temperatures || {};
+          const presetTemp = temps[data.preset_mode] ?? temps[`${data.preset_mode}_temp`];
           climate.attributes = {
             ...climate.attributes,
             preset_mode: data.preset_mode,
@@ -473,6 +492,9 @@ export function createMockHass() {
 
   hass.__mock = true;
   attachMockRegistries(hass);
+  ['climate.vtherm', 'number.vtherm_preset_frost_temp', 'number.vtherm_preset_eco_temp', 'number.vtherm_preset_comfort_temp', 'number.vtherm_preset_boost_temp', 'text.vtherm_schedule_settings'].forEach((entityId) => {
+    hass.entities[entityId] = { ...(hass.entities[entityId] || {}), device_id: 'vtherm', area_id: 'wohnzimmer' };
+  });
 
   return hass;
 }

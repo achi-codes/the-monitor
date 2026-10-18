@@ -9026,8 +9026,13 @@ export const styles = `
   .tm-thermo-badge { position: static; }
 }
 @container tm-thermo (max-height: 17rem) {
+  .tm-thermo-scene,
+  .tm-thermo-caption,
+  .tm-thermo-next { display: none; }
+  .tm-thermo-mode { padding: 0.4rem 0.45rem 0.35rem; }
+}
+@container tm-thermo (max-height: 8.5rem) {
   .tm-thermo-foot { display: none; }
-  .tm-thermo-caption { display: none; }
 }
 @container tm-thermo (max-height: 11rem) {
   .tm-thermo-scene,

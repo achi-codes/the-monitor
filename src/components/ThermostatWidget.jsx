@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  AlertCircle,
   Briefcase,
   ChevronRight,
   Clock3,
@@ -12,7 +13,9 @@ import {
   Moon,
   Plus,
   Power,
+  Rocket,
   Snowflake,
+  Sofa,
   Thermometer,
 } from 'lucide-react';
 import {
@@ -35,6 +38,9 @@ const ICONS = {
   power: Power,
   thermometer: Thermometer,
   droplet: Droplets,
+  alert: AlertCircle,
+  sofa: Sofa,
+  rocket: Rocket,
 };
 
 function sameTemp(left, right) {

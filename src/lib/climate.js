@@ -1,9 +1,9 @@
 import { getEntityPicture } from './hass';
 
 const PRESET_META = {
-  none: { label: 'Normal', icon: 'home' },
+  none: { label: 'Händisch', icon: 'alert' },
   home: { label: 'Zuhause', icon: 'home' },
-  comfort: { label: 'Komfort', icon: 'home' },
+  comfort: { label: 'Komfort', icon: 'sofa' },
   normal: { label: 'Normal', icon: 'home' },
   eco: { label: 'Eco', icon: 'leaf' },
   economy: { label: 'Eco', icon: 'leaf' },
@@ -13,10 +13,9 @@ const PRESET_META = {
   away: { label: 'Abwesend', icon: 'luggage' },
   not_home: { label: 'Abwesend', icon: 'luggage' },
   abwesend: { label: 'Abwesend', icon: 'luggage' },
-  boost: { label: 'Boost', icon: 'flame' },
+  boost: { label: 'Boost', icon: 'rocket' },
   activity: { label: 'Aktiv', icon: 'flame' },
   frost: { label: 'Frostschutz', icon: 'snowflake' },
-  comfort: { label: 'Komfort', icon: 'home' },
   manual: { label: 'Manuell', icon: 'thermometer' },
   holiday: { label: 'Urlaub', icon: 'luggage' },
   auto: { label: 'Auto', icon: 'thermometer' },

@@ -261,7 +261,7 @@ export default function DashboardGrid({
     if (!slotPicker || !onAddWidgetAt) return;
     const draft = createWidget(type, { x: slotPicker.x, y: slotPicker.y });
     const preferred = clampWidget(draft);
-    const fits = type === 'haCard'
+    const fits = (type === 'haCard' || type === 'thermostat')
       && findCollisions(page.widgets, preferred).length === 0;
     const widgetId = onAddWidgetAt(pageIndex, type, fits ? {
       x: preferred.x,

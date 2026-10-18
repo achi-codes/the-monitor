@@ -104,6 +104,7 @@ export default function WidgetInspector({
   const isMedia = widget.type === 'media';
   const isToday = widget.type === 'today';
   const isWaste = widget.type === 'waste';
+  const isThermostat = widget.type === 'thermostat';
 
   return (
     <div className="tm-widget-inspector">
@@ -509,13 +510,70 @@ export default function WidgetInspector({
 
       {!isPopup && !isCoverPopup && !isCamera && !isSensor && !isSensorStatus && !isHaCard && !isScene && !isEv && !isRoom && !isMedia && !isToday && !isWaste && widget.type !== 'shopping' && !isSankey && !isEnergyTile && (
         <div className="tm-widget-inspector-section">
-          <label className="tm-widget-inspector-label">Entität</label>
+          <label className="tm-widget-inspector-label">{isThermostat ? 'Klima' : 'Entität'}</label>
           <EntityPicker
             value={widget.entity_id || ''}
             onChange={(entity_id) => onUpdate(pageIndex, widget.id, { entity_id })}
             domains={meta.domains}
             placeholder="Entität wählen…"
           />
+        </div>
+      )}
+
+      {isThermostat && (
+        <div className="tm-widget-inspector-section">
+          <label className="tm-widget-inspector-label">Darstellung</label>
+          <p className="tm-widget-inspector-hint">
+            Die Kachel liest, was das Gerät kann: Profile oder Betriebsarten, eine Solltemperatur oder einen Bereich, Heizen und Kühlen.
+          </p>
+          <div className="tm-widget-inspector-field">
+            <span className="tm-widget-inspector-field-label">Untertitel</span>
+            <input
+              className="tm-input"
+              type="text"
+              value={widget.subtitle || ''}
+              onChange={(e) => onUpdate(pageIndex, widget.id, { subtitle: e.target.value })}
+              placeholder="Automatisch, z. B. Heizung"
+            />
+          </div>
+          <div className="tm-widget-inspector-field">
+            <span className="tm-widget-inspector-field-label">Ist-Temperatur</span>
+            <EntityPicker
+              value={widget.temperature_entity || ''}
+              onChange={(temperature_entity) => onUpdate(pageIndex, widget.id, { temperature_entity })}
+              domains={['sensor']}
+              placeholder="Optional, wenn das Thermostat keine hat"
+            />
+          </div>
+          <div className="tm-widget-inspector-field">
+            <span className="tm-widget-inspector-field-label">Bild</span>
+            <input
+              className="tm-input"
+              type="url"
+              value={widget.image || ''}
+              onChange={(e) => onUpdate(pageIndex, widget.id, { image: e.target.value })}
+              placeholder="/local/raum.jpg oder https://…"
+            />
+          </div>
+          <div className="tm-widget-inspector-field">
+            <span className="tm-widget-inspector-field-label">Steuerung</span>
+            <div className="tm-widget-inspector-sizes tm-widget-inspector-sizes--segment">
+              {[
+                ['auto', 'Automatisch'],
+                ['preset', 'Profile'],
+                ['hvac', 'Betriebsart'],
+              ].map(([kind, label]) => (
+                <button
+                  key={kind}
+                  type="button"
+                  className={`tm-widget-inspector-size${(widget.modeKind || 'auto') === kind ? ' active' : ''}`}
+                  onClick={() => onUpdate(pageIndex, widget.id, { modeKind: kind })}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

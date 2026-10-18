@@ -44,7 +44,35 @@ const MOCK_STATES = {
   }),
   'light.kueche': createState('light.kueche', 'off', { friendly_name: 'Küche Licht' }),
   'switch.steckdose': createState('switch.steckdose', 'off', { friendly_name: 'Steckdose TV' }),
-  'climate.wohnzimmer': createState('climate.wohnzimmer', 'heat', { friendly_name: 'Wohnzimmer Heizung', current_temperature: 21.5, temperature: 22 }),
+  'climate.wohnzimmer': createState('climate.wohnzimmer', 'heat', {
+    friendly_name: 'Wohnzimmer Heizung',
+    current_temperature: 21.5,
+    temperature: 21,
+    min_temp: 5,
+    max_temp: 30,
+    target_temp_step: 0.5,
+    hvac_modes: ['off', 'heat', 'auto'],
+    hvac_action: 'heating',
+    preset_mode: 'none',
+    preset_modes: ['none', 'eco', 'sleep', 'away'],
+    preset_temperatures: { none: 21, eco: 17, sleep: 16, away: 14 },
+    next_change: '22:00',
+    schedule: [
+      { start: '06:00', end: '09:00' },
+      { start: '16:00', end: '22:00' },
+    ],
+  }),
+  'climate.klima': createState('climate.klima', 'cool', {
+    friendly_name: 'Klimaanlage',
+    current_temperature: 24.5,
+    target_temp_low: 21,
+    target_temp_high: 24,
+    min_temp: 16,
+    max_temp: 30,
+    target_temp_step: 0.5,
+    hvac_modes: ['off', 'cool', 'heat_cool', 'dry', 'fan_only'],
+    hvac_action: 'cooling',
+  }),
   'lock.haustuer': createState('lock.haustuer', 'locked', { friendly_name: 'Haustür' }),
   'alarm_control_panel.haus': createState('alarm_control_panel.haus', 'armed_home', { friendly_name: 'Alarmanlage' }),
   'scene.filmabend': createState('scene.filmabend', 'scening', { friendly_name: 'Filmabend' }),
@@ -282,8 +310,44 @@ export function createMockHass() {
         const s = states[entityId];
         if (s) s.state = 'off';
       }
-      if (domain === 'climate' && service === 'set_temperature' && states[entityId]) {
-        states[entityId].attributes = { ...states[entityId].attributes, temperature: data.temperature };
+      if (domain === 'climate' && states[entityId]) {
+        const climate = states[entityId];
+        if (service === 'set_temperature') {
+          climate.attributes = {
+            ...climate.attributes,
+            ...(data.temperature != null ? { temperature: data.temperature } : {}),
+            ...(data.target_temp_low != null ? { target_temp_low: data.target_temp_low } : {}),
+            ...(data.target_temp_high != null ? { target_temp_high: data.target_temp_high } : {}),
+          };
+        }
+        if (service === 'set_hvac_mode' && data.hvac_mode) {
+          climate.state = data.hvac_mode;
+        }
+        if (service === 'set_preset_mode' && data.preset_mode) {
+          const presetTemp = climate.attributes.preset_temperatures?.[data.preset_mode];
+          climate.attributes = {
+            ...climate.attributes,
+            preset_mode: data.preset_mode,
+            ...(presetTemp != null ? { temperature: presetTemp } : {}),
+          };
+          if (climate.state === 'off') climate.state = climate.attributes.hvac_modes?.includes('heat') ? 'heat' : climate.state;
+        }
+        const current = Number(climate.attributes.current_temperature);
+        const target = Number(climate.attributes.temperature ?? climate.attributes.target_temp_low);
+        let action = climate.attributes.hvac_action;
+        if (climate.state === 'off' || climate.state === 'unavailable') action = 'off';
+        else if (climate.state === 'cool') action = target < current - 0.2 ? 'cooling' : 'idle';
+        else if (climate.state === 'dry') action = 'drying';
+        else if (climate.state === 'fan_only') action = 'fan';
+        else if (climate.state === 'heat_cool') {
+          const high = Number(climate.attributes.target_temp_high);
+          if (target > current + 0.2) action = 'heating';
+          else if (high < current - 0.2) action = 'cooling';
+          else action = 'idle';
+        } else if (climate.state === 'heat' || climate.state === 'auto') {
+          action = target > current + 0.2 ? 'heating' : 'idle';
+        }
+        climate.attributes = { ...climate.attributes, hvac_action: action };
       }
       if (domain === 'switch' && service === 'toggle' && entityId) {
         const s = states[entityId];

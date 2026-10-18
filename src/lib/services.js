@@ -149,9 +149,26 @@ export async function setLightColorTemp(hass, entityId, kelvin) {
   });
 }
 
-export async function setClimateTemperature(hass, entityId, temperature) {
+export async function setClimateTemperature(hass, entityId, temperature, extra = {}) {
   if (getDomain(entityId) !== 'climate' || !hass?.states?.[entityId]) return;
-  return callService(hass, 'climate', 'set_temperature', { entity_id: entityId, temperature });
+  const data = { entity_id: entityId };
+  if (extra.low != null || extra.high != null) {
+    if (extra.low != null) data.target_temp_low = extra.low;
+    if (extra.high != null) data.target_temp_high = extra.high;
+  } else {
+    data.temperature = temperature;
+  }
+  return callService(hass, 'climate', 'set_temperature', data);
+}
+
+export async function setClimateHvacMode(hass, entityId, hvacMode) {
+  if (getDomain(entityId) !== 'climate' || !hass?.states?.[entityId] || !hvacMode) return;
+  return callService(hass, 'climate', 'set_hvac_mode', { entity_id: entityId, hvac_mode: hvacMode });
+}
+
+export async function setClimatePresetMode(hass, entityId, presetMode) {
+  if (getDomain(entityId) !== 'climate' || !hass?.states?.[entityId] || presetMode == null) return;
+  return callService(hass, 'climate', 'set_preset_mode', { entity_id: entityId, preset_mode: presetMode });
 }
 
 export async function activateScene(hass, entityId) {

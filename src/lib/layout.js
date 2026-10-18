@@ -48,6 +48,7 @@ export const WIDGET_TYPES = {
   energyTile: { label: 'Energie-Kachel', icon: 'mdi:lightning-bolt', domains: [] },
   ev: { label: 'E-Auto', icon: 'mdi:car-electric', domains: [] },
   vacuum: { label: 'Saugroboter', icon: 'mdi:robot-vacuum', domains: ['vacuum'] },
+  thermostat: { label: 'Thermostat', icon: 'mdi:thermostat', domains: ['climate'] },
   haCard: { label: 'HA-Karte', icon: 'mdi:card-bulleted', domains: [] },
 };
 
@@ -79,6 +80,7 @@ const DEFAULT_SIZE_BY_TYPE = {
   energyTile: 'M',
   ev: 'L',
   vacuum: 'L',
+  thermostat: 'XL',
   today: 'XL',
   waste: 'XL',
   haCard: 'XL',
@@ -108,6 +110,7 @@ export function createWidget(type, overrides = {}) {
     mode: type === 'quickAction' ? 'toggle' : undefined,
     ...(type === 'energyTile' ? { tileKind: 'inputs-outputs' } : {}),
     ...(type === 'haCard' ? { card: null } : {}),
+    ...(type === 'thermostat' ? { w: 8, h: 3, modeKind: 'auto', image: '', subtitle: '', temperature_entity: '' } : {}),
     ...overrides,
   };
 }
@@ -205,6 +208,9 @@ export function getWidgetEntities(widget) {
   if (widget.type === 'sensor' || widget.type === 'scene' || widget.type === 'media' || widget.type === 'today' || widget.type === 'waste') {
     if (widget.entity_ids?.length) return widget.entity_ids;
     return widget.entity_id ? [widget.entity_id] : [];
+  }
+  if (widget.type === 'thermostat') {
+    return [widget.entity_id, widget.temperature_entity].filter(Boolean);
   }
   return widget.entity_id ? [widget.entity_id] : [];
 }
@@ -521,6 +527,12 @@ export function normalizeLayout(rawLayout, legacyConfig = null) {
           normalized.area_name = typeof widget.area_name === 'string' ? widget.area_name : '';
           if (typeof widget.accent === 'string' && widget.accent) normalized.accent = widget.accent;
           if (typeof widget.image === 'string' && widget.image) normalized.image = widget.image;
+        }
+        if (widget.type === 'thermostat') {
+          normalized.modeKind = widget.modeKind === 'preset' || widget.modeKind === 'hvac' ? widget.modeKind : 'auto';
+          normalized.image = typeof widget.image === 'string' ? widget.image : '';
+          normalized.subtitle = typeof widget.subtitle === 'string' ? widget.subtitle : '';
+          normalized.temperature_entity = typeof widget.temperature_entity === 'string' ? widget.temperature_entity : '';
         }
         if (widget.type === 'weather' && typeof widget.location === 'string') {
           normalized.location = widget.location;

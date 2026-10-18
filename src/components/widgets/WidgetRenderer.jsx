@@ -25,6 +25,7 @@ import VacuumWidget from '../VacuumWidget';
 import RoomWidget from '../RoomWidget';
 import TodayWidget from '../TodayWidget';
 import WasteWidget from '../WasteWidget';
+import ThermostatWidget from '../ThermostatWidget';
 import { WIDGET_TYPES, getWidgetLabel } from '../../lib/layout';
 
 export function renderDashboardWidget({
@@ -198,6 +199,8 @@ export function renderDashboardWidget({
           onConfigure={handleConfigure}
         />
       );
+    case 'thermostat':
+      return <ThermostatWidget widget={widget} hass={hass} />;
     case 'haCard':
       return (
         <HaCardWidget

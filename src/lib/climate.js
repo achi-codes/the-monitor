@@ -1,7 +1,7 @@
 import { getEntityPicture } from './hass';
 
 const PRESET_META = {
-  none: { label: 'Händisch', icon: 'alert' },
+  none: { label: 'Händisch', icon: 'thermometer' },
   home: { label: 'Zuhause', icon: 'home' },
   comfort: { label: 'Komfort', icon: 'sofa' },
   normal: { label: 'Normal', icon: 'home' },
@@ -381,10 +381,17 @@ function buildModes({ attributes, modeKind, activePreset, activeHvac, temperatur
     };
   });
 
-  if (kind === 'hvac') {
-    modes.sort((a, b) => Number(a.id === 'off') - Number(b.id === 'off'));
-  }
-  return { modes, modeKind: kind, activeModeId: activeId || '' };
+  const visibleModes = kind === 'hvac' ? modes.filter((mode) => mode.id !== 'off') : modes;
+  return { modes: visibleModes, modeKind: kind, activeModeId: activeId || '' };
+}
+
+function resolveAccent(hvacModes, tone) {
+  if (tone === 'cool' || tone === 'dry' || tone === 'fan' || tone === 'heat') return tone;
+  const modes = hvacModes || [];
+  if (modes.includes('cool') && !modes.includes('heat')) return 'cool';
+  if (modes.includes('dry') && !modes.includes('heat') && !modes.includes('cool')) return 'dry';
+  if (modes.includes('fan_only') && modes.every((mode) => mode === 'fan_only' || mode === 'off')) return 'fan';
+  return 'heat';
 }
 
 export function readClimate(hass, widget = {}) {
@@ -426,6 +433,11 @@ export function readClimate(hass, widget = {}) {
     max: readNumber(attributes.max_temp) ?? 30,
     step: readNumber(attributes.target_temp_step) || 0.5,
     tone: tone === 'idle' ? 'heat' : tone,
+    accent: resolveAccent(hvacModes, tone),
+    hvacModes,
+    powerSupported: hvacModes.length === 0 || hvacModes.includes('off'),
+    powerOn: state !== 'off' && state !== 'unavailable' && state !== 'unknown' && state !== '',
+    powerKnown: state !== 'unknown' && state !== '',
     status: resolveStatus({ state, action, tone }),
     image: widget.image?.trim() || (entityId ? getEntityPicture(hass, entityId) : '') || '',
     schedule,

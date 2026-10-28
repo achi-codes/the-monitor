@@ -187,7 +187,7 @@ const FIXED_PASTEL_BY_WIDGET_TYPE = {
   weather: PASTEL_CARD_COLORS[3],
   today: PASTEL_CARD_COLORS[5],
   waste: PASTEL_CARD_COLORS[5],
-  thermostat: { bg: '#F6F1EA', fg: '#1a1a1a' },
+  thermostat: PASTEL_CARD_COLORS[1],
 };
 
 export function getPastelCardVars(key = '0', widgetType = '') {

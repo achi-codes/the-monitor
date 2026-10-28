@@ -166,6 +166,20 @@ export async function setClimateHvacMode(hass, entityId, hvacMode) {
   return callService(hass, 'climate', 'set_hvac_mode', { entity_id: entityId, hvac_mode: hvacMode });
 }
 
+export async function setClimatePower(hass, entityId, on, resumeMode) {
+  if (getDomain(entityId) !== 'climate' || !hass?.states?.[entityId]) return;
+  const modes = hass.states[entityId]?.attributes?.hvac_modes;
+  const list = Array.isArray(modes) ? modes.filter(Boolean) : [];
+  if (on) {
+    const next = (resumeMode && list.includes(resumeMode) && resumeMode)
+      || list.find((mode) => mode !== 'off')
+      || 'heat';
+    return setClimateHvacMode(hass, entityId, next);
+  }
+  if (!list.length || list.includes('off')) return setClimateHvacMode(hass, entityId, 'off');
+  return callService(hass, 'climate', 'turn_off', { entity_id: entityId });
+}
+
 export async function setClimatePresetMode(hass, entityId, presetMode) {
   if (getDomain(entityId) !== 'climate' || !hass?.states?.[entityId] || presetMode == null) return;
   return callService(hass, 'climate', 'set_preset_mode', { entity_id: entityId, preset_mode: presetMode });

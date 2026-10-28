@@ -25,7 +25,7 @@ import {
   snapTemperature,
   temperaturesFromSlider,
 } from '../lib/climate';
-import { setClimateHvacMode, setClimatePresetMode, setClimateTemperature } from '../lib/services';
+import { setClimateHvacMode, setClimatePower, setClimatePresetMode, setClimateTemperature } from '../lib/services';
 
 const ICONS = {
   home: Home,
@@ -84,6 +84,7 @@ function TemperatureSlider({
     <div
       ref={trackRef}
       className="tm-thermo-track"
+      style={{ '--tm-thermo-ratio': percent / 100 }}
       role="slider"
       tabIndex={disabled ? -1 : 0}
       aria-valuemin={min}
@@ -95,6 +96,7 @@ function TemperatureSlider({
       onPointerDown={(event) => {
         if (disabled) return;
         event.stopPropagation();
+        event.currentTarget.classList.add('is-dragging');
         event.currentTarget.setPointerCapture(event.pointerId);
         onChange(valueFromPointer(event));
       }}
@@ -103,10 +105,14 @@ function TemperatureSlider({
         onChange(valueFromPointer(event));
       }}
       onPointerUp={(event) => {
+        event.currentTarget.classList.remove('is-dragging');
         if (!event.currentTarget.hasPointerCapture?.(event.pointerId)) return;
         const next = valueFromPointer(event);
         onChange(next);
         onCommit(next);
+      }}
+      onPointerCancel={(event) => {
+        event.currentTarget.classList.remove('is-dragging');
       }}
       onKeyDown={(event) => {
         if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
@@ -118,8 +124,8 @@ function TemperatureSlider({
         }
       }}
     >
-      <div className="tm-thermo-track-fill" style={{ width: `${percent}%` }} />
-      <div className="tm-thermo-thumb" style={{ left: `${percent}%` }} />
+      <div className="tm-thermo-track-fill" />
+      <div className="tm-thermo-thumb" />
     </div>
   );
 }
@@ -129,8 +135,10 @@ export default function ThermostatWidget({ widget, hass }) {
   const [draftLow, setDraftLow] = useState(null);
   const [draftHigh, setDraftHigh] = useState(null);
   const [draftMode, setDraftMode] = useState(null);
+  const [draftPower, setDraftPower] = useState(null);
   const [, bump] = useState(0);
   const dragging = useRef(false);
+  const resumeRef = useRef(null);
 
   useEffect(() => {
     if (draftLow == null || dragging.current) return undefined;
@@ -156,9 +164,23 @@ export default function ThermostatWidget({ widget, hass }) {
     return () => clearTimeout(timer);
   }, [draftMode, model.activeModeId]);
 
+  useEffect(() => {
+    if (model.powerOn && model.state && model.state !== 'off') resumeRef.current = model.state;
+  }, [model.powerOn, model.state]);
+
+  useEffect(() => {
+    if (draftPower == null) return undefined;
+    if (model.powerKnown && draftPower === model.powerOn) {
+      setDraftPower(null);
+      return undefined;
+    }
+    const timer = setTimeout(() => setDraftPower(null), 2500);
+    return () => clearTimeout(timer);
+  }, [draftPower, model.powerKnown, model.powerOn]);
+
   if (!widget?.entity_id) {
     return (
-      <div className="tm-thermo tm-thermo--empty">
+      <div className="tm-quick-action tm-thermo tm-thermo--empty">
         <Thermometer size={28} strokeWidth={1.6} />
         <div className="tm-thermo-empty-title">Thermostat</div>
         <p>Klima-Entität wählen — die Kachel übernimmt Profile, Betriebsart und Sollbereich.</p>
@@ -170,9 +192,17 @@ export default function ThermostatWidget({ widget, hass }) {
   const high = draftHigh ?? model.targetHigh;
   const bounds = sliderBounds(model, low ?? model.min, high);
   const activeModeId = draftMode ?? model.activeModeId;
+  const powerOn = draftPower ?? (model.powerKnown ? model.powerOn : null);
   const targetText = model.range && high != null
     ? `${formatTemp(low)}–${formatTemp(high)}°`
     : `${formatTemp(low)}°`;
+
+  const resumeMode = () => {
+    const modes = model.hvacModes.filter((mode) => mode && mode !== 'off');
+    if (resumeRef.current && modes.includes(resumeRef.current)) return resumeRef.current;
+    const order = ['heat', 'heat_cool', 'auto', 'cool', 'dry', 'fan_only'];
+    return order.find((mode) => modes.includes(mode)) || modes[0] || 'heat';
+  };
 
   const commitTemperatures = async (sliderValue) => {
     dragging.current = false;
@@ -195,11 +225,16 @@ export default function ThermostatWidget({ widget, hass }) {
   };
 
   const selectMode = async (mode) => {
-    if (model.locked || mode.id === activeModeId) return;
+    if (model.locked) return;
+    if (mode.id === activeModeId && powerOn !== false) return;
     setDraftMode(mode.id);
+    if (powerOn === false) setDraftPower(true);
     if (mode.temperature != null && !model.range) {
       setDraftLow(mode.temperature);
       setDraftHigh(null);
+    }
+    if (powerOn === false && model.powerSupported && mode.kind === 'preset') {
+      await setClimatePower(hass, model.entityId, true, resumeMode());
     }
     if (mode.kind === 'preset') {
       await setClimatePresetMode(hass, model.entityId, mode.id);
@@ -209,48 +244,58 @@ export default function ThermostatWidget({ widget, hass }) {
     bump((value) => value + 1);
   };
 
+  const setPower = async (on) => {
+    if (model.locked || !model.powerSupported || on === powerOn) return;
+    setDraftPower(on);
+    await setClimatePower(hass, model.entityId, on, on ? resumeMode() : undefined);
+    bump((value) => value + 1);
+  };
+
   return (
     <div
-      className={`tm-thermo${model.schedule ? ' tm-thermo--schedule' : ''}${model.modes.length ? ' tm-thermo--modes' : ''}${model.image ? ' tm-thermo--photo' : ''}`}
-      data-tone={model.status.tone === 'cool' ? 'cool' : model.status.tone === 'off' ? 'off' : model.tone}
+      className={`tm-quick-action tm-thermo${model.schedule ? ' tm-thermo--schedule' : ''}${powerOn === true ? ' is-on' : ''}${powerOn === false ? ' is-off' : ''}`}
+      data-tone={model.accent === 'cool' || model.accent === 'dry' || model.accent === 'fan' ? model.accent : 'heat'}
     >
-      <div className="tm-thermo-top">
-        <div className="tm-thermo-copy">
-          <div className="tm-thermo-head">
-            <div className="tm-thermo-heading">
-              <div className="tm-thermo-title">{model.missing ? 'Nicht gefunden' : model.title}</div>
-              <div className="tm-thermo-subtitle">{model.subtitle}</div>
-            </div>
-            <div className={`tm-thermo-badge tm-thermo-badge--${model.status.tone}`}>
-              <ModeIcon name={model.status.icon} size={15} />
-              <span>{model.status.label}</span>
-            </div>
+      <div className="tm-thermo-main">
+        <div className="tm-thermo-info">
+          <div className="tm-thermo-title">{model.missing ? 'Nicht gefunden' : model.title}</div>
+          {model.subtitle ? <div className="tm-thermo-subtitle">{model.subtitle}</div> : null}
+          <div className="tm-thermo-value">
+            {formatTemp(model.current)}
+            <span className="tm-thermo-unit">°</span>
           </div>
-          <div className="tm-thermo-temps">
-            <div className="tm-thermo-temp-block">
-              <div className="tm-thermo-current">{formatTemp(model.current)}°</div>
-              <div className="tm-thermo-caption">Aktuell</div>
-            </div>
-            <div className="tm-thermo-divider" aria-hidden="true" />
-            <div className="tm-thermo-temp-block tm-thermo-temp-block--target">
-              <div className="tm-thermo-target">{targetText}</div>
-              <div className="tm-thermo-caption">Solltemperatur</div>
-            </div>
+          <div className="tm-thermo-meta">
+            <span className={`tm-thermo-status tm-thermo-status--${model.status.tone}`}>
+              <ModeIcon name={model.status.icon} size={14} />
+              {model.status.label}
+            </span>
+            <span className="tm-thermo-meta-dot" aria-hidden="true" />
+            <span>Soll {targetText}</span>
           </div>
         </div>
 
-        <div className="tm-thermo-scene" aria-hidden="true">
-          {model.image ? (
-            <img src={model.image} alt="" draggable="false" />
-          ) : (
-            <div className={`tm-thermo-art tm-thermo-art--${model.tone === 'cool' ? 'cool' : 'heat'}`}>
-              <div className="tm-thermo-art-window" />
-              <div className="tm-thermo-art-glow" />
-              <div className="tm-thermo-art-sofa" />
-              <div className="tm-thermo-art-radiator" />
-            </div>
-          )}
-        </div>
+        {model.powerSupported && (
+          <div className="tm-thermo-power" role="group" aria-label="Betrieb">
+            <button
+              type="button"
+              className={`tm-thermo-power-btn tm-thermo-power-btn--on${powerOn === true ? ' is-active' : ''}`}
+              aria-pressed={powerOn === true}
+              disabled={model.locked}
+              onClick={() => setPower(true)}
+            >
+              An
+            </button>
+            <button
+              type="button"
+              className={`tm-thermo-power-btn tm-thermo-power-btn--off${powerOn === false ? ' is-active' : ''}`}
+              aria-pressed={powerOn === false}
+              disabled={model.locked}
+              onClick={() => setPower(false)}
+            >
+              Aus
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="tm-thermo-controls">

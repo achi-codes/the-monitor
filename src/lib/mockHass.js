@@ -341,6 +341,11 @@ export function createMockHass() {
         if (service === 'set_hvac_mode' && data.hvac_mode) {
           climate.state = data.hvac_mode;
         }
+        if (service === 'turn_off') climate.state = 'off';
+        if (service === 'turn_on') {
+          const modes = climate.attributes.hvac_modes || [];
+          climate.state = modes.find((mode) => mode && mode !== 'off') || 'heat';
+        }
         if (service === 'set_preset_mode' && data.preset_mode) {
           const temps = climate.attributes.preset_temperatures || {};
           const presetTemp = temps[data.preset_mode] ?? temps[`${data.preset_mode}_temp`];

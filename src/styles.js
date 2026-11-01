@@ -8728,8 +8728,9 @@ export const styles = `
 ):not(.empty) {
   position: relative;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.12) 18%, rgba(255, 255, 255, 0.04) 42%, rgba(255, 255, 255, 0.16) 100%);
-  color: var(--tm-tile-fg, #f7f8ff);
+    linear-gradient(168deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.1) 24%, transparent 42%),
+    linear-gradient(180deg, rgba(10, 16, 32, 0.5) 0%, rgba(6, 10, 22, 0.66) 100%);
+  color: #f7f8ff;
   border: 1px solid rgba(255, 255, 255, 0.38);
   border-top-color: rgba(255, 255, 255, 0.72);
   border-left-color: rgba(255, 255, 255, 0.5);
@@ -8750,8 +8751,10 @@ export const styles = `
   .tm-card.empty
 ) {
   opacity: 1;
-  color: rgba(255, 255, 255, 0.82);
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05));
+  color: rgba(255, 255, 255, 0.92);
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.06) 40%, transparent 70%),
+    rgba(8, 12, 24, 0.42);
   border: 1px dashed rgba(255, 255, 255, 0.42);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(22px) saturate(1.6);
@@ -8760,26 +8763,28 @@ export const styles = `
 
 [data-tm-theme="glass"] .tm-card-dark:not(.empty) {
   background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.22) 0%, rgba(8, 12, 24, 0.28) 46%, rgba(255, 255, 255, 0.08) 100%);
+    linear-gradient(165deg, rgba(255, 255, 255, 0.34) 0%, transparent 36%),
+    linear-gradient(180deg, rgba(10, 16, 32, 0.55), rgba(6, 10, 22, 0.7));
 }
 
 [data-tm-theme="glass"] .tm-weather-card.tm-weather-card {
   --tm-wx-fg: #f7f8ff;
-  --tm-wx-muted: rgba(247, 248, 255, 0.68);
-  --tm-wx-chip: rgba(255, 255, 255, 0.14);
-  --tm-wx-divider: rgba(255, 255, 255, 0.16);
+  --tm-wx-muted: rgba(247, 248, 255, 0.86);
+  --tm-wx-chip: rgba(255, 255, 255, 0.16);
+  --tm-wx-divider: rgba(255, 255, 255, 0.22);
   color: var(--tm-wx-fg);
   background:
-    linear-gradient(150deg, rgba(255, 255, 255, 0.48) 0%, rgba(255, 255, 255, 0.08) 34%, transparent 52%),
-    radial-gradient(78% 58% at 86% 0%, rgba(var(--tm-wx-glow), 0.42), transparent 70%),
-    rgba(255, 255, 255, 0.1);
+    linear-gradient(150deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 30%, transparent 46%),
+    radial-gradient(78% 58% at 86% 0%, rgba(var(--tm-wx-glow), 0.36), transparent 70%),
+    linear-gradient(180deg, rgba(10, 16, 32, 0.42), rgba(6, 10, 22, 0.62));
 }
 
 [data-tm-theme="glass"] .tm-history-card--toned {
   color: #f7f8ff;
   background:
     linear-gradient(150deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.06) 36%, transparent 54%),
-    color-mix(in srgb, var(--tm-tone) 26%, rgba(255, 255, 255, 0.08));
+    linear-gradient(180deg, rgba(10, 16, 32, 0.36), rgba(6, 10, 22, 0.55)),
+    color-mix(in srgb, var(--tm-tone) 22%, transparent);
 }
 
 [data-tm-theme="glass"] .tm-scene-gradient {
@@ -8788,16 +8793,30 @@ export const styles = `
 }
 
 [data-tm-theme="glass"] .tm-vi-wrap {
-  --tm-vi-text: #f7f8ff;
-  --tm-vi-muted: rgba(247, 248, 255, 0.66);
-  --tm-vi-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 16px 40px rgba(5, 8, 22, 0.28);
+  --tm-vi-text: #1d1d1f;
+  --tm-vi-muted: rgba(29, 29, 31, 0.64);
+  --tm-vi-shadow: 0 10px 28px rgba(5, 8, 22, 0.28);
+}
+[data-tm-theme="glass"] .tm-vi.tm-vi {
+  background: rgba(255, 255, 255, 0.94);
+  color: #1d1d1f;
 }
 
 [data-tm-theme="glass"] .tm-btn-round {
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  background: rgba(8, 12, 24, 0.46);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
   backdrop-filter: blur(16px) saturate(1.6);
   -webkit-backdrop-filter: blur(16px) saturate(1.6);
+}
+[data-tm-theme="glass"] .tm-btn-round:hover {
+  background: rgba(8, 12, 24, 0.62);
+}
+[data-tm-theme="glass"] .tm-presence-chip {
+  background: rgba(8, 12, 24, 0.46);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.32);
 }
 
 [data-tm-theme="glass"] .tm-settings-panel {
@@ -8806,13 +8825,77 @@ export const styles = `
 }
 
 [data-tm-theme="glass"] .tm-title-xl,
-[data-tm-theme="glass"] .tm-title-lg {
-  text-shadow: 0 1px 12px rgba(5, 8, 22, 0.28);
+[data-tm-theme="glass"] .tm-title-lg,
+[data-tm-theme="glass"] .tm-clock-lg,
+[data-tm-theme="glass"] .tm-dashboard-header .tm-text-sm {
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.72), 0 10px 28px rgba(0, 0, 0, 0.48) !important;
+}
+[data-tm-theme="glass"] .tm-dashboard-header .tm-opacity-70 { opacity: 0.94; }
+
+[data-tm-theme="glass"] :is(
+  .tm-light-card-area,
+  .tm-light-card-status,
+  .tm-cover-card-area,
+  .tm-cover-card-status,
+  .tm-scene-card-sub,
+  .tm-scene-card-kicker
+) {
+  opacity: 1;
+  color: rgba(247, 248, 255, 0.86);
+}
+[data-tm-theme="glass"] .tm-waste-card { --tm-waste-muted: rgba(247, 248, 255, 0.86); }
+[data-tm-theme="glass"] .tm-today-card {
+  --tm-today-muted: rgba(247, 248, 255, 0.86);
+  --tm-today-chip: rgba(255, 255, 255, 0.16);
+}
+[data-tm-theme="glass"] .tm-room-card { --tm-room-muted: rgba(247, 248, 255, 0.86); }
+[data-tm-theme="glass"] .tm-thermo { --tm-thermo-muted: rgba(247, 248, 255, 0.84); }
+[data-tm-theme="glass"] .tm-scene-card { --tm-scene-muted: rgba(247, 248, 255, 0.86); }
+[data-tm-theme="glass"] .tm-scene-card-title { text-shadow: 0 1px 8px rgba(5, 8, 22, 0.45); }
+
+[data-tm-theme="glass"] .tm-charge-card {
+  background:
+    linear-gradient(168deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.1) 24%, transparent 42%),
+    linear-gradient(180deg, rgba(10, 16, 32, 0.5) 0%, rgba(6, 10, 22, 0.66) 100%);
+  color: #f7f8ff;
+  border-color: rgba(255, 255, 255, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 18px 42px rgba(5, 8, 22, 0.28);
+  backdrop-filter: blur(28px) saturate(1.8);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+}
+[data-tm-theme="glass"] .tm-charge-card :is(
+  .tm-charge-title,
+  .tm-charge-now,
+  .tm-charge-kicker,
+  .tm-charge-year,
+  .tm-charge-unit,
+  .tm-charge-approx,
+  .tm-charge-day-when
+) { color: rgba(247, 248, 255, 0.86); }
+[data-tm-theme="glass"] .tm-charge-card :is(
+  .tm-charge-now strong,
+  .tm-charge-when,
+  .tm-charge-day-name,
+  .tm-charge-day-price
+) { color: #f7f8ff; }
+[data-tm-theme="glass"] .tm-charge-card :is(
+  .tm-charge-kicker.is-good,
+  .tm-charge-hero.is-wait .tm-charge-amount,
+  .tm-charge-day.is-active .tm-charge-day-name,
+  .tm-charge-day.is-active .tm-charge-day-price
+) { color: #8eecc0; }
+[data-tm-theme="glass"] .tm-charge-card .tm-charge-day { border-top-color: rgba(255, 255, 255, 0.16); }
+[data-tm-theme="glass"] .tm-charge-card .tm-charge-badge {
+  background: rgba(255, 255, 255, 0.16);
+  color: #f7f8ff;
 }
 
 /* Saugroboter, E-Auto und Licht: controls sit in the same liquid glass as the card */
 [data-tm-theme="glass"] .tm-vacuum-card {
-  --tm-vacuum-muted: rgba(247, 248, 255, 0.76);
+  --tm-vacuum-muted: rgba(247, 248, 255, 0.88);
   --tm-vacuum-chip: rgba(255, 255, 255, 0.14);
   --tm-vacuum-chip-primary: rgba(255, 255, 255, 0.28);
   --tm-vacuum-bristle: rgba(255, 255, 255, 0.78);
@@ -8862,7 +8945,7 @@ export const styles = `
 }
 
 [data-tm-theme="glass"] .tm-ev-card {
-  --tm-ev-muted: rgba(247, 248, 255, 0.76);
+  --tm-ev-muted: rgba(247, 248, 255, 0.88);
   --tm-ev-track: rgba(255, 255, 255, 0.16);
   --tm-ev-chip: rgba(255, 255, 255, 0.14);
 }
@@ -8880,7 +8963,7 @@ export const styles = `
 [data-tm-theme="glass"] .tm-ev-card-stat-icon { color: rgba(247, 248, 255, 0.82); }
 
 [data-tm-theme="glass"] .tm-light-card-area,
-[data-tm-theme="glass"] .tm-light-card-status { opacity: 0.72; }
+[data-tm-theme="glass"] .tm-light-card-status { opacity: 1; color: rgba(247, 248, 255, 0.86); }
 [data-tm-theme="glass"] .tm-light-card-visual {
   background:
     radial-gradient(ellipse 68% 58% at 50% 78%, rgba(var(--tm-light-rgb), calc(0.5 * var(--tm-light-level))), transparent 74%),

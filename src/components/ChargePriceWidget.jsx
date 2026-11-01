@@ -29,6 +29,12 @@ const STATUS_LABEL = {
   next: 'Nächstes Fenster',
 };
 
+const CARD_STATUS = {
+  wait: 'Warten',
+  today: 'Heute',
+  next: 'Nächstes',
+};
+
 function formatCt(value, estimated = false) {
   if (value == null || !Number.isFinite(value)) return '—';
   const text = `${CT.format(value)} ct`;
@@ -56,7 +62,7 @@ function PriceBadge({ badge }) {
   return <span className="tm-charge-badge">{badge}</span>;
 }
 
-function DayRow({ day, active }) {
+function DayRow({ day, active, compact = false }) {
   const window = day.window;
   return (
     <div className={`tm-charge-day${active ? ' is-active' : ''}${window ? '' : ' is-empty'}`}>
@@ -66,12 +72,12 @@ function DayRow({ day, active }) {
           <span className="tm-charge-day-when">{formatBerlinRange(window.startMs, window.endMs)}</span>
           <span className="tm-charge-day-price">
             {formatCt(window.avg, window.estimated)}
-            <PriceBadge badge={window.badge} />
+            {!compact && <PriceBadge badge={window.badge} />}
           </span>
         </>
       ) : (
         <span className="tm-charge-day-when">
-          {day.quarterCount > 0 ? 'kein vollständiges Fenster' : 'keine Preise'}
+          {compact ? '—' : (day.quarterCount > 0 ? 'kein vollständiges Fenster' : 'keine Preise')}
         </span>
       )}
     </div>
@@ -310,60 +316,48 @@ export default function ChargePriceWidget({ widget, hass, editMode = false }) {
         }}
       >
         <div className="tm-charge-layout">
-        <div className="tm-charge-card-top">
-          <span className="tm-charge-card-title">{title}</span>
-          <span className="tm-charge-card-more">Details</span>
-        </div>
+          <div className="tm-charge-head">
+            <span className="tm-charge-title">{title}</span>
+            {current && (
+              <span className="tm-charge-now">
+                <span>Jetzt</span>
+                <strong>{formatCt(current.price, false)}</strong>
+              </span>
+            )}
+          </div>
 
-        <div className="tm-charge-card-main">
-          <div className="tm-charge-card-copy">
-          <div className="tm-charge-card-hero">
-            <div className={`tm-charge-kicker${recommendation.status === 'wait' ? ' is-good' : ''}`}>
-              {recommendation.status === 'none' ? 'Keine Empfehlung' : STATUS_LABEL[recommendation.status]}
-            </div>
-            <div className="tm-charge-card-when">
-              {recommendation.status === 'none'
-                ? (REASONS[recommendation.reason] || REASONS.empty)
-                : windowWhen(days, recommendation.window)}
-            </div>
-            {recommendation.window && (
-              <div className="tm-charge-card-rate">
-                {formatCt(recommendation.window.avg, recommendation.window.estimated)}
-                <PriceBadge badge={recommendation.window.badge} />
+          <div className={`tm-charge-hero${recommendation.status === 'wait' ? ' is-wait' : ''}`}>
+            {recommendation.status !== 'none' && (
+              <div className={`tm-charge-kicker${recommendation.status === 'wait' ? ' is-good' : ''}`}>
+                {CARD_STATUS[recommendation.status]}
               </div>
             )}
-            {recommendation.status === 'wait' && (
-              <p className="tm-charge-card-save">
-                {CT.format(recommendation.diffCt)} ct günstiger als heute.
-                {' '}
-                Halber Akku ca. {EURO.format(recommendation.saveHalfEuro)}, voller Akku ca. {EURO.format(recommendation.saveFullEuro)}.
-              </p>
+            <div className="tm-charge-price">
+              {recommendation.window?.estimated && <span className="tm-charge-approx">≈</span>}
+              <span className="tm-charge-amount">
+                {recommendation.window ? CT.format(recommendation.window.avg) : '—'}
+              </span>
+              {recommendation.window && <span className="tm-charge-unit">ct</span>}
+            </div>
+            <div className="tm-charge-when">
+              {recommendation.status === 'none'
+                ? (REASONS[recommendation.reason] || REASONS.empty)
+                : (recommendation.status === 'today'
+                  ? formatBerlinRange(recommendation.window.startMs, recommendation.window.endMs)
+                  : windowWhen(days, recommendation.window))}
+            </div>
+          </div>
+
+          <div className="tm-charge-side">
+            <div className="tm-charge-days">
+              {previewDays.map((day) => (
+                <DayRow key={day.key} day={day} active={day.window?.startMs === activeStart} compact />
+              ))}
+            </div>
+            {year.status === 'ok' && year.ct != null && (
+              <div className="tm-charge-year">{CT.format(year.ct)} ct im Jahr</div>
             )}
           </div>
-
-          <div className="tm-charge-card-now">
-            <span>Jetzt</span>
-            <strong>{current ? formatCt(current.price, false) : '—'}</strong>
-            <small>Tibber</small>
-          </div>
-          </div>
-          <p className="tm-charge-card-note">Die Empfehlung startet oder stoppt die Ladung nicht.</p>
-        </div>
-
-        <div className="tm-charge-more">
-          <div className="tm-charge-days">
-            {previewDays.map((day) => (
-              <DayRow key={day.key} day={day} active={day.window?.startMs === activeStart} />
-            ))}
-          </div>
-          {year.status === 'ok' && year.ct != null && (
-            <div className="tm-charge-yearline">
-              Dieses Jahr {CT.format(year.ct)} ct/kWh
-              {year.kwh != null ? ` · ${KWH.format(year.kwh)} kWh` : ''}
-              {year.costEuro != null ? ` · ca. ${EURO.format(year.costEuro)}` : ''}
-            </div>
-          )}
-        </div>
         </div>
       </button>
       {open && (

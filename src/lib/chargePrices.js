@@ -23,6 +23,30 @@ const FORECAST_STALE_MS = 12 * 60 * 60 * 1000;
 
 const DEAD_STATES = new Set(['unavailable', 'unknown', 'none', '']);
 
+const wallFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: BERLIN,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+});
+const weekdayFormatter = new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN, weekday: 'long' });
+const clockFormatter = new Intl.DateTimeFormat('de-DE', {
+  timeZone: BERLIN,
+  hour: '2-digit',
+  minute: '2-digit',
+});
+const dateFormatter = new Intl.DateTimeFormat('de-DE', {
+  timeZone: BERLIN,
+  weekday: 'short',
+  day: 'numeric',
+  month: 'numeric',
+});
+const offsetCache = new Map();
+
 function pad(value) {
   return String(value).padStart(2, '0');
 }
@@ -44,18 +68,8 @@ function snapQuarter(ms) {
 }
 
 function berlinWallParts(date) {
-  const fmt = new Intl.DateTimeFormat('en-GB', {
-    timeZone: BERLIN,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23',
-  });
   const bag = {};
-  fmt.formatToParts(date).forEach((part) => {
+  wallFormatter.formatToParts(date).forEach((part) => {
     if (part.type !== 'literal') bag[part.type] = part.value;
   });
   let year = Number(bag.year);
@@ -80,9 +94,15 @@ function berlinWallParts(date) {
 }
 
 function berlinOffsetMs(utcMs) {
+  const key = Math.floor(utcMs / 3600000);
+  const cached = offsetCache.get(key);
+  if (cached != null) return cached;
   const parts = berlinWallParts(new Date(utcMs));
   const asUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
-  return asUtc - utcMs;
+  const offset = asUtc - utcMs;
+  if (offsetCache.size > 72) offsetCache.clear();
+  offsetCache.set(key, offset);
+  return offset;
 }
 
 function berlinDateTimeToUtc(year, month, day, hour, minute) {
@@ -102,7 +122,7 @@ function dayKey(parts) {
 
 function weekdayLabel(parts) {
   const noon = berlinDateTimeToUtc(parts.year, parts.month, parts.day, 12, 0);
-  return new Intl.DateTimeFormat('de-DE', { timeZone: BERLIN, weekday: 'long' }).format(new Date(noon));
+  return weekdayFormatter.format(new Date(noon));
 }
 
 function dayLabel(parts, offset) {
@@ -113,11 +133,7 @@ function dayLabel(parts, offset) {
 
 export function formatBerlinClock(ms) {
   if (!Number.isFinite(ms)) return '';
-  return new Intl.DateTimeFormat('de-DE', {
-    timeZone: BERLIN,
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(ms));
+  return clockFormatter.format(new Date(ms));
 }
 
 export function formatBerlinRange(startMs, endMs) {
@@ -126,12 +142,7 @@ export function formatBerlinRange(startMs, endMs) {
 
 export function formatBerlinDate(ms) {
   if (!Number.isFinite(ms)) return '';
-  return new Intl.DateTimeFormat('de-DE', {
-    timeZone: BERLIN,
-    weekday: 'short',
-    day: 'numeric',
-    month: 'numeric',
-  }).format(new Date(ms));
+  return dateFormatter.format(new Date(ms));
 }
 
 function readPrice(value) {
@@ -243,46 +254,59 @@ export function assessSurcharge(tibberQuarters, forecastQuarters) {
   };
 }
 
-function cheapestWindow(slots, parts, now) {
+function daySpan(parts) {
+  const midnight = berlinDateTimeToUtc(parts.year, parts.month, parts.day, 0, 0);
+  const next = shiftBerlinDay(parts, 1);
+  const nextMidnight = berlinDateTimeToUtc(next.year, next.month, next.day, 0, 0);
+  const offset = berlinOffsetMs(midnight);
+  const endOffset = berlinOffsetMs(Math.max(midnight, nextMidnight - 1));
+  const starts = [];
+  if (offset === endOffset) {
+    const last = midnight + 22 * 60 * 60 * 1000;
+    for (let startMs = midnight; startMs <= last; startMs += QUARTER_MS) starts.push(startMs);
+  } else {
+    for (let index = 0; index <= 88; index += 1) {
+      const hour = Math.floor(index / 4);
+      const minute = (index % 4) * 15;
+      starts.push(snapQuarter(berlinDateTimeToUtc(parts.year, parts.month, parts.day, hour, minute)));
+    }
+  }
+  return { midnight, nextMidnight, starts };
+}
+
+function cheapestWindow(slots, starts, parts, now) {
   let best = null;
-  for (let index = 0; index <= 88; index += 1) {
-    const hour = Math.floor(index / 4);
-    const minute = (index % 4) * 15;
-    const startMs = snapQuarter(berlinDateTimeToUtc(parts.year, parts.month, parts.day, hour, minute));
-    if (startMs < now) continue;
-    const points = [];
-    let complete = true;
+  const key = dayKey(parts);
+  starts.forEach((startMs) => {
+    if (startMs < now) return;
+    let sum = 0;
+    let estimated = false;
+    let forecastOrigin = false;
     for (let step = 0; step < WINDOW_SLOTS; step += 1) {
       const slot = slots.get(startMs + step * QUARTER_MS);
-      if (!slot) {
-        complete = false;
-        break;
-      }
-      points.push(slot);
+      if (!slot) return;
+      sum += slot.price;
+      if (slot.estimated) estimated = true;
+      if (slot.origin === 'forecast') forecastOrigin = true;
     }
-    if (!complete) continue;
-    const avg = points.reduce((sum, slot) => sum + slot.price, 0) / WINDOW_SLOTS;
+    const avg = sum / WINDOW_SLOTS;
     if (!best || avg < best.avg - 1e-6 || (Math.abs(avg - best.avg) <= 1e-6 && startMs < best.startMs)) {
-      const estimated = points.some((slot) => slot.estimated);
       best = {
         startMs,
         endMs: startMs + WINDOW_SLOTS * QUARTER_MS,
         avg,
         estimated,
-        badge: !estimated ? null : (points.some((slot) => slot.origin === 'forecast') ? 'Prognose' : 'geschätzt'),
-        dayKey: dayKey(parts),
+        badge: !estimated ? null : (forecastOrigin ? 'Prognose' : 'geschätzt'),
+        dayKey: key,
       };
     }
-  }
+  });
   return best;
 }
 
-function quarterCount(slots, parts) {
+function quarterCount(slots, midnight, nextMidnight) {
   let count = 0;
-  for (let index = 0; index < 96; index += 1) {
-    const hour = Math.floor(index / 4);
-    const minute = (index % 4) * 15;
-    const startMs = snapQuarter(berlinDateTimeToUtc(parts.year, parts.month, parts.day, hour, minute));
+  for (let startMs = midnight; startMs < nextMidnight; startMs += QUARTER_MS) {
     if (slots.has(startMs)) count += 1;
   }
   return count;
@@ -293,13 +317,13 @@ function buildDays(slots, now) {
   const days = [];
   for (let offset = 0; offset < DAY_COUNT; offset += 1) {
     const parts = shiftBerlinDay(today, offset);
-    const window = cheapestWindow(slots, parts, now);
+    const span = daySpan(parts);
     days.push({
       key: dayKey(parts),
       label: dayLabel(parts, offset),
       weekday: weekdayLabel(parts),
-      quarterCount: quarterCount(slots, parts),
-      window,
+      quarterCount: quarterCount(slots, span.midnight, span.nextMidnight),
+      window: cheapestWindow(slots, span.starts, parts, now),
     });
   }
   return days;

@@ -1,10 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, X } from 'lucide-react';
 import { getOverlayRoot, useOverlayLock } from '../lib/overlayPortal';
 import {
   BATTERY_KWH,
+  COMPARISON_ENTITY,
+  FORECAST_ENTITY,
   HALF_BATTERY_KWH,
+  TIBBER_PRICE_ENTITY,
+  YEAR_ENERGY_ENTITY,
+  YEAR_PRICE_ENTITY,
   buildChargeOutlook,
   formatBerlinClock,
   formatBerlinDate,
@@ -45,6 +50,23 @@ function formatSignedCt(value) {
   if (!Number.isFinite(value)) return '—';
   const prefix = value > 0 ? '+' : value < 0 ? '−' : '';
   return `${prefix}${CT.format(Math.abs(value))} ct`;
+}
+
+function usePriceMinute() {
+  const [minute, setMinute] = useState(() => Math.floor(Date.now() / 60000));
+  useEffect(() => {
+    let timer = 0;
+    const arm = () => {
+      const delay = 60000 - (Date.now() % 60000) + 20;
+      timer = window.setTimeout(() => {
+        setMinute(Math.floor(Date.now() / 60000));
+        arm();
+      }, delay);
+    };
+    arm();
+    return () => window.clearTimeout(timer);
+  }, []);
+  return minute;
 }
 
 function dayFor(days, dayKey) {
@@ -296,7 +318,30 @@ function ChargeSheet({ outlook, title, onClose }) {
 
 export default function ChargePriceWidget({ widget, hass, editMode = false }) {
   const [open, setOpen] = useState(false);
-  const outlook = buildChargeOutlook(hass?.states);
+  const minute = usePriceMinute();
+  const states = hass?.states;
+  const tibber = states?.[TIBBER_PRICE_ENTITY];
+  const forecast = states?.[FORECAST_ENTITY];
+  const comparison = states?.[COMPARISON_ENTITY];
+  const yearPrice = states?.[YEAR_PRICE_ENTITY];
+  const yearEnergy = states?.[YEAR_ENERGY_ENTITY];
+  const outlook = useMemo(
+    () => buildChargeOutlook(states),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      minute,
+      tibber?.state,
+      tibber?.last_updated,
+      forecast?.state,
+      forecast?.last_updated,
+      comparison?.state,
+      comparison?.last_updated,
+      yearPrice?.state,
+      yearPrice?.last_updated,
+      yearEnergy?.state,
+      yearEnergy?.last_updated,
+    ],
+  );
   const { recommendation, days, current, year } = outlook;
   const title = widget?.label?.trim() || 'Dynamische Ladepreise';
   const previewDays = days.slice(0, 3);

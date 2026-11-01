@@ -2,24 +2,24 @@ import { execSync } from 'node:child_process'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import cssInjectedByJsPlugin from 'vite-plugin-css-injected-by-js'
+import { formatBuildStamp, makeBuildToken } from './src/lib/buildStamp.js'
 
-function buildId() {
+function buildMeta() {
   let hash = 'dev'
   try {
     hash = execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim()
   } catch {
     // local checkout without git
   }
-  const stamp = new Intl.DateTimeFormat('de-DE', {
-    timeZone: 'Europe/Berlin',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date())
-  return `${hash} · ${stamp}`
+  const now = new Date()
+  const label = `${hash} · ${formatBuildStamp(now)}`
+  return {
+    label,
+    token: makeBuildToken(hash, now.getTime(), label),
+  }
 }
+
+const build = buildMeta()
 
 export default defineConfig({
   plugins: [
@@ -40,6 +40,7 @@ export default defineConfig({
   define: {
     'process.env': JSON.stringify({ NODE_ENV: 'production' }),
     global: 'window',
-    'import.meta.env.VITE_TM_BUILD': JSON.stringify(buildId()),
+    'import.meta.env.VITE_TM_BUILD': JSON.stringify(build.label),
+    'import.meta.env.VITE_TM_BUILD_TOKEN': JSON.stringify(build.token),
   },
 })

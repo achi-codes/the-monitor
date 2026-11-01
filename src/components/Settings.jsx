@@ -7,7 +7,7 @@ import { useConfig } from '../context/ConfigContext';
 import { useHass } from '../context/HassContext';
 import { loadHassUrl } from '../lib/hassConnection';
 import { COLOR_MODES, COLOR_SETS } from '../lib/colorThemes';
-import { BUILD_ID } from '../lib/buildInfo';
+import { BUILD_ID, compareInstalledBuild } from '../lib/buildInfo';
 
 export default function Settings({ onBack }) {
   const [brightness, setBrightness] = useState(80);
@@ -31,10 +31,22 @@ export default function Settings({ onBack }) {
   const [hassUrl, setHassUrl] = useState(loadHassUrl);
   const [accessToken, setAccessToken] = useState('');
   const [showTokenLogin, setShowTokenLogin] = useState(false);
+  const [buildCheck, setBuildCheck] = useState({ status: 'checking', installedLabel: '' });
+  const buildBehind = buildCheck.status === 'behind' || buildCheck.status === 'different';
 
   useEffect(() => {
     setHassUrl(loadHassUrl());
   }, [isConnected]);
+
+  useEffect(() => {
+    let cancel = false;
+    compareInstalledBuild().then((result) => {
+      if (!cancel) setBuildCheck(result);
+    });
+    return () => {
+      cancel = true;
+    };
+  }, []);
 
   const handleLogin = () => {
     if (!hassUrl.trim()) return;
@@ -113,6 +125,18 @@ export default function Settings({ onBack }) {
       </div>
 
       <div className="tm-settings-scroll">
+        {buildBehind && (
+          <div className="tm-version-alert" role="status">
+            <strong>
+              {buildCheck.status === 'behind'
+                ? 'Die angezeigte Version hängt hinter der installierten.'
+                : 'Die angezeigte Version ist nicht die installierte Datei.'}
+            </strong>
+            <p>Angezeigt: <span className="tm-build-id">{BUILD_ID}</span></p>
+            <p>Installiert: <span className="tm-build-id">{buildCheck.installedLabel}</span></p>
+            <p>Neue Kacheln fehlen, bis die Seite hart neu geladen wird.</p>
+          </div>
+        )}
         {tab === 'display' && (
           <div className="tm-settings-layout">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -444,11 +468,22 @@ export default function Settings({ onBack }) {
               </h3>
               <div className="tm-setting-group">
                 <div className="tm-flex-row tm-justify-between tm-items-center">
-                  <span>Build</span>
+                  <span>Angezeigt</span>
                   <span className="tm-build-id">{BUILD_ID}</span>
                 </div>
+                {buildCheck.installedLabel && buildCheck.status !== 'current' && (
+                  <div className="tm-flex-row tm-justify-between tm-items-center">
+                    <span>Installiert</span>
+                    <span className="tm-build-id">{buildCheck.installedLabel}</span>
+                  </div>
+                )}
                 <p className="tm-text-sm tm-opacity-70">
-                  Steht hier eine ältere Nummer, lädt das Gerät noch eine gecachte Datei — hart neu laden.
+                  {buildCheck.status === 'current' && 'Das ist die installierte Version.'}
+                  {buildCheck.status === 'behind' && 'Diese Ausgabe ist älter als die Datei auf Home Assistant.'}
+                  {buildCheck.status === 'different' && 'Diese Ausgabe ist nicht die Datei auf Home Assistant.'}
+                  {(buildCheck.status === 'unknown' || buildCheck.status === 'checking') && (
+                    'Steht hier eine ältere Nummer, lädt das Gerät noch eine gecachte Datei — hart neu laden.'
+                  )}
                 </p>
               </div>
             </div>
@@ -480,10 +515,11 @@ export default function Settings({ onBack }) {
         {tab === 'dashboard' && <WidgetConfig />}
       </div>
 
-      <div className="tm-settings-build">
+      <div className={`tm-settings-build${buildBehind ? ' tm-settings-build--behind' : ''}`}>
         The Monitor
         {' · '}
         <span className="tm-build-id">{BUILD_ID}</span>
+        {buildBehind && ' · nicht die installierte Version'}
       </div>
     </div>
   );

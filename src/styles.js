@@ -4264,6 +4264,17 @@ export const styles = `
   user-select: text;
   letter-spacing: 0.01em;
 }
+.tm-settings-build--behind { opacity: 1; color: #9a6700; }
+.tm-version-alert {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.15rem;
+  border-radius: 1rem;
+  background: #fff4e0;
+  color: #1c1c1e;
+  border: 1px solid #e0a100;
+}
+.tm-version-alert strong { display: block; margin-bottom: 0.35rem; }
+.tm-version-alert p { margin: 0.2rem 0 0; font-size: 0.95rem; line-height: 1.4; }
 .tm-placeholder-widget {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   height: 100%; opacity: 0.4; gap: 0.5rem; text-align: center; padding: 1rem;

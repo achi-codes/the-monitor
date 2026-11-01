@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronRight, MapPin } from 'lucide-react';
 import { useHass } from '../context/HassContext';
 import {
   WASTE_TYPES,
@@ -30,14 +29,14 @@ function WasteBin({ type, className }) {
 function PickupRow({ pickup }) {
   const meta = WASTE_TYPES[pickup.type] || WASTE_TYPES.rest;
   return (
-    <div className="tm-waste-row">
+    <div className="tm-waste-row" style={{ '--tm-waste-accent': meta.color }}>
       <span className="tm-waste-row-thumb">
         <WasteBin type={pickup.type} className="tm-waste-row-bin" />
       </span>
       <span className="tm-waste-row-copy">
         <span className="tm-waste-row-line">
-          <span className="tm-waste-row-name">{pickupLabel(pickup)}</span>
-          <span className="tm-waste-row-eta" style={{ color: meta.color }}>{formatWasteInDays(pickup.days)}</span>
+          <span className="tm-waste-row-name" title={pickupLabel(pickup)}>{pickupLabel(pickup)}</span>
+          <span className="tm-waste-row-eta">{formatWasteInDays(pickup.days)}</span>
         </span>
         <span className="tm-waste-row-date">{formatWasteListDate(pickup.date)}</span>
       </span>
@@ -82,16 +81,19 @@ export default function WasteWidget({ widget, editMode = false, onConfigure }) {
 
   const { next, upcoming } = useMemo(() => groupWastePickups(pickups), [pickups]);
   const featured = next?.[0] || null;
-  const list = useMemo(() => (next ? [...next, ...upcoming] : []), [next, upcoming]);
   const heading = !widget?.label || /^(müll|muell|waste)$/i.test(widget.label.trim())
     ? 'Müllkalender'
     : widget.label;
   const place = wasteLocation(widget, pickups);
   const urgent = featured?.days === 0;
+  const showAgenda = upcoming.length > 0;
+  const heroBins = next?.slice(0, 2) || [];
+  const heroNames = next?.map((pickup) => pickupLabel(pickup)).join(' · ') || '';
+  const accent = featured ? (WASTE_TYPES[featured.type]?.color || WASTE_TYPES.rest.color) : undefined;
 
   return (
     <div
-      className={`tm-card tm-waste-card${urgent ? ' tm-waste-card--today' : ''}`}
+      className={`tm-card tm-waste-card${urgent ? ' tm-waste-card--today' : ''}${showAgenda ? ' tm-waste-card--split' : ''}`}
       onClick={editMode ? onConfigure : undefined}
       role={editMode ? 'button' : undefined}
     >
@@ -99,21 +101,30 @@ export default function WasteWidget({ widget, editMode = false, onConfigure }) {
         <section className="tm-waste-hero">
           <header className="tm-waste-hero-head">
             <div className="tm-waste-title">{heading}</div>
-            <div className="tm-waste-place">{place}</div>
+            {place ? <div className="tm-waste-place">{place}</div> : null}
           </header>
 
           {featured ? (
-            <div className="tm-waste-feature">
-              <div className="tm-waste-date">
-                <span className="tm-waste-date-week">{formatWasteWeekday(featured.date)}</span>
-                <span className="tm-waste-date-day">{featured.date.getDate()}</span>
-                <span className="tm-waste-date-month">{formatWasteMonth(featured.date)}</span>
-              </div>
-              <div className="tm-waste-feature-bin">
-                <WasteBin type={featured.type} />
-                <div className="tm-waste-hero-names">
-                  {next.map((pickup) => pickupLabel(pickup)).join(' · ')}
+            <div
+              className="tm-waste-feature"
+              style={{ '--tm-waste-accent': accent }}
+              aria-label={`${heroNames}, ${formatWasteWeekday(featured.date)} ${featured.date.getDate()}. ${formatWasteMonth(featured.date)}, ${formatWasteInDays(featured.days)}`}
+            >
+              <div className="tm-waste-when" aria-hidden="true">
+                <div className="tm-waste-date">
+                  <span className="tm-waste-date-week">{formatWasteWeekday(featured.date)}</span>
+                  <span className="tm-waste-date-day">{featured.date.getDate()}</span>
+                  <span className="tm-waste-date-month">{formatWasteMonth(featured.date)}</span>
+                  <span className="tm-waste-eta">{formatWasteInDays(featured.days)}</span>
                 </div>
+              </div>
+              <div className={`tm-waste-stage${heroBins.length > 1 ? ' tm-waste-stage--multi' : ''}`} aria-hidden="true">
+                <div className="tm-waste-bins">
+                  {heroBins.map((pickup) => (
+                    <WasteBin key={pickup.id} type={pickup.type} />
+                  ))}
+                </div>
+                <div className="tm-waste-hero-names">{heroNames}</div>
               </div>
             </div>
           ) : (
@@ -121,24 +132,18 @@ export default function WasteWidget({ widget, editMode = false, onConfigure }) {
           )}
         </section>
 
-        <section className="tm-waste-agenda">
-          <header className="tm-waste-agenda-head">
-            <span className="tm-waste-agenda-label">
-              <MapPin />
-              Nächste Abholung
-            </span>
-            <span className="tm-waste-chip" aria-hidden="true">
-              <ChevronRight />
-            </span>
-          </header>
-          <div className="tm-waste-list">
-            {list.length ? list.map((pickup) => (
-              <PickupRow key={pickup.id} pickup={pickup} />
-            )) : (
-              <div className="tm-waste-empty">Keine weiteren Termine</div>
-            )}
-          </div>
-        </section>
+        {showAgenda ? (
+          <section className="tm-waste-agenda" aria-label="Weitere Abfuhren">
+            <header className="tm-waste-agenda-head">
+              <span className="tm-waste-agenda-label">Weitere</span>
+            </header>
+            <div className="tm-waste-list">
+              {upcoming.map((pickup) => (
+                <PickupRow key={pickup.id} pickup={pickup} />
+              ))}
+            </div>
+          </section>
+        ) : null}
       </div>
     </div>
   );

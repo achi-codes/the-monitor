@@ -8810,6 +8810,107 @@ export const styles = `
   text-shadow: 0 1px 12px rgba(5, 8, 22, 0.28);
 }
 
+/* Saugroboter, E-Auto und Licht: controls sit in the same liquid glass as the card */
+[data-tm-theme="glass"] .tm-vacuum-card {
+  --tm-vacuum-muted: rgba(247, 248, 255, 0.76);
+  --tm-vacuum-chip: rgba(255, 255, 255, 0.14);
+  --tm-vacuum-chip-primary: rgba(255, 255, 255, 0.28);
+  --tm-vacuum-bristle: rgba(255, 255, 255, 0.78);
+}
+[data-tm-theme="glass"] .tm-vacuum-title,
+[data-tm-theme="glass"] .tm-vacuum-battery,
+[data-tm-theme="glass"] .tm-ev-card-title,
+[data-tm-theme="glass"] .tm-ev-card-value,
+[data-tm-theme="glass"] .tm-light-card-title,
+[data-tm-theme="glass"] .tm-light-card-value {
+  text-shadow: 0 1px 12px rgba(5, 8, 22, 0.32);
+}
+[data-tm-theme="glass"] .tm-vacuum-action,
+[data-tm-theme="glass"] .tm-vacuum-zone,
+[data-tm-theme="glass"] .tm-vacuum-zones-close,
+[data-tm-theme="glass"] .tm-ev-card-stat {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    0 8px 18px rgba(5, 8, 22, 0.14);
+  backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+}
+[data-tm-theme="glass"] .tm-vacuum-action--primary,
+[data-tm-theme="glass"] .tm-vacuum-zone--active {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56) 0%, rgba(255, 255, 255, 0.2) 100%);
+  border-color: rgba(255, 255, 255, 0.62);
+}
+[data-tm-theme="glass"] .tm-vacuum-floor {
+  background: radial-gradient(closest-side, rgba(8, 12, 24, 0.22), transparent 72%);
+  filter: blur(6px);
+}
+[data-tm-theme="glass"] .tm-vacuum-led { mix-blend-mode: screen; }
+[data-tm-theme="glass"] .tm-vacuum-bot img {
+  filter: drop-shadow(0 10px 14px rgba(5, 8, 22, 0.28));
+}
+[data-tm-theme="glass"] .tm-vacuum-zones {
+  background:
+    linear-gradient(150deg, rgba(255, 255, 255, 0.46) 0%, rgba(255, 255, 255, 0.12) 48%, rgba(8, 12, 24, 0.18) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(28px) saturate(1.7);
+  -webkit-backdrop-filter: blur(28px) saturate(1.7);
+}
+
+[data-tm-theme="glass"] .tm-ev-card {
+  --tm-ev-muted: rgba(247, 248, 255, 0.76);
+  --tm-ev-track: rgba(255, 255, 255, 0.16);
+  --tm-ev-chip: rgba(255, 255, 255, 0.14);
+}
+[data-tm-theme="glass"] .tm-ev-card-art img {
+  filter: drop-shadow(0 16px 22px rgba(5, 8, 22, 0.28));
+}
+[data-tm-theme="glass"] .tm-ev-card-bar-track {
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.12);
+}
+[data-tm-theme="glass"] .tm-ev-card-bar-fill {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+[data-tm-theme="glass"] .tm-ev-card-stat-icon { color: rgba(247, 248, 255, 0.82); }
+
+[data-tm-theme="glass"] .tm-light-card-area,
+[data-tm-theme="glass"] .tm-light-card-status { opacity: 0.72; }
+[data-tm-theme="glass"] .tm-light-card-visual {
+  background:
+    radial-gradient(ellipse 68% 58% at 50% 78%, rgba(var(--tm-light-rgb), calc(0.5 * var(--tm-light-level))), transparent 74%),
+    linear-gradient(165deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.06) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 10px 22px rgba(5, 8, 22, 0.16);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+}
+[data-tm-theme="glass"] .tm-light-card-slider {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+}
+[data-tm-theme="glass"] .tm-light-card-slider-thumb {
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 6px 16px rgba(5, 8, 22, 0.24),
+    0 0 1rem rgba(251, 191, 36, 0.28);
+}
+[data-tm-theme="glass"] .tm-light-card-swatch {
+  border-color: rgba(255, 255, 255, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 4px 10px rgba(5, 8, 22, 0.18);
+}
+
 
 .tm-thermo {
   --tm-thermo-muted: color-mix(in srgb, currentColor 52%, transparent);

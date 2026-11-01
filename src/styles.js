@@ -4275,6 +4275,23 @@ export const styles = `
 }
 .tm-version-alert strong { display: block; margin-bottom: 0.35rem; }
 .tm-version-alert p { margin: 0.2rem 0 0; font-size: 0.95rem; line-height: 1.4; }
+.tm-version-reload {
+  margin-top: 0.85rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 1.1rem;
+  border: 0;
+  border-radius: 999px;
+  background: #1c1c1e;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+.tm-version-reload:disabled { opacity: 0.55; cursor: default; }
+.tm-version-reload:focus-visible {
+  outline: 2px solid #1c1c1e;
+  outline-offset: 3px;
+}
 .tm-placeholder-widget {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   height: 100%; opacity: 0.4; gap: 0.5rem; text-align: center; padding: 1rem;

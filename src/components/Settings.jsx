@@ -7,7 +7,7 @@ import { useConfig } from '../context/ConfigContext';
 import { useHass } from '../context/HassContext';
 import { loadHassUrl } from '../lib/hassConnection';
 import { COLOR_MODES, COLOR_SETS } from '../lib/colorThemes';
-import { BUILD_ID, compareInstalledBuild } from '../lib/buildInfo';
+import { BUILD_ID, compareInstalledBuild, hardReloadPage } from '../lib/buildInfo';
 
 export default function Settings({ onBack }) {
   const [brightness, setBrightness] = useState(80);
@@ -32,6 +32,7 @@ export default function Settings({ onBack }) {
   const [accessToken, setAccessToken] = useState('');
   const [showTokenLogin, setShowTokenLogin] = useState(false);
   const [buildCheck, setBuildCheck] = useState({ status: 'checking', installedLabel: '' });
+  const [reloading, setReloading] = useState(false);
   const buildBehind = buildCheck.status === 'behind' || buildCheck.status === 'different';
 
   useEffect(() => {
@@ -134,7 +135,18 @@ export default function Settings({ onBack }) {
             </strong>
             <p>Angezeigt: <span className="tm-build-id">{BUILD_ID}</span></p>
             <p>Installiert: <span className="tm-build-id">{buildCheck.installedLabel}</span></p>
-            <p>Neue Kacheln fehlen, bis die Seite hart neu geladen wird.</p>
+            <p>Neue Kacheln fehlen in dieser Ausgabe.</p>
+            <button
+              type="button"
+              className="tm-version-reload"
+              onClick={() => {
+                setReloading(true);
+                hardReloadPage();
+              }}
+              disabled={reloading}
+            >
+              {reloading ? 'Lädt neu …' : 'Hart neu laden'}
+            </button>
           </div>
         )}
         {tab === 'display' && (

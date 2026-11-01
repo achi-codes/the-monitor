@@ -48,3 +48,21 @@ export async function compareInstalledBuild() {
     return { status: 'unknown', installedLabel: '' };
   }
 }
+
+export async function hardReloadPage() {
+  const scriptUrl = runningScriptUrl();
+  try {
+    if (typeof caches !== 'undefined') {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+    if (scriptUrl) {
+      await fetch(scriptUrl, { cache: 'reload', credentials: 'same-origin' });
+    }
+  } catch {
+    // The navigation below still replaces the cached page.
+  }
+  const next = new URL(window.location.href);
+  next.searchParams.set('tm_reload', String(Date.now()));
+  window.location.replace(next.href);
+}

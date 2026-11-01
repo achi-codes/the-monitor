@@ -24,6 +24,7 @@ export default function Settings({ onBack }) {
     connect,
     login,
     disconnect,
+    hass,
     states,
   } = useHass();
   const fileRef = useRef(null);
@@ -141,7 +142,7 @@ export default function Settings({ onBack }) {
               className="tm-version-reload"
               onClick={() => {
                 setReloading(true);
-                hardReloadPage();
+                hardReloadPage(hass);
               }}
               disabled={reloading}
             >

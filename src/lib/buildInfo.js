@@ -7,7 +7,6 @@ function monitorScriptUrl(value) {
   try {
     const url = new URL(value, window.location.href);
     if (!/\/the-monitor\.js$/i.test(url.pathname)) return '';
-    url.search = '';
     url.hash = '';
     return url.href;
   } catch {
@@ -35,6 +34,21 @@ export function runningScriptUrl() {
   return '';
 }
 
+async function replaceLovelaceResource(hass, currentUrl) {
+  if (!hass?.callWS || !currentUrl) return;
+  const resources = await hass.callWS({ type: 'lovelace/resources' });
+  const resource = (resources || []).find((item) => /\/the-monitor\.js(?:\?|$)/.test(item?.url || ''));
+  if (!resource?.id) return;
+  const fresh = new URL(currentUrl, window.location.origin);
+  fresh.searchParams.set('v', String(Date.now()));
+  await hass.callWS({
+    type: 'lovelace/resources/update',
+    resource_id: resource.id,
+    url: `${fresh.pathname}${fresh.search}`,
+    res_type: resource.res_type || resource.type || 'module',
+  });
+}
+
 export async function compareInstalledBuild() {
   const scriptUrl = runningScriptUrl();
   if (!BUILD_TOKEN || !scriptUrl) return { status: 'unknown', installedLabel: '' };
@@ -49,12 +63,21 @@ export async function compareInstalledBuild() {
   }
 }
 
-export async function hardReloadPage() {
+export async function hardReloadPage(hass) {
   const scriptUrl = runningScriptUrl();
+  try {
+    await replaceLovelaceResource(hass, scriptUrl);
+  } catch {
+    // A changed resource address is the reliable cache break. The reload still runs.
+  }
   try {
     if (typeof caches !== 'undefined') {
       const keys = await caches.keys();
       await Promise.all(keys.map((key) => caches.delete(key)));
+    }
+    if (navigator.serviceWorker?.getRegistrations) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
     }
     if (scriptUrl) {
       await fetch(scriptUrl, { cache: 'reload', credentials: 'same-origin' });

@@ -1,4 +1,4 @@
-import { normalizeConfig, DEFAULT_CONFIG } from './config';
+import { normalizeConfig, DEFAULT_CONFIG, ensureChargePricePage } from './config';
 
 export const SETUPS_STORAGE_KEY = 'the-monitor-setups';
 export const ACTIVE_SETUP_KEY = 'the-monitor-active-setup';
@@ -42,9 +42,9 @@ export function normalizeSetup(raw = {}) {
 }
 
 export function setupToConfig(setup) {
-  if (!setup) return normalizeConfig(DEFAULT_CONFIG);
+  if (!setup) return ensureChargePricePage(normalizeConfig(DEFAULT_CONFIG));
   const { id: _id, name: _name, ...rest } = setup;
-  return normalizeConfig(rest);
+  return ensureChargePricePage(normalizeConfig(rest));
 }
 
 export function applyConfigToSetup(setup, config) {

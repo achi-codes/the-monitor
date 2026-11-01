@@ -48,6 +48,7 @@ export const WIDGET_TYPES = {
   sankey: { label: 'Energiefluss', icon: 'mdi:chart-sankey', domains: [] },
   energyTile: { label: 'Energie-Kachel', icon: 'mdi:lightning-bolt', domains: [] },
   ev: { label: 'E-Auto', icon: 'mdi:car-electric', domains: [] },
+  chargePrice: { label: 'Dynamische Ladepreise', icon: 'mdi:chart-bell-curve', domains: [] },
   vacuum: { label: 'Saugroboter', icon: 'mdi:robot-vacuum', domains: ['vacuum'] },
   haCard: { label: 'HA-Karte', icon: 'mdi:card-bulleted', domains: [] },
 };
@@ -79,6 +80,7 @@ const DEFAULT_SIZE_BY_TYPE = {
   sankey: 'tall',
   energyTile: 'M',
   ev: 'L',
+  chargePrice: 'XL',
   vacuum: 'L',
   thermostat: 'XL',
   today: 'XL',

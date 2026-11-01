@@ -1,4 +1,5 @@
 import { MOCK_ROOM_STATES, attachMockRegistries } from './mockRooms';
+import { createMockChargeStates } from './chargePrices';
 import { computeSolarTimes, getMockTodayEvents } from './today';
 import { getMockWastePickups } from './waste';
 
@@ -287,6 +288,7 @@ const MOCK_STATES = {
     unit_of_measurement: '€',
     device_class: 'monetary',
   }),
+  ...createMockChargeStates(),
 };
 
 const serviceLog = [];

@@ -85,6 +85,7 @@ export const LAYOUT_PRESETS = [
         { id: 'page-home', name: 'Home', widgets: buildClassicWidgets(entities) },
         { id: 'page-list', name: 'Liste', widgets: [w('shopping', 0, 0, GRID_COLS, GRID_ROWS, { entity_id: entities.shopping || '' })] },
         { id: 'page-energy', name: 'Energie', widgets: buildEnergyPageWidgets() },
+        { id: 'page-laden', name: 'Laden', widgets: [w('chargePrice', 0, 0, GRID_COLS, GRID_ROWS, { label: 'Dynamische Ladepreise' })] },
       ],
     }),
   },

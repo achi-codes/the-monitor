@@ -183,6 +183,7 @@ export function getPastelCardColor(key = '0') {
 
 const FIXED_PASTEL_BY_WIDGET_TYPE = {
   ev: PASTEL_CARD_COLORS[0],
+  chargePrice: PASTEL_CARD_COLORS[5],
   vacuum: PASTEL_CARD_COLORS[0],
   weather: PASTEL_CARD_COLORS[3],
   today: PASTEL_CARD_COLORS[5],

@@ -99,6 +99,7 @@ export default function WidgetInspector({
   const isHaCard = widget.type === 'haCard';
   const isScene = widget.type === 'scene';
   const isEv = widget.type === 'ev';
+  const isChargePrice = widget.type === 'chargePrice';
   const isRoom = widget.type === 'room';
   const isVacuum = widget.type === 'vacuum';
   const isMedia = widget.type === 'media';
@@ -361,6 +362,15 @@ export default function WidgetInspector({
         </div>
       )}
 
+      {isChargePrice && (
+        <div className="tm-widget-inspector-section">
+          <label className="tm-widget-inspector-label">Ladepreise</label>
+          <p className="tm-widget-inspector-hint">
+            Zeigt Tibber, die Ladeprognose und die evcc-Jahresstatistik. Die Kachel startet keine Ladung.
+          </p>
+        </div>
+      )}
+
       {isEv && (
         <div className="tm-widget-inspector-section">
           <label className="tm-widget-inspector-label">Fahrzeug</label>
@@ -508,7 +518,7 @@ export default function WidgetInspector({
         </div>
       )}
 
-      {!isPopup && !isCoverPopup && !isCamera && !isSensor && !isSensorStatus && !isHaCard && !isScene && !isEv && !isRoom && !isMedia && !isToday && !isWaste && widget.type !== 'shopping' && !isSankey && !isEnergyTile && (
+      {!isPopup && !isCoverPopup && !isCamera && !isSensor && !isSensorStatus && !isHaCard && !isScene && !isEv && !isChargePrice && !isRoom && !isMedia && !isToday && !isWaste && widget.type !== 'shopping' && !isSankey && !isEnergyTile && (
         <div className="tm-widget-inspector-section">
           <label className="tm-widget-inspector-label">{isThermostat ? 'Klima' : 'Entität'}</label>
           <EntityPicker

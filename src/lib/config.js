@@ -1,5 +1,7 @@
 import embeddedHaConfig from '../../deploy/the-monitor-config.json';
 import {
+  GRID_COLS,
+  GRID_ROWS,
   SLOT_LIMITS,
   createDefaultLayout,
   createWidget,
@@ -439,6 +441,59 @@ function ensureSankeyPageInLayout(layout) {
   }
 
   return nextLayout;
+}
+
+function findOpenSpot(widgets, width, height) {
+  for (let y = 0; y <= GRID_ROWS - height; y += 1) {
+    for (let x = 0; x <= GRID_COLS - width; x += 1) {
+      if (findCollisions(widgets, { x, y, w: width, h: height }).length === 0) {
+        return { x, y, w: width, h: height };
+      }
+    }
+  }
+  return null;
+}
+
+function configHasChargePrice(config) {
+  return config.rooms?.some((room) => room.layout?.pages?.some((page) => (
+    page.widgets?.some((widget) => widget.type === 'chargePrice')
+  )));
+}
+
+export function ensureChargePricePage(config) {
+  if (!config?.rooms?.length || configHasChargePrice(config)) return config;
+  const next = structuredClone(config);
+  const layout = next.rooms[0]?.layout;
+  if (!layout?.pages?.length) return config;
+
+  if (layout.pages.length < SLOT_LIMITS.pages) {
+    layout.pages.push({
+      id: layout.pages.some((page) => page.id === 'page-laden')
+        ? `page-laden-${Date.now().toString(36)}`
+        : 'page-laden',
+      name: 'Laden',
+      widgets: [createWidget('chargePrice', {
+        x: 0,
+        y: 0,
+        w: GRID_COLS,
+        h: GRID_ROWS,
+        label: 'Dynamische Ladepreise',
+      })],
+    });
+    return normalizeConfig(next);
+  }
+
+  for (const page of layout.pages) {
+    const spot = findOpenSpot(page.widgets, 6, 2) || findOpenSpot(page.widgets, 4, 2);
+    if (!spot) continue;
+    page.widgets.push(createWidget('chargePrice', {
+      ...spot,
+      label: 'Dynamische Ladepreise',
+    }));
+    return normalizeConfig(next);
+  }
+
+  return config;
 }
 
 function ensureSankeyPage(config) {

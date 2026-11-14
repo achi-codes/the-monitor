@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Screensaver from './components/Screensaver';
 import Dashboard from './components/Dashboard';
 import Settings from './components/Settings';
@@ -23,17 +23,34 @@ function App() {
   const [view, setView] = useState(() => (readUiSession().view === 'settings' ? 'settings' : 'dashboard'));
   const [activeProfile] = useState(DEFAULT_PROFILE);
   const [lastActivity, setLastActivity] = useState(Date.now());
+  const [idleStage, setIdleStage] = useState(false);
+  const launchIdleRef = useRef(false);
+  const stageScreensaver = config.screensaver.style === 'stage';
 
   useEffect(() => {
     saveUiSession({ view });
   }, [view]);
 
+  useEffect(() => {
+    if (!stageScreensaver) setIdleStage(false);
+  }, [stageScreensaver]);
+
   const resetTimer = useCallback(() => {
+    if (launchIdleRef.current) {
+      launchIdleRef.current = false;
+      return;
+    }
     setLastActivity(Date.now());
+    setIdleStage(false);
     if (view === 'screensaver') {
       setView('dashboard');
     }
   }, [view]);
+
+  const showStageIdle = useCallback(() => {
+    launchIdleRef.current = true;
+    setIdleStage(true);
+  }, []);
 
   useEffect(() => {
     if (!config.screensaver.enabled) return undefined;
@@ -47,9 +64,12 @@ function App() {
     window.addEventListener('keydown', handleActivity);
 
     const interval = setInterval(() => {
-      if (Date.now() - lastActivity > idleTimeoutMs && view !== 'screensaver' && view !== 'settings') {
-        setView('screensaver');
+      if (Date.now() - lastActivity <= idleTimeoutMs || view === 'settings') return;
+      if (stageScreensaver) {
+        if (view !== 'screensaver') setIdleStage(true);
+        return;
       }
+      if (view !== 'screensaver') setView('screensaver');
     }, 1000);
 
     return () => {
@@ -59,7 +79,7 @@ function App() {
       window.removeEventListener('keydown', handleActivity);
       clearInterval(interval);
     };
-  }, [lastActivity, view, resetTimer, config.screensaver.enabled, config.screensaver.idleMinutes]);
+  }, [lastActivity, view, resetTimer, config.screensaver.enabled, config.screensaver.idleMinutes, stageScreensaver]);
 
   return (
     <div className="tm-full-screen" {...themeAttrs}>
@@ -85,7 +105,9 @@ function App() {
             <Dashboard
               user={activeProfile}
               onSettings={() => setView('settings')}
-              onScreensaver={() => setView('screensaver')}
+              onScreensaver={stageScreensaver ? showStageIdle : () => setView('screensaver')}
+              idleStage={stageScreensaver && idleStage}
+              onWake={resetTimer}
             />
           </div>
         )}

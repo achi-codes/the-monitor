@@ -119,7 +119,7 @@ export function normalizeConfig(raw = {}) {
         : DEFAULT_CONFIG.screensaver.idleMinutes,
       showDate: raw.screensaver.showDate !== false,
       showWeather: raw.screensaver.showWeather !== false,
-      style: raw.screensaver.style === 'sexy' ? 'sexy' : 'classic',
+      style: raw.screensaver.style === 'sexy' || raw.screensaver.style === 'stage' ? raw.screensaver.style : 'classic',
       rowMode: raw.screensaver.rowMode === 'custom' ? 'custom' : 'auto',
       row: normalizeScreensaverRow(raw.screensaver.row),
     };

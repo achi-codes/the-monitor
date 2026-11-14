@@ -15,7 +15,7 @@ import { QuickActionPopup, CoverPopup } from './widgets/ActionWidgets';
 import { RoomPopup } from './RoomWidget';
 import ContextStage from './ContextStage';
 
-export default function Dashboard({ user, onSettings, onScreensaver }) {
+export default function Dashboard({ user, onSettings, onScreensaver, idleStage = false, onWake }) {
   const [time, setTime] = useState(new Date());
   const [qaPopup, setQaPopup] = useState(null);
   const [restoredSession] = useState(readUiSession);
@@ -169,7 +169,12 @@ export default function Dashboard({ user, onSettings, onScreensaver }) {
               <button type="button" onClick={onSettings} className="tm-btn-round" aria-label="Einstellungen">
                 <Settings size={24} />
               </button>
-              <button type="button" onClick={onScreensaver} className="tm-btn-round" aria-label="Bildschirmschoner">
+              <button
+                type="button"
+                onClick={onScreensaver}
+                className="tm-btn-round"
+                aria-label={config.screensaver.style === 'stage' ? 'Bühne zeigen' : 'Bildschirmschoner'}
+              >
                 <Monitor size={24} />
               </button>
             </>
@@ -253,7 +258,11 @@ export default function Dashboard({ user, onSettings, onScreensaver }) {
         />
       )}
 
-      <ContextStage suspended={editMode || Boolean(qaPopup || pageManageOpen || slotPickerOpen)} />
+      <ContextStage
+        suspended={editMode || Boolean(qaPopup || pageManageOpen || slotPickerOpen)}
+        idle={idleStage}
+        onWake={onWake}
+      />
 
       {qaPopup && !editMode && (
         qaPopup.variant === 'room'

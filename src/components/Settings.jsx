@@ -310,7 +310,7 @@ export default function Settings({ onBack }) {
                   <div className="tm-color-mode-row">
                     <button
                       type="button"
-                      className={`tm-color-mode-btn${config.screensaver.style !== 'sexy' ? ' active' : ''}`}
+                      className={`tm-color-mode-btn${config.screensaver.style === 'classic' ? ' active' : ''}`}
                       onClick={() => updateScreensaver({ style: 'classic' })}
                     >
                       Klassisch
@@ -322,33 +322,46 @@ export default function Settings({ onBack }) {
                     >
                       Sexy
                     </button>
+                    <button
+                      type="button"
+                      className={`tm-color-mode-btn${config.screensaver.style === 'stage' ? ' active' : ''}`}
+                      onClick={() => updateScreensaver({ style: 'stage' })}
+                    >
+                      Bühne
+                    </button>
                   </div>
                 </div>
 
-                <label className="tm-setting-toggle">
-                  <input
-                    type="checkbox"
-                    checked={config.screensaver.showDate}
-                    onChange={(e) => updateScreensaver({ showDate: e.target.checked })}
-                  />
-                  <span>Datum anzeigen</span>
-                </label>
+                {config.screensaver.style !== 'stage' && (
+                  <>
+                    <label className="tm-setting-toggle">
+                      <input
+                        type="checkbox"
+                        checked={config.screensaver.showDate}
+                        onChange={(e) => updateScreensaver({ showDate: e.target.checked })}
+                      />
+                      <span>Datum anzeigen</span>
+                    </label>
 
-                <label className="tm-setting-toggle">
-                  <input
-                    type="checkbox"
-                    checked={config.screensaver.showWeather}
-                    onChange={(e) => updateScreensaver({ showWeather: e.target.checked })}
-                  />
-                  <span>Wetter anzeigen</span>
-                </label>
+                    <label className="tm-setting-toggle">
+                      <input
+                        type="checkbox"
+                        checked={config.screensaver.showWeather}
+                        onChange={(e) => updateScreensaver({ showWeather: e.target.checked })}
+                      />
+                      <span>Wetter anzeigen</span>
+                    </label>
+                  </>
+                )}
 
                 {config.screensaver.style === 'sexy' && <ScreensaverRowEditor />}
 
                 <p className="tm-text-sm tm-opacity-70">
-                  {config.screensaver.style === 'sexy'
-                    ? 'Sexy zeigt ein großes Foto mit Uhrzeit und darunter die Reihe mit den gewählten Kacheln.'
-                    : 'Der Bildschirmschoner lässt sich jederzeit manuell über das Monitor-Symbol im Dashboard starten.'}
+                  {config.screensaver.style === 'stage'
+                    ? 'Bühne legt nach der Wartezeit die große Kachel über das Dashboard. Läuft gerade nichts, zeigt sie die Uhr. Das Monitor-Symbol startet sie auch von Hand.'
+                    : config.screensaver.style === 'sexy'
+                      ? 'Sexy zeigt ein großes Foto mit Uhrzeit und darunter die Reihe mit den gewählten Kacheln.'
+                      : 'Der Bildschirmschoner lässt sich jederzeit manuell über das Monitor-Symbol im Dashboard starten.'}
                 </p>
               </div>
             </div>

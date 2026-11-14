@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 import { X } from 'lucide-react';
 import { useConfig } from '../context/ConfigContext';
 import { useHass } from '../context/HassContext';
@@ -45,7 +47,7 @@ function TileArt({ moment, hass }) {
 }
 
 function StageTile({ moment, lead, index, hass }) {
-  const word = String(moment.value || '').length > 3;
+  const word = moment.kind !== 'clock' && String(moment.value || '').length > 3;
   return (
     <article
       className={`tm-stage-tile tm-stage-tile--${moment.kind}${lead ? ' tm-stage-tile--lead' : ''}${word ? ' tm-stage-tile--word' : ''}`}
@@ -62,7 +64,7 @@ function StageTile({ moment, lead, index, hass }) {
       <div className="tm-stage-tile-body">
         <header className="tm-stage-head">
           <span className="tm-stage-kicker">{moment.kicker}</span>
-          <span className="tm-stage-live">{moment.status}</span>
+          {moment.status && <span className="tm-stage-live">{moment.status}</span>}
         </header>
         <div className="tm-stage-figure">
           {moment.kind === 'media' ? (
@@ -93,7 +95,27 @@ function StageTile({ moment, lead, index, hass }) {
   );
 }
 
-export default function ContextStage({ suspended = false }) {
+const CLOCK_THEME = { bg: '#14161c', fg: '#f4f6fb', accent: '#d5d8e0' };
+
+function clockMoment(now) {
+  const date = new Date(now);
+  return {
+    id: 'clock',
+    kind: 'clock',
+    theme: CLOCK_THEME,
+    kicker: 'Zuhause',
+    status: '',
+    value: format(date, 'HH:mm'),
+    unit: '',
+    caption: format(date, 'EEEE, d. MMMM', { locale: de }),
+    progress: null,
+    facts: [],
+    art: '',
+    bins: [],
+  };
+}
+
+export default function ContextStage({ suspended = false, idle = false, onWake }) {
   const { hass, isMock, revision } = useHass();
   const { config } = useConfig();
   const [wastePickups, setWastePickups] = useState([]);
@@ -136,30 +158,40 @@ export default function ContextStage({ suspended = false }) {
     if (!signature) setDismissed('');
   }, [signature]);
 
-  const ticking = moments.some((moment) => moment.kind === 'media');
+  const showClock = idle && !layout.pattern;
+  const ticking = showClock || moments.some((moment) => moment.kind === 'media');
   useEffect(() => {
     if (!ticking) return undefined;
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, [ticking]);
 
+  const visibleLayout = layout.pattern
+    ? layout
+    : (showClock ? { pattern: 'hero', tiles: [clockMoment(now)] } : null);
+  const hidden = !idle && dismissed === signature;
+
+  const open = Boolean(visibleLayout) && !hidden;
+
   useEffect(() => {
-    if (!layout.pattern || dismissed === signature) return undefined;
+    if (!open) return undefined;
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') setDismissed(signature);
+      if (event.key !== 'Escape') return;
+      setDismissed(signature);
+      if (idle) onWake?.();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [layout.pattern, dismissed, signature]);
+  }, [open, idle, signature, onWake]);
 
-  if (!layout.pattern || dismissed === signature) return null;
+  if (!open) return null;
 
   const sidebar = Boolean(config.roomSidebar && config.rooms.length > 1);
-  const count = layout.tiles.length;
+  const count = visibleLayout.tiles.length;
 
   return createPortal(
     <section
-      className={`tm-stage tm-stage--${layout.pattern}${sidebar ? ' tm-stage--sidebar' : ''}${suspended ? ' tm-stage--suspended' : ''}`}
+      className={`tm-stage tm-stage--${visibleLayout.pattern}${sidebar ? ' tm-stage--sidebar' : ''}${suspended ? ' tm-stage--suspended' : ''}`}
       aria-label="Aktuelles"
       hidden={suspended}
     >
@@ -168,20 +200,23 @@ export default function ContextStage({ suspended = false }) {
         <button
           type="button"
           className="tm-stage-close"
-          onClick={() => setDismissed(signature)}
+          onClick={() => {
+            setDismissed(signature);
+            if (idle) onWake?.();
+          }}
           aria-label="Ausblenden"
         >
           <X size={18} strokeWidth={2.4} />
         </button>
         <div
-          className={`tm-stage-board tm-stage-board--${layout.pattern} tm-stage-board--n${count}`}
+          className={`tm-stage-board tm-stage-board--${visibleLayout.pattern} tm-stage-board--n${count}`}
           style={{ '--tm-stage-n': count }}
         >
-          {layout.tiles.map((moment, index) => (
+          {visibleLayout.tiles.map((moment, index) => (
             <StageTile
               key={moment.id}
               moment={moment}
-              lead={layout.pattern === 'mosaic' && index === 0}
+              lead={visibleLayout.pattern === 'mosaic' && index === 0}
               index={index}
               hass={hass}
             />

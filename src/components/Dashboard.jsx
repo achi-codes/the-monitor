@@ -13,6 +13,7 @@ import DashboardEditor from './DashboardEditor';
 import RoomSelector from './RoomSelector';
 import { QuickActionPopup, CoverPopup } from './widgets/ActionWidgets';
 import { RoomPopup } from './RoomWidget';
+import ContextStage from './ContextStage';
 
 export default function Dashboard({ user, onSettings, onScreensaver }) {
   const [time, setTime] = useState(new Date());
@@ -251,6 +252,8 @@ export default function Dashboard({ user, onSettings, onScreensaver }) {
           onRenamePage={renameLayoutPage}
         />
       )}
+
+      <ContextStage suspended={editMode || Boolean(qaPopup || pageManageOpen || slotPickerOpen)} />
 
       {qaPopup && !editMode && (
         qaPopup.variant === 'room'

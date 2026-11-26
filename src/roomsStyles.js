@@ -455,4 +455,5 @@ export const roomsStyles = `
   background: rgba(255, 77, 77, 0.16); color: #ffb3b3; font: inherit;
 }
 .tm-rooms-panel-list { display: flex; flex-direction: column; gap: 4px; margin-top: 0.6rem; }
+.tm-rooms-panel-hint { margin: 0.35rem 0 0; font-size: 0.8rem; opacity: 0.5; overflow-wrap: anywhere; }
 `;

@@ -14,12 +14,12 @@ import {
   packItems, tileColumnWidth,
 } from '../../lib/roomsMode';
 import {
-  addSubpage, addSubpageDevice, addTile, removeItem, removeSubpage, setItemOrder,
+  addSubpage, addSubpageDevice, addTile, removeItem, removeSubpage, replaceDevice, setDeviceLabel, setItemOrder,
   setSubpageOrder, updateSubpage, updateTile,
 } from '../../lib/roomsModeConfig';
 import useHorizontalReorder from './useHorizontalReorder';
 import {
-  AddItemPanel, AddSubpagePopover, SubpagePopover, TileInspectorPanel,
+  AddItemPanel, AddSubpagePopover, DevicePanel, SubpagePopover, TileInspectorPanel,
 } from './RoomEditParts';
 import { renderDashboardWidget } from '../widgets/WidgetRenderer';
 import { RoomCard, SceneRow } from './RoomCards';
@@ -214,6 +214,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
     ? getSubpageContent(hass, config, room, subpage)
     : { items: [], hiddenIds: [], favorites: [] };
   const { items, favorites, hiddenIds } = content;
+  const labels = content.labels || {};
   const itemKeys = items.map((item) => item.key);
   const sceneIds = room ? getSceneIds(room.entityIds) : [];
   const alerts = rooms.filter((candidate) => candidate.alert);
@@ -278,6 +279,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
       favorite={favorites.includes(item.entityId)}
       onToggleFavorite={() => toggleFavorite(item.entityId)}
       run={run}
+      name={labels[item.entityId]}
     />
   );
 
@@ -300,7 +302,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
   const renderEditItem = (item) => {
     const dragged = strip.drag?.key === item.key;
     const isTile = item.kind === 'tile';
-    const label = isTile ? (item.tile.label || 'Kachel') : getEntity(item.entityId).name;
+    const label = isTile ? (item.tile.label || 'Kachel') : (labels[item.entityId] || getEntity(item.entityId).name);
     return (
       <div
         key={item.key}
@@ -322,7 +324,9 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
         <EditOverlay
           label={label}
           onRemove={() => apply((c) => removeItem(c, room.id, subpage.id, item.key))}
-          onEdit={isTile ? () => setPanel({ type: 'tile', tileId: item.tile.id }) : null}
+          onEdit={isTile
+            ? () => setPanel({ type: 'tile', tileId: item.tile.id })
+            : () => setPanel({ type: 'device', entityId: item.entityId })}
         />
       </div>
     );
@@ -496,6 +500,21 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
           hass={hass}
           onUpdate={onUpdateTile}
           onRemove={(tileId) => apply((c) => removeItem(c, room.id, subpage.id, `t:${tileId}`))}
+          onClose={() => setPanel(null)}
+        />
+      )}
+      {isEditing && panel?.type === 'device' && itemKeys.includes(`d:${panel.entityId}`) && (
+        <DevicePanel
+          key={panel.entityId}
+          hass={hass}
+          entityId={panel.entityId}
+          label={labels[panel.entityId] || ''}
+          onReplace={(newId) => {
+            apply((c) => replaceDevice(c, room.id, subpage.id, panel.entityId, newId, itemKeys));
+            setPanel({ type: 'device', entityId: newId });
+          }}
+          onLabel={(text) => apply((c) => setDeviceLabel(c, room.id, subpage.id, panel.entityId, text))}
+          onRemove={() => apply((c) => removeItem(c, room.id, subpage.id, `d:${panel.entityId}`))}
           onClose={() => setPanel(null)}
         />
       )}

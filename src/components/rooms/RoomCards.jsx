@@ -51,8 +51,9 @@ function Switch({ on, onClick, label }) {
   );
 }
 
-function LightCard({ hass, entityId, run, head }) {
+function LightCard({ hass, entityId, run, head, name: nameOverride }) {
   const entity = getEntity(hass, entityId);
+  const name = nameOverride || entity.name;
   const on = entity.state === 'on';
   const stored = getBrightnessPercent(hass, entityId);
   const [dragPct, setDragPct] = useState(null);
@@ -83,16 +84,16 @@ function LightCard({ hass, entityId, run, head }) {
   };
 
   return (
-    <section className="tm-rc tm-rc--wide" aria-label={entity.name}>
-      <CardHead {...head} title={entity.name}>
-        <Switch on={on} onClick={() => run(toggleEntity(hass, entityId))} label={`${entity.name} schalten`} />
+    <section className="tm-rc tm-rc--wide" aria-label={name}>
+      <CardHead {...head} title={name}>
+        <Switch on={on} onClick={() => run(toggleEntity(hass, entityId))} label={`${name} schalten`} />
       </CardHead>
       <div
         ref={panelRef}
         className="tm-rc-light-panel"
         role="slider"
         tabIndex={0}
-        aria-label={`Helligkeit ${entity.name}`}
+        aria-label={`Helligkeit ${name}`}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct}
@@ -128,7 +129,7 @@ function LightCard({ hass, entityId, run, head }) {
   );
 }
 
-function ClimateCard({ hass, entityId, run, head }) {
+function ClimateCard({ hass, entityId, run, head, name: nameOverride }) {
   const model = readClimate(hass, { entity_id: entityId });
   const target = model.target ?? model.min;
   const ratio = Math.min(1, Math.max(0, (target - model.min) / (model.max - model.min || 1)));
@@ -139,7 +140,7 @@ function ClimateCard({ hass, entityId, run, head }) {
 
   return (
     <section className="tm-rc" aria-label={model.title}>
-      <CardHead {...head} title={model.title} subtitle={model.status?.label || model.subtitle} />
+      <CardHead {...head} title={nameOverride || model.title} subtitle={model.status?.label || model.subtitle} />
       <div className="tm-rc-climate-dial">
         <svg viewBox="0 0 220 130" aria-hidden="true">
           <path d="M20 115 A90 90 0 0 1 200 115" className="tm-rc-arc-track" />
@@ -159,8 +160,9 @@ function ClimateCard({ hass, entityId, run, head }) {
   );
 }
 
-function MediaCard({ hass, entityId, run, head }) {
+function MediaCard({ hass, entityId, run, head, name: nameOverride }) {
   const entity = getEntity(hass, entityId);
+  const name = nameOverride || entity.name;
   const attrs = entity.attributes;
   const playing = entity.state === 'playing';
   const idle = ['off', 'idle', 'standby', 'unavailable'].includes(entity.state);
@@ -169,11 +171,11 @@ function MediaCard({ hass, entityId, run, head }) {
   const progress = live ? (live.position / live.duration) * 100 : 0;
 
   return (
-    <section className="tm-rc" aria-label={entity.name}>
+    <section className="tm-rc" aria-label={name}>
       <div className="tm-rc-cover-art" style={picture ? { backgroundImage: `url("${picture.replace(/"/g, '%22')}")` } : undefined}>
         {!picture && <Music size={44} />}
       </div>
-      <CardHead {...head} title={idle ? 'Nichts läuft' : (attrs.media_title || entity.name)} subtitle={idle ? entity.name : (attrs.media_artist || entity.name)} />
+      <CardHead {...head} title={idle ? 'Nichts läuft' : (attrs.media_title || name)} subtitle={idle ? name : (attrs.media_artist || name)} />
       <div className="tm-rc-progress"><div style={{ width: `${progress}%` }} /></div>
       <div className="tm-rc-media-controls">
         <button type="button" className="tm-rc-round" onClick={() => run(mediaPrevious(hass, entityId))} aria-label="Zurück"><SkipBack size={20} /></button>
@@ -186,13 +188,14 @@ function MediaCard({ hass, entityId, run, head }) {
   );
 }
 
-function CoverCard({ hass, entityId, run, head }) {
+function CoverCard({ hass, entityId, run, head, name: nameOverride }) {
   const entity = getEntity(hass, entityId);
+  const name = nameOverride || entity.name;
   const open = getCoverPositionPercent(hass, entityId);
   const label = open >= 100 ? 'offen' : open <= 0 ? 'geschlossen' : `${open} % offen`;
   return (
-    <section className="tm-rc" aria-label={entity.name}>
-      <CardHead {...head} title={entity.name} subtitle={label} />
+    <section className="tm-rc" aria-label={name}>
+      <CardHead {...head} title={name} subtitle={label} />
       <div className="tm-rc-window">
         <div className="tm-rc-slats" style={{ height: `${100 - open}%` }} />
       </div>
@@ -213,8 +216,9 @@ const CONTACT_LABELS = {
   presence: ['Anwesend', 'Leer'],
 };
 
-function ContactCard({ hass, entityId, head }) {
+function ContactCard({ hass, entityId, head, name: nameOverride }) {
   const entity = getEntity(hass, entityId);
+  const name = nameOverride || entity.name;
   const deviceClass = entity.attributes.device_class;
   const on = entity.state === 'on';
   const [onText, offText] = CONTACT_LABELS[deviceClass] || ['Offen', 'Geschlossen'];
@@ -222,8 +226,8 @@ function ContactCard({ hass, entityId, head }) {
   const alert = on && isOpening;
   const Icon = isOpening ? (on ? DoorOpen : DoorClosed) : Activity;
   return (
-    <section className={`tm-rc${alert ? ' tm-rc--alert' : ''}`} aria-label={entity.name}>
-      <CardHead {...head} title={entity.name} />
+    <section className={`tm-rc${alert ? ' tm-rc--alert' : ''}`} aria-label={name}>
+      <CardHead {...head} title={name} />
       <div className="tm-rc-status">
         <Icon size={40} />
         <strong>{on ? onText : offText}</strong>
@@ -232,14 +236,15 @@ function ContactCard({ hass, entityId, head }) {
   );
 }
 
-function SensorCard({ hass, entityId, head }) {
+function SensorCard({ hass, entityId, head, name: nameOverride }) {
   const entity = getEntity(hass, entityId);
+  const name = nameOverride || entity.name;
   const unit = entity.attributes.unit_of_measurement || '';
   const value = Number.parseFloat(entity.state);
   const text = Number.isFinite(value) ? value.toLocaleString('de-DE', { maximumFractionDigits: 1 }) : entity.state;
   return (
-    <section className="tm-rc" aria-label={entity.name}>
-      <CardHead {...head} title={entity.name} />
+    <section className="tm-rc" aria-label={name}>
+      <CardHead {...head} title={name} />
       <div className="tm-rc-status">
         <Gauge size={40} />
         <strong>{text}<small> {unit}</small></strong>
@@ -250,15 +255,16 @@ function SensorCard({ hass, entityId, head }) {
 
 const TOGGLE_ICONS = { fan: Fan, lock: Lock, switch: Plug };
 
-function ToggleCard({ hass, entityId, run, head }) {
+function ToggleCard({ hass, entityId, run, head, name: nameOverride }) {
   const entity = getEntity(hass, entityId);
+  const name = nameOverride || entity.name;
   const domain = getDomain(entityId);
   const on = ['on', 'unlocked', 'cleaning', 'open'].includes(entity.state);
   const Icon = TOGGLE_ICONS[domain] || Power;
   return (
-    <section className={`tm-rc${on ? ' tm-rc--on' : ''}`} aria-label={entity.name}>
-      <CardHead {...head} title={entity.name} subtitle={on ? 'An' : 'Aus'} />
-      <button type="button" className="tm-rc-big-toggle" onClick={() => run(toggleEntity(hass, entityId))} aria-pressed={on} aria-label={`${entity.name} schalten`}>
+    <section className={`tm-rc${on ? ' tm-rc--on' : ''}`} aria-label={name}>
+      <CardHead {...head} title={name} subtitle={on ? 'An' : 'Aus'} />
+      <button type="button" className="tm-rc-big-toggle" onClick={() => run(toggleEntity(hass, entityId))} aria-pressed={on} aria-label={`${name} schalten`}>
         <Icon size={56} />
       </button>
     </section>
@@ -275,10 +281,10 @@ const CARDS = {
   toggle: ToggleCard,
 };
 
-export function RoomCard({ hass, entityId, roomName, favorite, onToggleFavorite, run }) {
+export function RoomCard({ hass, entityId, roomName, favorite, onToggleFavorite, run, name }) {
   const Card = CARDS[getCardKind(entityId)] || ToggleCard;
   const head = { subtitle: roomName, favorite, onToggleFavorite };
-  return <Card hass={hass} entityId={entityId} run={run} head={head} />;
+  return <Card hass={hass} entityId={entityId} run={run} head={head} name={name || ''} />;
 }
 
 export function SceneRow({ hass, sceneIds, run }) {

@@ -154,3 +154,31 @@ export function AddSubpagePopover({ presets, onAdd, onClose }) {
     </div>
   );
 }
+
+export function DevicePanel({ hass, entityId, label, onReplace, onLabel, onRemove, onClose }) {
+  const ref = useDismiss(onClose);
+  const [name, setName] = useState(label);
+  const saveName = () => { if (name !== label) onLabel(name); };
+  return (
+    <div ref={ref} className="tm-rooms-panel tm-rooms-panel--side" role="dialog" aria-label="Gerät bearbeiten">
+      <PanelHead title="Gerät bearbeiten" onClose={() => { saveName(); onClose(); }} />
+      <p className="tm-rooms-panel-label">Entität</p>
+      <EntityPicker value={entityId} domains={CARD_DOMAINS} onChange={(id) => id && id !== entityId && onReplace(id)} />
+      <p className="tm-rooms-panel-hint">{entityId}</p>
+      <label className="tm-rooms-panel-label" htmlFor="rooms-device-name">Anzeigename</label>
+      <input
+        id="rooms-device-name"
+        className="tm-input"
+        value={name}
+        placeholder={getFriendlyName(hass, entityId)}
+        onChange={(e) => setName(e.target.value)}
+        onBlur={saveName}
+        onKeyDown={(e) => { if (e.key === 'Enter') { saveName(); onClose(); } }}
+      />
+      <button type="button" className="tm-rooms-panel-danger" onClick={() => { onRemove(); onClose(); }}>
+        <Trash2 size={16} />
+        Karte entfernen
+      </button>
+    </div>
+  );
+}

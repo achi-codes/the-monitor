@@ -143,3 +143,36 @@ export function removeItem(config, roomId, subId, key) {
 export function setSubpageOrder(config, roomId, ids) {
   return withSubpages(config, roomId, (subs) => ids.map((id) => subs.find((sub) => sub.id === id)).filter(Boolean));
 }
+
+/**
+ * Swaps the entity behind a device card in place: a picked device is replaced,
+ * a preset device is hidden and the new one picked at the same position.
+ */
+export function replaceDevice(config, roomId, subId, oldId, newId, currentKeys = []) {
+  if (!newId || newId === oldId) return config;
+  return withSubpage(config, roomId, subId, (sub) => {
+    const devices = sub.devices.includes(oldId)
+      ? sub.devices.map((id) => (id === oldId ? newId : id))
+      : [...sub.devices.filter((id) => id !== newId), newId];
+    const hidden = sub.devices.includes(oldId) ? sub.hidden : [...new Set([...sub.hidden, oldId])];
+    const baseOrder = sub.order?.length ? sub.order : currentKeys;
+    const order = baseOrder
+      .filter((key) => key !== `d:${newId}`)
+      .map((key) => (key === `d:${oldId}` ? `d:${newId}` : key));
+    const { [oldId]: oldLabel, ...labels } = sub.labels || {};
+    return {
+      ...sub,
+      devices,
+      hidden: hidden.filter((id) => id !== newId),
+      order,
+      labels: oldLabel ? { ...labels, [newId]: oldLabel } : labels,
+    };
+  });
+}
+
+export function setDeviceLabel(config, roomId, subId, entityId, label) {
+  return withSubpage(config, roomId, subId, (sub) => {
+    const { [entityId]: _old, ...labels } = sub.labels || {};
+    return { ...sub, labels: label.trim() ? { ...labels, [entityId]: label.trim() } : labels };
+  });
+}

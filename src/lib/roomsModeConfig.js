@@ -1,6 +1,6 @@
 import { createWidget } from './layout';
-import { createRoom, ROOM_LIMIT, TILE_LIMIT } from './rooms';
-import { RAIL_LIMIT, getRailRoomIds, getRoomTiles } from './roomsMode';
+import { createRoom, ROOM_LIMIT, SUBPAGE_LIMIT, TILE_LIMIT } from './rooms';
+import { RAIL_LIMIT, createSubpage, getRailRoomIds, getRoomSubpages } from './roomsMode';
 
 // Pure config transforms for the rooms-mode configurator; use with setConfig(prev => …).
 
@@ -8,8 +8,16 @@ function mapRoom(config, roomId, fn) {
   return { ...config, rooms: config.rooms.map((room) => (room.id === roomId ? fn(room) : room)) };
 }
 
-function withTiles(config, roomId, fn) {
-  return mapRoom(config, roomId, (room) => ({ ...room, tiles: fn([...getRoomTiles(room)]) }));
+function withSubpages(config, roomId, fn) {
+  return mapRoom(config, roomId, (room) => ({ ...room, subpages: fn(getRoomSubpages(room).map((sub) => ({ ...sub }))) }));
+}
+
+function withSubpage(config, roomId, subId, fn) {
+  return withSubpages(config, roomId, (subs) => subs.map((sub) => (sub.id === subId ? fn(sub) : sub)));
+}
+
+function withTiles(config, roomId, subId, fn) {
+  return withSubpage(config, roomId, subId, (sub) => ({ ...sub, tiles: fn([...sub.tiles]) }));
 }
 
 function move(list, index, delta) {
@@ -59,18 +67,55 @@ export function toggleRailRoom(config, roomId) {
   return { ...config, railRoomIds: [...pinned, roomId] };
 }
 
-export function addTile(config, roomId, type) {
-  return withTiles(config, roomId, (tiles) => (tiles.length >= TILE_LIMIT ? tiles : [...tiles, createWidget(type)]));
+export function addSubpage(config, roomId, preset = null) {
+  return withSubpages(config, roomId, (subs) => (
+    subs.length >= SUBPAGE_LIMIT ? subs : [...subs, createSubpage({ preset })]
+  ));
 }
 
-export function updateTile(config, roomId, tileId, patch) {
-  return withTiles(config, roomId, (tiles) => tiles.map((tile) => (tile.id === tileId ? { ...tile, ...patch } : tile)));
+export function updateSubpage(config, roomId, subId, patch) {
+  return withSubpage(config, roomId, subId, (sub) => ({ ...sub, ...patch }));
 }
 
-export function removeTile(config, roomId, tileId) {
-  return withTiles(config, roomId, (tiles) => tiles.filter((tile) => tile.id !== tileId));
+export function removeSubpage(config, roomId, subId) {
+  return withSubpages(config, roomId, (subs) => (subs.length <= 1 ? subs : subs.filter((sub) => sub.id !== subId)));
 }
 
-export function moveTile(config, roomId, tileId, delta) {
-  return withTiles(config, roomId, (tiles) => move(tiles, tiles.findIndex((tile) => tile.id === tileId), delta));
+export function moveSubpage(config, roomId, subId, delta) {
+  return withSubpages(config, roomId, (subs) => move(subs, subs.findIndex((sub) => sub.id === subId), delta));
+}
+
+export function toggleHiddenDevice(config, roomId, subId, entityId) {
+  return withSubpage(config, roomId, subId, (sub) => ({
+    ...sub,
+    hidden: sub.hidden.includes(entityId) ? sub.hidden.filter((id) => id !== entityId) : [...sub.hidden, entityId],
+  }));
+}
+
+export function addSubpageDevice(config, roomId, subId, entityId) {
+  return withSubpage(config, roomId, subId, (sub) => ({
+    ...sub,
+    devices: sub.devices.includes(entityId) ? sub.devices : [...sub.devices, entityId],
+    hidden: sub.hidden.filter((id) => id !== entityId),
+  }));
+}
+
+export function removeSubpageDevice(config, roomId, subId, entityId) {
+  return withSubpage(config, roomId, subId, (sub) => ({ ...sub, devices: sub.devices.filter((id) => id !== entityId) }));
+}
+
+export function addTile(config, roomId, subId, type) {
+  return withTiles(config, roomId, subId, (tiles) => (tiles.length >= TILE_LIMIT ? tiles : [...tiles, createWidget(type)]));
+}
+
+export function updateTile(config, roomId, subId, tileId, patch) {
+  return withTiles(config, roomId, subId, (tiles) => tiles.map((tile) => (tile.id === tileId ? { ...tile, ...patch } : tile)));
+}
+
+export function removeTile(config, roomId, subId, tileId) {
+  return withTiles(config, roomId, subId, (tiles) => tiles.filter((tile) => tile.id !== tileId));
+}
+
+export function moveTile(config, roomId, subId, tileId, delta) {
+  return withTiles(config, roomId, subId, (tiles) => move(tiles, tiles.findIndex((tile) => tile.id === tileId), delta));
 }

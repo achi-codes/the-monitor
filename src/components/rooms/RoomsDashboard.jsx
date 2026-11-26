@@ -2,19 +2,20 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import {
   Home, CookingPot, Sofa, BedDouble, Bath, Briefcase, DoorOpen, Warehouse, Trees,
-  WashingMachine, Dumbbell, Baby, Utensils, Star, Lightbulb, Thermometer, Music, Plug,
-  LayoutGrid, LayoutDashboard, MoreHorizontal, Settings, Monitor, Pencil,
+  WashingMachine, Dumbbell, Baby, Utensils, LayoutGrid, LayoutDashboard, MoreHorizontal,
+  Settings, Monitor, Pencil,
 } from 'lucide-react';
 import { useHass } from '../../context/HassContext';
 import { useConfig } from '../../context/ConfigContext';
 import { describeRoomSummary, formatRoomNumber } from '../../lib/roomWidget';
 import {
-  ROOMS_OVERVIEW_ID, ROOM_FILTERS, buildModeRooms, filterCardIds, getCardEntityIds,
-  getFavorites, getRailRoomIds, getSceneIds, packTileColumns, tileColumnWidth, tilesVisible,
+  ROOMS_OVERVIEW_ID, buildModeRooms, getRailRoomIds, getSceneIds, getSubpageContent,
+  packTileColumns, tileColumnWidth,
 } from '../../lib/roomsMode';
 import { updateTile } from '../../lib/roomsModeConfig';
 import { renderDashboardWidget } from '../widgets/WidgetRenderer';
 import { RoomCard, SceneRow } from './RoomCards';
+import { SUBPAGE_ICON_MAP } from './subpageIcons';
 
 const ROOM_ICONS = {
   home: Home,
@@ -34,14 +35,9 @@ const ROOM_ICONS = {
   gym: Dumbbell,
 };
 
-const FILTER_ICONS = {
-  fav: Star,
-  light: Lightbulb,
-  climate: Thermometer,
-  media: Music,
-  devices: Plug,
-  all: LayoutGrid,
-};
+function countTiles(room) {
+  return room.subpages.reduce((sum, sub) => sum + sub.tiles.length, 0);
+}
 
 function roomIcon(room) {
   return ROOM_ICONS[room.kind] || Home;
@@ -120,8 +116,8 @@ function MoreMenu({ rooms, activeId, onPick, onEdit, onClose }) {
   );
 }
 
-function TileColumns({ room, hass, getEntity, onOpenPopup, onUpdateTile }) {
-  return packTileColumns(room.tiles).map((column) => (
+function TileColumns({ tiles, hass, getEntity, onOpenPopup, onUpdateTile }) {
+  return packTileColumns(tiles).map((column) => (
     <div
       key={column.id}
       className={`tm-rooms-tile-col${column.tall ? ' tall' : ''}`}
@@ -139,7 +135,7 @@ function TileColumns({ room, hass, getEntity, onOpenPopup, onUpdateTile }) {
               getEntity,
               editMode: false,
               onOpenPopup,
-              onUpdateWidget: (_pageIndex, tileId, patch) => onUpdateTile(room.id, tileId, patch),
+              onUpdateWidget: (_pageIndex, tileId, patch) => onUpdateTile(tileId, patch),
               widgetIndex: index,
             })}
           </div>
@@ -153,7 +149,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup 
   const { hass, revision, getEntity } = useHass();
   const { config, updateDisplay, setConfig } = useConfig();
   const [roomId, setRoomId] = useState(ROOMS_OVERVIEW_ID);
-  const [filter, setFilter] = useState('fav');
+  const [subId, setSubId] = useState(null);
   const [moreOpen, setMoreOpen] = useState(false);
   const [tick, setTick] = useState(0);
   const [time, setTime] = useState(new Date());
@@ -181,11 +177,10 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup 
   const room = rooms.find((candidate) => candidate.id === roomId) || null;
   const isOverview = !room;
   const hasDevices = Boolean(room?.entityIds.length);
-
-  const cardIds = room ? getCardEntityIds(hass, room.entityIds) : [];
-  const favorites = room ? getFavorites(config, room, cardIds) : [];
-  const visibleIds = hasDevices ? filterCardIds(cardIds, filter, favorites) : [];
-  const showTiles = room && (!hasDevices || tilesVisible(filter));
+  const subpage = room ? (room.subpages.find((sub) => sub.id === subId) || room.subpages[0]) : null;
+  const showDock = Boolean(room && room.subpages.length > 1);
+  const content = subpage ? getSubpageContent(hass, config, room, subpage) : { deviceIds: [], favorites: [], tiles: [] };
+  const { deviceIds: visibleIds, favorites, tiles } = content;
   const sceneIds = room ? getSceneIds(room.entityIds) : [];
   const alerts = rooms.filter((candidate) => candidate.alert);
 
@@ -196,13 +191,13 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup 
     updateDisplay({ roomFavorites: { ...config.roomFavorites, [room.id]: next } });
   };
 
-  const onUpdateTile = (targetRoomId, tileId, patch) => {
-    setConfig((prev) => updateTile(prev, targetRoomId, tileId, patch));
+  const onUpdateTile = (tileId, patch) => {
+    setConfig((prev) => updateTile(prev, room.id, subpage.id, tileId, patch));
   };
 
   const openRoom = (id) => {
     setRoomId(id);
-    setFilter('fav');
+    setSubId(null);
     setMoreOpen(false);
   };
 
@@ -213,10 +208,11 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup 
   } else if (hasDevices) {
     subtitle = [`${room.summary.activeDevices} aktiv`, ...roomLine(room.summary)].join(' · ');
   } else {
-    subtitle = `${room.tiles.length} ${room.tiles.length === 1 ? 'Kachel' : 'Kacheln'}`;
+    const count = countTiles(room);
+    subtitle = `${count} ${count === 1 ? 'Kachel' : 'Kacheln'}`;
   }
   const alertText = room ? room.alert : (alerts.length ? `${alerts.length} ${alerts.length === 1 ? 'Hinweis' : 'Hinweise'}` : '');
-  const nothingVisible = room && !visibleIds.length && !(showTiles && room.tiles.length);
+  const nothingVisible = room && !visibleIds.length && !tiles.length;
 
   return (
     <div className="tm-rooms">
@@ -253,7 +249,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup 
         )}
       </nav>
 
-      <main className={`tm-rooms-main${room && hasDevices ? '' : ' tm-rooms-main--no-dock'}`}>
+      <main className={`tm-rooms-main${showDock ? '' : ' tm-rooms-main--no-dock'}`}>
         <header className="tm-rooms-header">
           <div>
             <h1 className="tm-rooms-title">{title}</h1>
@@ -272,7 +268,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup 
         <div className="tm-rooms-strip">
           {isOverview && rooms.map((candidate) => {
             const lines = candidate.isPage
-              ? [`${candidate.tiles.length} ${candidate.tiles.length === 1 ? 'Kachel' : 'Kacheln'}`]
+              ? [`${countTiles(candidate)} ${countTiles(candidate) === 1 ? 'Kachel' : 'Kacheln'}`]
               : describeRoomSummary(candidate.summary);
             const Icon = roomIcon(candidate);
             return (
@@ -311,17 +307,17 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup 
             />
           ))}
 
-          {showTiles && (
-            <TileColumns room={room} hass={hass} getEntity={getEntity} onOpenPopup={onOpenPopup} onUpdateTile={onUpdateTile} />
+          {room && tiles.length > 0 && (
+            <TileColumns tiles={tiles} hass={hass} getEntity={getEntity} onOpenPopup={onOpenPopup} onUpdateTile={onUpdateTile} />
           )}
 
           {nothingVisible && (
             <div className="tm-rc tm-rc--empty">
               <h2 className="tm-rc-title">Nichts hier</h2>
               <p className="tm-rc-sub">
-                {!hasDevices && 'Diese Seite hat noch keine Kacheln. Füge sie in den Einstellungen hinzu.'}
-                {hasDevices && filter === 'fav' && 'Markiere Geräte mit dem Stern oder füge Kacheln hinzu.'}
-                {hasDevices && filter !== 'fav' && `In ${room.name} gibt es keine Geräte dieser Art.`}
+                {subpage.preset === 'fav' && hasDevices
+                  ? 'Markiere Geräte mit dem Stern oder füge in den Einstellungen Geräte und Kacheln hinzu.'
+                  : 'Füge dieser Unterseite in den Einstellungen Geräte oder Kacheln hinzu.'}
               </p>
               <button type="button" className="tm-rc-chip tm-rc-chip--static" style={{ cursor: 'pointer' }} onClick={onSettings}>
                 <Pencil size={16} />
@@ -332,20 +328,21 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup 
         </div>
       </main>
 
-      {room && hasDevices && (
-        <nav className="tm-rooms-dock" aria-label="Filter nach Gerätetyp">
-          {ROOM_FILTERS.map((item) => {
-            const Icon = FILTER_ICONS[item.id];
+      {showDock && (
+        <nav className="tm-rooms-dock" aria-label={`Unterseiten von ${room.name}`}>
+          {room.subpages.map((item) => {
+            const Icon = SUBPAGE_ICON_MAP[item.icon] || LayoutGrid;
+            const active = item.id === subpage.id;
             return (
               <button
                 key={item.id}
                 type="button"
-                className={`tm-rooms-dock-btn${filter === item.id ? ' active' : ''}`}
-                onClick={() => setFilter(item.id)}
-                aria-pressed={filter === item.id}
+                className={`tm-rooms-dock-btn${active ? ' active' : ''}`}
+                onClick={() => setSubId(item.id)}
+                aria-pressed={active}
               >
                 <Icon size={22} />
-                <span>{item.label}</span>
+                <span>{item.name}</span>
               </button>
             );
           })}

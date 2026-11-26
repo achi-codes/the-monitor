@@ -3,6 +3,9 @@ import { createDefaultLayout, layoutHasWidgetEntities, normalizeLayout } from '.
 
 export const ROOM_LIMIT = 12;
 export const TILE_LIMIT = 24;
+export const SUBPAGE_LIMIT = 8;
+export const SUBPAGE_PRESETS = ['fav', 'light', 'climate', 'media', 'devices', 'all'];
+export const SUBPAGE_ICONS = ['fav', 'light', 'climate', 'media', 'devices', 'all', 'energy', 'security', 'camera', 'scenes', 'home'];
 export const ACTIVE_ROOM_KEY = 'the-monitor-active-room';
 
 export function createRoomId() {
@@ -19,7 +22,32 @@ export function createRoom(name, {
     layoutPreset,
     layout: layout || buildLayoutFromPreset(layoutPreset),
     tiles,
+    subpages: null,
   };
+}
+
+function stringList(raw) {
+  return Array.isArray(raw) ? [...new Set(raw.filter((id) => typeof id === 'string' && id))] : [];
+}
+
+/** Sub pages of a room (the dock tabs): a device preset and/or picked devices plus tiles. */
+export function normalizeSubpages(rawSubpages) {
+  if (!Array.isArray(rawSubpages) || !rawSubpages.length) return null;
+  return rawSubpages
+    .filter((sub) => sub && typeof sub === 'object')
+    .slice(0, SUBPAGE_LIMIT)
+    .map((sub, index) => {
+      const preset = SUBPAGE_PRESETS.includes(sub.preset) ? sub.preset : null;
+      return {
+        id: typeof sub.id === 'string' && sub.id ? sub.id : `sp-${Date.now().toString(36)}-${index}`,
+        name: typeof sub.name === 'string' && sub.name.trim() ? sub.name : 'Unterseite',
+        icon: SUBPAGE_ICONS.includes(sub.icon) ? sub.icon : (preset || 'all'),
+        preset,
+        hidden: stringList(sub.hidden),
+        devices: stringList(sub.devices),
+        tiles: normalizeTiles(sub.tiles) || [],
+      };
+    });
 }
 
 /** Tiles of the rooms mode: one widget list in display order, no grid positions. */
@@ -44,6 +72,7 @@ export function normalizeRoom(raw = {}) {
     layoutPreset,
     layout,
     tiles: normalizeTiles(raw.tiles),
+    subpages: normalizeSubpages(raw.subpages),
   };
 }
 

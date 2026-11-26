@@ -4,6 +4,11 @@ import { getRoomKind, getRoomSummary, resolveRoomEntityIds } from './roomWidget'
 export const ROOMS_OVERVIEW_ID = '__overview__';
 export const RAIL_LIMIT = 6;
 
+export const CARD_DOMAINS = [
+  'light', 'climate', 'media_player', 'cover', 'binary_sensor', 'sensor',
+  'switch', 'fan', 'input_boolean', 'lock', 'vacuum',
+];
+
 export const ROOM_FILTERS = [
   { id: 'fav', label: 'Favoriten' },
   { id: 'light', label: 'Licht' },
@@ -50,6 +55,54 @@ export function getRoomTiles(room) {
     .sort((a, b) => (a.y - b.y) || (a.x - b.x)));
 }
 
+export function presetLabel(preset) {
+  return ROOM_FILTERS.find((item) => item.id === preset)?.label || '';
+}
+
+export function createSubpage({ preset = null, name = '', tiles = [] } = {}) {
+  return {
+    id: `sp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    name: name || presetLabel(preset) || 'Unterseite',
+    icon: preset || 'all',
+    preset,
+    hidden: [],
+    devices: [],
+    tiles,
+  };
+}
+
+/**
+ * The dock tabs of a room. Stored ones win; otherwise rooms get the device
+ * presets (their tiles on "Favoriten") and pages one "Start" tab with their tiles.
+ */
+export function getRoomSubpages(room) {
+  if (Array.isArray(room?.subpages) && room.subpages.length) return room.subpages;
+  const tiles = getRoomTiles(room);
+  if (room?.areaId) {
+    return ROOM_FILTERS.map((item) => ({
+      id: `sp-${item.id}`,
+      name: item.label,
+      icon: item.id,
+      preset: item.id,
+      hidden: [],
+      devices: [],
+      tiles: item.id === 'fav' ? tiles : [],
+    }));
+  }
+  return [{ id: 'sp-start', name: 'Start', icon: 'home', preset: null, hidden: [], devices: [], tiles }];
+}
+
+/** Device cards and tiles of one sub page. */
+export function getSubpageContent(hass, config, room, subpage) {
+  const cardIds = getCardEntityIds(hass, room.entityIds);
+  const favorites = getFavorites(config, room, cardIds);
+  const auto = subpage.preset ? filterCardIds(cardIds, subpage.preset, favorites) : [];
+  const hidden = new Set(subpage.hidden);
+  const picked = subpage.devices.filter((id) => hass?.states?.[id]);
+  const deviceIds = [...new Set([...auto.filter((id) => !hidden.has(id)), ...picked])];
+  return { deviceIds, autoIds: auto, favorites, tiles: subpage.tiles };
+}
+
 export function normalizeRailRoomIds(raw, rooms = []) {
   if (!Array.isArray(raw)) return null;
   const known = new Set(rooms.map((room) => room.id));
@@ -76,7 +129,7 @@ export function buildModeRooms(hass, config) {
       isPage: !room.areaId,
       kind: room.areaId ? getRoomKind(room.name) : 'page',
       entityIds,
-      tiles: getRoomTiles(room),
+      subpages: getRoomSubpages(room),
       summary,
       alert: getRoomAlert(summary),
     };
@@ -132,11 +185,6 @@ export function filterCardIds(cardIds, filter, favorites) {
   if (filter === 'all') return cardIds;
   if (filter === 'fav') return cardIds.filter((id) => favorites.includes(id));
   return cardIds.filter((id) => CATEGORY_BY_DOMAIN[getDomain(id)] === filter);
-}
-
-/** Tiles show with favourites and under "Alle"; the type filters only list devices. */
-export function tilesVisible(filter) {
-  return filter === 'fav' || filter === 'all';
 }
 
 export function normalizeRoomFavorites(raw) {

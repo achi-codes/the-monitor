@@ -5,14 +5,23 @@ import {
 import { useConfig } from '../../context/ConfigContext';
 import { useHass } from '../../context/HassContext';
 import { fetchHaAreas } from '../../lib/haAreas';
-import { ROOM_LIMIT, TILE_LIMIT } from '../../lib/rooms';
-import { WIDGET_TYPES, getWidgetLabel } from '../../lib/layout';
-import { RAIL_LIMIT, getRailRoomIds, getRoomTiles } from '../../lib/roomsMode';
 import {
-  addModeRoom, addTile, moveModeRoom, moveTile, removeModeRoom, removeTile,
-  toggleRailRoom, updateModeRoom, updateTile,
+  ROOM_LIMIT, SUBPAGE_ICONS, SUBPAGE_LIMIT, TILE_LIMIT,
+} from '../../lib/rooms';
+import { WIDGET_TYPES, getWidgetLabel } from '../../lib/layout';
+import { getFriendlyName } from '../../lib/entities';
+import { resolveRoomEntityIds } from '../../lib/roomWidget';
+import {
+  CARD_DOMAINS, RAIL_LIMIT, ROOM_FILTERS, getRailRoomIds, getRoomSubpages, getSubpageContent, presetLabel,
+} from '../../lib/roomsMode';
+import {
+  addModeRoom, addSubpage, addSubpageDevice, addTile, moveModeRoom, moveSubpage, moveTile,
+  removeModeRoom, removeSubpage, removeSubpageDevice, removeTile, toggleHiddenDevice,
+  toggleRailRoom, updateModeRoom, updateSubpage, updateTile,
 } from '../../lib/roomsModeConfig';
 import WidgetInspector from '../WidgetInspector';
+import EntityPicker from '../EntityPicker';
+import { SUBPAGE_ICON_LABELS } from './subpageIcons';
 
 const HEADING_STYLE = {
   fontSize: '1.25rem', fontWeight: 500, opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem',
@@ -34,14 +43,14 @@ function IconButton({ label, onClick, disabled, active, children }) {
   );
 }
 
-function TileEditor({ room, hass, apply }) {
-  const tiles = getRoomTiles(room);
+function TileEditor({ tiles, hass, idPrefix, onAdd, onUpdate, onRemove, onMove }) {
   const [selectedId, setSelectedId] = useState(null);
   const [newType, setNewType] = useState('weather');
   const selected = tiles.find((tile) => tile.id === selectedId) || null;
 
   return (
-    <div className="tm-rmc-tiles">
+    <div className="tm-rmc-block">
+      <p className="tm-rmc-block-title">Kacheln</p>
       {tiles.length === 0 && <p className="tm-text-sm tm-opacity-70">Noch keine Kacheln.</p>}
       <ol className="tm-rmc-tile-list">
         {tiles.map((tile, index) => (
@@ -50,10 +59,10 @@ function TileEditor({ room, hass, apply }) {
               {getWidgetLabel(tile)}
               {getWidgetLabel(tile) !== WIDGET_TYPES[tile.type]?.label && <small>{WIDGET_TYPES[tile.type]?.label || tile.type}</small>}
             </span>
-            <IconButton label="Nach vorne" disabled={index === 0} onClick={() => apply((c) => moveTile(c, room.id, tile.id, -1))}><ChevronUp size={18} /></IconButton>
-            <IconButton label="Nach hinten" disabled={index === tiles.length - 1} onClick={() => apply((c) => moveTile(c, room.id, tile.id, 1))}><ChevronDown size={18} /></IconButton>
+            <IconButton label="Nach vorne" disabled={index === 0} onClick={() => onMove(tile.id, -1)}><ChevronUp size={18} /></IconButton>
+            <IconButton label="Nach hinten" disabled={index === tiles.length - 1} onClick={() => onMove(tile.id, 1)}><ChevronDown size={18} /></IconButton>
             <IconButton label="Kachel bearbeiten" active={tile.id === selectedId} onClick={() => setSelectedId(tile.id === selectedId ? null : tile.id)}><Pencil size={16} /></IconButton>
-            <IconButton label="Kachel entfernen" onClick={() => apply((c) => removeTile(c, room.id, tile.id))}><Trash2 size={16} /></IconButton>
+            <IconButton label="Kachel entfernen" onClick={() => onRemove(tile.id)}><Trash2 size={16} /></IconButton>
           </li>
         ))}
       </ol>
@@ -64,22 +73,145 @@ function TileEditor({ room, hass, apply }) {
             widget={selected}
             pageIndex={0}
             hass={hass}
-            onUpdate={(_page, tileId, patch) => apply((c) => updateTile(c, room.id, tileId, patch))}
-            onDelete={(_page, tileId) => { setSelectedId(null); apply((c) => removeTile(c, room.id, tileId)); }}
-            onApplySize={(_page, tileId, preset) => apply((c) => updateTile(c, room.id, tileId, { w: preset.w, h: preset.h }))}
+            onUpdate={(_page, tileId, patch) => onUpdate(tileId, patch)}
+            onDelete={(_page, tileId) => { setSelectedId(null); onRemove(tileId); }}
+            onApplySize={(_page, tileId, preset) => onUpdate(tileId, { w: preset.w, h: preset.h })}
           />
         </div>
       )}
 
       {tiles.length < TILE_LIMIT && (
         <div className="tm-rmc-add">
-          <label className="tm-rmc-visually-hidden" htmlFor={`tile-type-${room.id}`}>Kachel-Typ</label>
-          <select id={`tile-type-${room.id}`} className="tm-input" value={newType} onChange={(e) => setNewType(e.target.value)}>
+          <label className="tm-rmc-visually-hidden" htmlFor={`tile-type-${idPrefix}`}>Kachel-Typ</label>
+          <select id={`tile-type-${idPrefix}`} className="tm-input" value={newType} onChange={(e) => setNewType(e.target.value)}>
             {Object.entries(WIDGET_TYPES).map(([type, meta]) => <option key={type} value={type}>{meta.label}</option>)}
           </select>
-          <button type="button" className="tm-btn-secondary" onClick={() => apply((c) => addTile(c, room.id, newType))}>
+          <button type="button" className="tm-btn-secondary" onClick={() => onAdd(newType)}>
             <Plus size={16} />
             Kachel hinzufügen
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DeviceEditor({ room, sub, hass, config, apply }) {
+  const entityIds = room.areaId ? resolveRoomEntityIds(hass, { area_id: room.areaId }) : [];
+  const { autoIds } = getSubpageContent(hass, config, { id: room.id, entityIds }, sub);
+  const name = (id) => getFriendlyName(hass, id);
+
+  return (
+    <div className="tm-rmc-block">
+      <p className="tm-rmc-block-title">Geräte</p>
+      {sub.preset && (
+        autoIds.length ? (
+          <ul className="tm-rmc-device-list">
+            {autoIds.map((id) => (
+              <li key={id}>
+                <label className="tm-setting-toggle">
+                  <input
+                    type="checkbox"
+                    checked={!sub.hidden.includes(id)}
+                    onChange={() => apply((c) => toggleHiddenDevice(c, room.id, sub.id, id))}
+                  />
+                  <span>{name(id)}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="tm-text-sm tm-opacity-70">
+            {room.areaId ? 'Die Vorlage findet in diesem Bereich keine Geräte.' : 'Ohne HA-Bereich gibt es keine automatischen Geräte.'}
+          </p>
+        )
+      )}
+      {sub.devices.length > 0 && (
+        <ol className="tm-rmc-tile-list">
+          {sub.devices.map((id) => (
+            <li key={id} className="tm-rmc-tile">
+              <span className="tm-rmc-tile-name">{name(id)}<small>{id}</small></span>
+              <IconButton label={`${name(id)} entfernen`} onClick={() => apply((c) => removeSubpageDevice(c, room.id, sub.id, id))}><Trash2 size={16} /></IconButton>
+            </li>
+          ))}
+        </ol>
+      )}
+      <div className="tm-rmc-picker">
+        <EntityPicker
+          value=""
+          domains={CARD_DOMAINS}
+          placeholder="Weiteres Gerät hinzufügen …"
+          onChange={(id) => { if (id) apply((c) => addSubpageDevice(c, room.id, sub.id, id)); }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SubpageEditor({ room, hass, config, apply }) {
+  const subs = getRoomSubpages(room);
+  const [openSubId, setOpenSubId] = useState(null);
+  const missingPresets = room.areaId ? ROOM_FILTERS.filter((item) => !subs.some((sub) => sub.preset === item.id)) : [];
+  const [newKind, setNewKind] = useState('');
+
+  return (
+    <div className="tm-rmc-tiles">
+      <ol className="tm-rmc-sub-list">
+        {subs.map((sub, index) => {
+          const open = openSubId === sub.id;
+          return (
+            <li key={sub.id} className={`tm-rmc-sub${open ? ' open' : ''}`}>
+              <div className="tm-rmc-row">
+                <select
+                  className="tm-input tm-rmc-icon-select"
+                  value={sub.icon}
+                  onChange={(e) => apply((c) => updateSubpage(c, room.id, sub.id, { icon: e.target.value }))}
+                  aria-label={`Icon für ${sub.name}`}
+                >
+                  {SUBPAGE_ICONS.map((key) => <option key={key} value={key}>{SUBPAGE_ICON_LABELS[key]}</option>)}
+                </select>
+                <input
+                  className="tm-input tm-rmc-name"
+                  value={sub.name}
+                  onChange={(e) => apply((c) => updateSubpage(c, room.id, sub.id, { name: e.target.value }))}
+                  aria-label={`Name der Unterseite ${sub.name}`}
+                />
+                <span className="tm-rmc-badge">{sub.preset ? `Vorlage: ${presetLabel(sub.preset)}` : 'Eigene'}</span>
+                <IconButton label="Nach links" disabled={index === 0} onClick={() => apply((c) => moveSubpage(c, room.id, sub.id, -1))}><ChevronUp size={18} /></IconButton>
+                <IconButton label="Nach rechts" disabled={index === subs.length - 1} onClick={() => apply((c) => moveSubpage(c, room.id, sub.id, 1))}><ChevronDown size={18} /></IconButton>
+                <button type="button" className={`tm-btn-secondary tm-rmc-tiles-btn${open ? ' active' : ''}`} onClick={() => setOpenSubId(open ? null : sub.id)} aria-expanded={open}>
+                  Inhalt
+                </button>
+                <IconButton label={`${sub.name} entfernen`} disabled={subs.length <= 1} onClick={() => apply((c) => removeSubpage(c, room.id, sub.id))}><Trash2 size={18} /></IconButton>
+              </div>
+              {open && (
+                <div className="tm-rmc-sub-body">
+                  <DeviceEditor room={room} sub={sub} hass={hass} config={config} apply={apply} />
+                  <TileEditor
+                    tiles={sub.tiles}
+                    hass={hass}
+                    idPrefix={sub.id}
+                    onAdd={(type) => apply((c) => addTile(c, room.id, sub.id, type))}
+                    onUpdate={(tileId, patch) => apply((c) => updateTile(c, room.id, sub.id, tileId, patch))}
+                    onRemove={(tileId) => apply((c) => removeTile(c, room.id, sub.id, tileId))}
+                    onMove={(tileId, delta) => apply((c) => moveTile(c, room.id, sub.id, tileId, delta))}
+                  />
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      {subs.length < SUBPAGE_LIMIT && (
+        <div className="tm-rmc-add">
+          <label className="tm-rmc-visually-hidden" htmlFor={`sub-kind-${room.id}`}>Art der Unterseite</label>
+          <select id={`sub-kind-${room.id}`} className="tm-input" value={newKind} onChange={(e) => setNewKind(e.target.value)}>
+            <option value="">Eigene Unterseite</option>
+            {missingPresets.map((item) => <option key={item.id} value={item.id}>{`Vorlage: ${item.label}`}</option>)}
+          </select>
+          <button type="button" className="tm-btn-secondary" onClick={() => { apply((c) => addSubpage(c, room.id, newKind || null)); setNewKind(''); }}>
+            <Plus size={16} />
+            Unterseite
           </button>
         </div>
       )}
@@ -125,7 +257,7 @@ export default function RoomsModeConfig() {
           <span>Raum-Modus verwenden</span>
         </label>
         <p className="tm-text-sm tm-opacity-70" style={{ lineHeight: 1.5 }}>
-          Räume zeigen automatisch die Geräte ihres HA-Bereichs, Seiten nur die Kacheln, die du hinzufügst.
+          Räume zeigen automatisch die Geräte ihres HA-Bereichs, Seiten nur das, was du hinzufügst. Unter „Unterseiten“ legst du die Reiter im unteren Dock fest: Vorlagen wie Licht oder Klima, eigene Unterseiten, Geräte ausblenden oder dazunehmen und Kacheln ergänzen.
           {` Bis zu ${RAIL_LIMIT} stehen direkt in der Leiste (`}
           <Pin size={12} />
           {'), alle anderen im Mehr-Menü darunter.'}
@@ -135,7 +267,7 @@ export default function RoomsModeConfig() {
           {config.rooms.map((room, index) => {
             const isPinned = pinned.includes(room.id);
             const open = openId === room.id;
-            const tileCount = getRoomTiles(room).length;
+            const subCount = getRoomSubpages(room).length;
             return (
               <li key={room.id} className={`tm-rmc-room${open ? ' open' : ''}`}>
                 <div className="tm-rmc-row">
@@ -170,11 +302,11 @@ export default function RoomsModeConfig() {
                   <IconButton label="Nach oben" disabled={index === 0} onClick={() => apply((c) => moveModeRoom(c, room.id, -1))}><ChevronUp size={18} /></IconButton>
                   <IconButton label="Nach unten" disabled={index === config.rooms.length - 1} onClick={() => apply((c) => moveModeRoom(c, room.id, 1))}><ChevronDown size={18} /></IconButton>
                   <button type="button" className={`tm-btn-secondary tm-rmc-tiles-btn${open ? ' active' : ''}`} onClick={() => setOpenId(open ? null : room.id)} aria-expanded={open}>
-                    {`Kacheln (${tileCount})`}
+                    {`Unterseiten (${subCount})`}
                   </button>
                   <IconButton label={`${room.name} entfernen`} disabled={config.rooms.length <= 1} onClick={() => apply((c) => removeModeRoom(c, room.id))}><Trash2 size={18} /></IconButton>
                 </div>
-                {open && <TileEditor room={room} hass={hass} apply={apply} />}
+                {open && <SubpageEditor room={room} hass={hass} config={config} apply={apply} />}
               </li>
             );
           })}

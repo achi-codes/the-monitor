@@ -360,4 +360,15 @@ export const roomsStyles = `
 .tm-rmc-add .tm-input { flex: 1 1 12rem; }
 .tm-rmc-add .tm-btn-secondary { display: inline-flex; align-items: center; gap: 0.35rem; }
 .tm-rmc-visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.tm-rmc-sub-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.tm-rmc-sub { border-radius: 14px; background: rgba(0, 0, 0, 0.18); }
+.tm-rmc-sub.open { background: rgba(0, 0, 0, 0.28); }
+.tm-rmc-sub-body { padding: 0 0.75rem 0.9rem; display: flex; flex-direction: column; gap: 1rem; }
+.tm-rmc-icon-select { flex: 0 0 8.5rem; }
+.tm-rmc-badge { font-size: 0.8rem; padding: 0.25rem 0.6rem; border-radius: 999px; background: rgba(255, 255, 255, 0.08); white-space: nowrap; }
+.tm-rmc-block { display: flex; flex-direction: column; gap: 0.5rem; }
+.tm-rmc-block-title { margin: 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.55; }
+.tm-rmc-device-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 0.25rem 1rem; }
+.tm-rmc-picker { max-width: 28rem; }
+.tm-rooms-dock { max-width: calc(100% - 12rem); overflow-x: auto; scrollbar-width: none; }
 `;

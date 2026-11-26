@@ -155,7 +155,9 @@ export function AddSubpagePopover({ presets, onAdd, onClose }) {
   );
 }
 
-export function DevicePanel({ hass, entityId, label, onReplace, onLabel, onRemove, onClose }) {
+export function DevicePanel({
+  hass, entityId, label, group = [], onGroup, onReplace, onLabel, onRemove, onClose,
+}) {
   const ref = useDismiss(onClose);
   const [name, setName] = useState(label);
   const saveName = () => { if (name !== label) onLabel(name); };
@@ -175,6 +177,30 @@ export function DevicePanel({ hass, entityId, label, onReplace, onLabel, onRemov
         onBlur={saveName}
         onKeyDown={(e) => { if (e.key === 'Enter') { saveName(); onClose(); } }}
       />
+      {entityId.startsWith('light.') && onGroup && (
+        <>
+          <p className="tm-rooms-panel-label">Gruppe · bis zu 4 Lampen teilen sich die Karte</p>
+          <ul className="tm-rooms-panel-members">
+            <li><span>{getFriendlyName(hass, entityId)}</span><small>Hauptlampe</small></li>
+            {group.map((id) => (
+              <li key={id}>
+                <span>{getFriendlyName(hass, id)}</span>
+                <button type="button" className="tm-rooms-panel-close" onClick={() => onGroup(group.filter((m) => m !== id))} aria-label={`${getFriendlyName(hass, id)} aus der Gruppe entfernen`}>
+                  <X size={18} />
+                </button>
+              </li>
+            ))}
+          </ul>
+          {group.length < 3 && (
+            <EntityPicker
+              value=""
+              domains={['light']}
+              placeholder="Lampe zur Gruppe hinzufügen …"
+              onChange={(id) => id && id !== entityId && !group.includes(id) && onGroup([...group, id])}
+            />
+          )}
+        </>
+      )}
       <button type="button" className="tm-rooms-panel-danger" onClick={() => { onRemove(); onClose(); }}>
         <Trash2 size={16} />
         Karte entfernen

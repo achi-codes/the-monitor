@@ -160,12 +160,15 @@ export function replaceDevice(config, roomId, subId, oldId, newId, currentKeys =
       .filter((key) => key !== `d:${newId}`)
       .map((key) => (key === `d:${oldId}` ? `d:${newId}` : key));
     const { [oldId]: oldLabel, ...labels } = sub.labels || {};
+    const { [oldId]: oldGroup, ...groups } = sub.groups || {};
+    const keptGroup = (oldGroup || []).filter((id) => id !== newId);
     return {
       ...sub,
       devices,
       hidden: hidden.filter((id) => id !== newId),
       order,
       labels: oldLabel ? { ...labels, [newId]: oldLabel } : labels,
+      groups: keptGroup.length ? { ...groups, [newId]: keptGroup } : groups,
     };
   });
 }
@@ -174,5 +177,14 @@ export function setDeviceLabel(config, roomId, subId, entityId, label) {
   return withSubpage(config, roomId, subId, (sub) => {
     const { [entityId]: _old, ...labels } = sub.labels || {};
     return { ...sub, labels: label.trim() ? { ...labels, [entityId]: label.trim() } : labels };
+  });
+}
+
+/** Extra lamps sharing one light card (up to three besides the card's own). */
+export function setDeviceGroup(config, roomId, subId, entityId, members) {
+  return withSubpage(config, roomId, subId, (sub) => {
+    const { [entityId]: _old, ...groups } = sub.groups || {};
+    const next = [...new Set(members.filter((id) => id && id !== entityId))].slice(0, 3);
+    return { ...sub, groups: next.length ? { ...groups, [entityId]: next } : groups };
   });
 }

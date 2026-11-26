@@ -108,7 +108,7 @@ export function getSubpageContent(hass, config, room, subpage) {
     ...subpage.tiles.map((tile) => ({ key: `t:${tile.id}`, kind: 'tile', tile })),
   ].sort((a, b) => (rank.get(a.key) ?? 1e9) - (rank.get(b.key) ?? 1e9));
   const hiddenIds = auto.filter((id) => hidden.has(id));
-  return { items, hiddenIds, favorites, labels: subpage.labels || {} };
+  return { items, hiddenIds, favorites, labels: subpage.labels || {}, groups: subpage.groups || {} };
 }
 
 /**

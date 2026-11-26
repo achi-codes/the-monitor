@@ -485,4 +485,23 @@ export const roomsStyles = `
   font-size: clamp(0.85rem, 5cqmin, 1rem); font-weight: 500; background: color-mix(in srgb, currentColor 10%, transparent);
 }
 .tm-appliance--running .tm-appliance-foot { background: rgba(255, 255, 255, 0.38); }
+
+/* Light group: up to four lamps share one light card */
+.tm-rc-light-group { flex: 1; min-height: 0; display: grid; gap: 0.6rem; }
+.tm-rc-light-group--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tm-rc-light-group--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tm-rc-light-group--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.tm-rc-light-panel.compact { border-radius: 22px; height: 100%; }
+.tm-rc-light-panel.compact .tm-rc-light-pct { top: 0.8rem; right: 0.9rem; font-size: 1.6rem; }
+.tm-rc-light-name {
+  position: absolute; left: 0.9rem; right: 0.9rem; bottom: 0.8rem; font-size: 0.9rem; font-weight: 600;
+  color: #ededeb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.tm-rc-light-name.dark { color: #1c1a16; }
+.tm-rooms-panel-members { list-style: none; margin: 0 0 0.6rem; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
+.tm-rooms-panel-members li {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 44px;
+  padding: 0 0.3rem 0 0.9rem; border-radius: 14px; background: rgba(255, 255, 255, 0.06);
+}
+.tm-rooms-panel-members small { opacity: 0.55; padding-right: 0.6rem; }
 `;

@@ -51,15 +51,13 @@ function Switch({ on, onClick, label }) {
   );
 }
 
-function LightCard({ hass, entityId, run, head, name: nameOverride }) {
+function LightPanel({ hass, entityId, run, label, compact = false }) {
   const entity = getEntity(hass, entityId);
-  const name = nameOverride || entity.name;
   const on = entity.state === 'on';
   const stored = getBrightnessPercent(hass, entityId);
   const [dragPct, setDragPct] = useState(null);
   const panelRef = useRef(null);
   const pct = dragPct ?? (on ? stored : 0);
-  const support = getLightColorSupport(hass, entityId);
   const activePreset = getActiveLightPresetId(hass, entityId);
   const rgb = getLightRgbFromState(hass, entityId);
   const fill = LIGHT_PRESETS.find((p) => p.id === activePreset)?.swatch || (rgb ? rgbToHex(rgb) : '#efd9b0');
@@ -69,55 +67,83 @@ function LightCard({ hass, entityId, run, head, name: nameOverride }) {
     const ratio = 1 - (event.clientY - rect.top) / rect.height;
     return Math.min(100, Math.max(0, Math.round(ratio * 100)));
   };
-  const onPointerDown = (event) => {
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setDragPct(pctFromEvent(event));
-  };
-  const onPointerMove = (event) => {
-    if (dragPct != null) setDragPct(pctFromEvent(event));
-  };
-  const onPointerUp = () => {
-    if (dragPct == null) return;
-    const next = dragPct;
-    setDragPct(null);
-    run(setEntityBrightness(hass, entityId, next));
+
+  return (
+    <div
+      ref={panelRef}
+      className={`tm-rc-light-panel${compact ? ' compact' : ''}`}
+      role="slider"
+      tabIndex={0}
+      aria-label={`Helligkeit ${label}`}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct}
+      onPointerDown={(event) => {
+        event.currentTarget.setPointerCapture(event.pointerId);
+        setDragPct(pctFromEvent(event));
+      }}
+      onPointerMove={(event) => { if (dragPct != null) setDragPct(pctFromEvent(event)); }}
+      onPointerUp={() => {
+        if (dragPct == null) return;
+        const next = dragPct;
+        setDragPct(null);
+        run(setEntityBrightness(hass, entityId, next));
+      }}
+      onPointerCancel={() => setDragPct(null)}
+      onKeyDown={(event) => {
+        if (event.key === 'ArrowUp') run(setEntityBrightness(hass, entityId, Math.min(100, pct + 10)));
+        if (event.key === 'ArrowDown') run(setEntityBrightness(hass, entityId, Math.max(0, pct - 10)));
+      }}
+    >
+      <div className="tm-rc-light-fill" style={{ height: `${pct}%`, background: fill, transition: dragPct == null ? undefined : 'none' }} />
+      <span className={`tm-rc-light-pct${pct >= (compact ? 78 : 82) ? ' dark' : ''}`}>{pct > 0 ? `${pct}%` : 'Aus'}</span>
+      {compact
+        ? <span className={`tm-rc-light-name${pct >= 14 ? ' dark' : ''}`}>{label}</span>
+        : <Lightbulb className={`tm-rc-light-icon${pct >= 8 ? ' dark' : ''}`} size={26} />}
+    </div>
+  );
+}
+
+function LightCard({ hass, entityId, run, head, name: nameOverride, group = [] }) {
+  const entity = getEntity(hass, entityId);
+  const name = nameOverride || entity.name;
+  const members = [entityId, ...group.filter((id) => id !== entityId && hass?.states?.[id])].slice(0, 4);
+  const isGroup = members.length > 1;
+  const anyOn = members.some((id) => hass?.states?.[id]?.state === 'on');
+  const colorIds = members.filter((id) => getLightColorSupport(hass, id).colorTemp);
+  const activePreset = getActiveLightPresetId(hass, colorIds[0] || entityId);
+  const toggleAll = () => run(Promise.all(members.map((id) => (
+    anyOn ? setEntityBrightness(hass, id, 0) : toggleEntity(hass, id)
+  ))));
+  // "Wohnzimmer Licht" next to "Wohnzimmer Stehlampe": drop the shared first word.
+  const prefix = `${entity.name.split(' ')[0]} `.toLowerCase();
+  const memberName = (id) => {
+    const full = getEntity(hass, id).name;
+    return full.toLowerCase().startsWith(prefix) && full.length > prefix.length ? full.slice(prefix.length) : full;
   };
 
   return (
-    <section className="tm-rc tm-rc--wide" aria-label={name}>
-      <CardHead {...head} title={name}>
-        <Switch on={on} onClick={() => run(toggleEntity(hass, entityId))} label={`${name} schalten`} />
+    <section className={`tm-rc tm-rc--wide${isGroup ? ' tm-rc--light-group' : ''}`} aria-label={name}>
+      <CardHead {...head} title={name} subtitle={isGroup ? `${members.length} Lampen · ${head.subtitle}` : head.subtitle}>
+        <Switch on={isGroup ? anyOn : entity.state === 'on'} onClick={isGroup ? toggleAll : () => run(toggleEntity(hass, entityId))} label={`${name} schalten`} />
       </CardHead>
-      <div
-        ref={panelRef}
-        className="tm-rc-light-panel"
-        role="slider"
-        tabIndex={0}
-        aria-label={`Helligkeit ${name}`}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={pct}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={() => setDragPct(null)}
-        onKeyDown={(event) => {
-          if (event.key === 'ArrowUp') run(setEntityBrightness(hass, entityId, Math.min(100, pct + 10)));
-          if (event.key === 'ArrowDown') run(setEntityBrightness(hass, entityId, Math.max(0, pct - 10)));
-        }}
-      >
-        <div className="tm-rc-light-fill" style={{ height: `${pct}%`, background: fill, transition: dragPct == null ? undefined : 'none' }} />
-        <span className={`tm-rc-light-pct${pct >= 82 ? ' dark' : ''}`}>{pct > 0 ? `${pct}%` : 'Aus'}</span>
-        <Lightbulb className={`tm-rc-light-icon${pct >= 8 ? ' dark' : ''}`} size={26} />
-      </div>
-      {support.colorTemp && (
+      {isGroup ? (
+        <div className={`tm-rc-light-group tm-rc-light-group--${members.length}`}>
+          {members.map((id) => (
+            <LightPanel key={id} hass={hass} entityId={id} run={run} label={memberName(id) || getEntity(hass, id).name} compact />
+          ))}
+        </div>
+      ) : (
+        <LightPanel hass={hass} entityId={entityId} run={run} label={name} />
+      )}
+      {colorIds.length > 0 && (
         <div className="tm-rc-chips">
           {LIGHT_PRESETS.map((preset) => (
             <button
               key={preset.id}
               type="button"
               className={`tm-rc-chip${activePreset === preset.id ? ' active' : ''}`}
-              onClick={() => run(setLightColorTemp(hass, entityId, preset.kelvin))}
+              onClick={() => run(Promise.all(colorIds.map((id) => setLightColorTemp(hass, id, preset.kelvin))))}
             >
               <span className="tm-rc-dot" style={{ background: preset.swatch }} />
               {preset.label}
@@ -281,10 +307,10 @@ const CARDS = {
   toggle: ToggleCard,
 };
 
-export function RoomCard({ hass, entityId, roomName, favorite, onToggleFavorite, run, name }) {
+export function RoomCard({ hass, entityId, roomName, favorite, onToggleFavorite, run, name, group }) {
   const Card = CARDS[getCardKind(entityId)] || ToggleCard;
   const head = { subtitle: roomName, favorite, onToggleFavorite };
-  return <Card hass={hass} entityId={entityId} run={run} head={head} name={name || ''} />;
+  return <Card hass={hass} entityId={entityId} run={run} head={head} name={name || ''} group={group || []} />;
 }
 
 export function SceneRow({ hass, sceneIds, run }) {

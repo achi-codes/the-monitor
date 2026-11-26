@@ -14,7 +14,7 @@ import {
   packItems, tileColumnWidth,
 } from '../../lib/roomsMode';
 import {
-  addSubpage, addSubpageDevice, addTile, removeItem, removeSubpage, replaceDevice, setDeviceLabel, setItemOrder,
+  addSubpage, addSubpageDevice, addTile, removeItem, removeSubpage, replaceDevice, setDeviceGroup, setDeviceLabel, setItemOrder,
   setSubpageOrder, updateSubpage, updateTile,
 } from '../../lib/roomsModeConfig';
 import useHorizontalReorder from './useHorizontalReorder';
@@ -215,6 +215,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
     : { items: [], hiddenIds: [], favorites: [] };
   const { items, favorites, hiddenIds } = content;
   const labels = content.labels || {};
+  const groups = content.groups || {};
   const itemKeys = items.map((item) => item.key);
   const sceneIds = room ? getSceneIds(room.entityIds) : [];
   const alerts = rooms.filter((candidate) => candidate.alert);
@@ -280,6 +281,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
       onToggleFavorite={() => toggleFavorite(item.entityId)}
       run={run}
       name={labels[item.entityId]}
+      group={groups[item.entityId]}
     />
   );
 
@@ -509,6 +511,8 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
           hass={hass}
           entityId={panel.entityId}
           label={labels[panel.entityId] || ''}
+          group={groups[panel.entityId] || []}
+          onGroup={(members) => apply((c) => setDeviceGroup(c, room.id, subpage.id, panel.entityId, members))}
           onReplace={(newId) => {
             apply((c) => replaceDevice(c, room.id, subpage.id, panel.entityId, newId, itemKeys));
             setPanel({ type: 'device', entityId: newId });

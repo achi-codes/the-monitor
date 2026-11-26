@@ -104,33 +104,42 @@ export function getSubpageContent(hass, config, room, subpage) {
   const deviceIds = [...new Set([...auto.filter((id) => !hidden.has(id)), ...picked])];
   const rank = new Map((subpage.order || []).map((key, index) => [key, index]));
   const items = [
-    ...deviceIds.map((entityId) => ({ key: `d:${entityId}`, kind: 'device', entityId })),
-    ...subpage.tiles.map((tile) => ({ key: `t:${tile.id}`, kind: 'tile', tile })),
+    ...deviceIds.map((entityId) => ({
+      key: `d:${entityId}`, kind: 'device', entityId, size: subpage.sizes?.[entityId] || defaultDeviceSize(entityId),
+    })),
+    ...subpage.tiles.map((tile) => ({ key: `t:${tile.id}`, kind: 'tile', tile, size: { w: tile.w || 3, h: tile.h || 2 } })),
   ].sort((a, b) => (rank.get(a.key) ?? 1e9) - (rank.get(b.key) ?? 1e9));
   const hiddenIds = auto.filter((id) => hidden.has(id));
-  return { items, hiddenIds, favorites, labels: subpage.labels || {}, groups: subpage.groups || {} };
+  return {
+    items, hiddenIds, favorites, labels: subpage.labels || {}, groups: subpage.groups || {}, sizes: subpage.sizes || {},
+  };
+}
+
+/** Device cards default to a full-height column, lights a little wider. */
+export function defaultDeviceSize(entityId) {
+  return { w: getDomain(entityId) === 'light' ? 4 : 3, h: 4 };
+}
+
+export function columnWidth(items) {
+  const cols = Math.max(...items.map((item) => item.size?.w || 3));
+  return Math.min(1100, Math.max(260, cols * 105));
 }
 
 /**
- * Strip columns in display order: devices take a column each, tall tiles too,
- * smaller tiles stack two to a column (unless `pair` is off, as in edit mode).
+ * Strip columns in display order: items three or more rows high fill a column,
+ * lower ones (devices or tiles) stack two to a column (unless `pair` is off, as in edit mode).
  */
 export function packItems(items, { pair = true } = {}) {
   const columns = [];
   let open = null;
   items.forEach((item) => {
-    if (item.kind === 'device') {
-      open = null;
-      columns.push({ key: item.key, items: [item], kind: 'device' });
-      return;
-    }
-    const tall = (item.tile.h || 1) >= 3;
+    const tall = (item.size?.h || 1) >= 3;
     if (!tall && pair && open) {
       open.items.push(item);
       open = null;
       return;
     }
-    const column = { key: item.key, items: [item], kind: 'tiles', tall };
+    const column = { key: item.key, items: [item], tall };
     columns.push(column);
     open = !tall && pair ? column : null;
   });
@@ -226,9 +235,4 @@ export function normalizeRoomFavorites(raw) {
   return Object.fromEntries(Object.entries(raw)
     .filter(([key, ids]) => key && Array.isArray(ids))
     .map(([key, ids]) => [key, ids.filter((id) => typeof id === 'string')]));
-}
-
-export function tileColumnWidth(tiles) {
-  const cols = Math.max(...tiles.map((tile) => tile.w || 3));
-  return Math.min(720, Math.max(260, cols * 105));
 }

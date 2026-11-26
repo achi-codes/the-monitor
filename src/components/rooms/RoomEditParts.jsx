@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2, X } from 'lucide-react';
-import { WIDGET_TYPES } from '../../lib/layout';
+import { SIZE_PRESETS, WIDGET_TYPES } from '../../lib/layout';
 import { getFriendlyName } from '../../lib/entities';
 import { CARD_DOMAINS } from '../../lib/roomsMode';
 import { SUBPAGE_ICONS } from '../../lib/rooms';
@@ -156,7 +156,7 @@ export function AddSubpagePopover({ presets, onAdd, onClose }) {
 }
 
 export function DevicePanel({
-  hass, entityId, label, group = [], onGroup, onReplace, onLabel, onRemove, onClose,
+  hass, entityId, label, group = [], onGroup, size, onSize, onReplace, onLabel, onRemove, onClose,
 }) {
   const ref = useDismiss(onClose);
   const [name, setName] = useState(label);
@@ -177,6 +177,24 @@ export function DevicePanel({
         onBlur={saveName}
         onKeyDown={(e) => { if (e.key === 'Enter') { saveName(); onClose(); } }}
       />
+      {onSize && (
+        <>
+          <p className="tm-rooms-panel-label">Größe</p>
+          <div className="tm-widget-inspector-sizes">
+            {Object.entries(SIZE_PRESETS).map(([key, preset]) => (
+              <button
+                key={key}
+                type="button"
+                className={`tm-widget-inspector-size${size?.w === preset.w && size?.h === preset.h ? ' active' : ''}`}
+                onClick={() => onSize(preset)}
+              >
+                <span>{preset.label}</span>
+                <span className="tm-widget-inspector-size-dim">{`${preset.w}×${preset.h}`}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
       {entityId.startsWith('light.') && onGroup && (
         <>
           <p className="tm-rooms-panel-label">Gruppe · bis zu 4 Lampen teilen sich die Karte</p>

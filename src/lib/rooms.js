@@ -51,6 +51,11 @@ export function normalizeSubpages(rawSubpages) {
             .map(([id, members]) => [id, stringList(members).filter((m) => m !== id).slice(0, 3)])
             .filter(([id, members]) => id && members.length))
           : {},
+        sizes: sub.sizes && typeof sub.sizes === 'object' && !Array.isArray(sub.sizes)
+          ? Object.fromEntries(Object.entries(sub.sizes)
+            .filter(([id, size]) => id && size && Number(size.w) > 0 && Number(size.h) > 0)
+            .map(([id, size]) => [id, { w: Math.min(12, Math.round(size.w)), h: Math.min(4, Math.round(size.h)) }]))
+          : {},
         labels: sub.labels && typeof sub.labels === 'object' && !Array.isArray(sub.labels)
           ? Object.fromEntries(Object.entries(sub.labels).filter(([id, label]) => id && typeof label === 'string' && label.trim()))
           : {},

@@ -11,10 +11,10 @@ import { useConfig } from '../../context/ConfigContext';
 import { describeRoomSummary, formatRoomNumber } from '../../lib/roomWidget';
 import {
   ROOMS_OVERVIEW_ID, ROOM_FILTERS, buildModeRooms, createSubpage, getRailRoomIds, getSceneIds, getSubpageContent,
-  packItems, tileColumnWidth,
+  columnWidth, packItems,
 } from '../../lib/roomsMode';
 import {
-  addSubpage, addSubpageDevice, addTile, removeItem, removeSubpage, replaceDevice, setDeviceGroup, setDeviceLabel, setItemOrder,
+  addSubpage, addSubpageDevice, addTile, removeItem, removeSubpage, replaceDevice, setDeviceGroup, setDeviceLabel, setDeviceSize, setItemOrder,
   setSubpageOrder, updateSubpage, updateTile,
 } from '../../lib/roomsModeConfig';
 import useHorizontalReorder from './useHorizontalReorder';
@@ -216,6 +216,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
   const { items, favorites, hiddenIds } = content;
   const labels = content.labels || {};
   const groups = content.groups || {};
+  const sizes = content.sizes || {};
   const itemKeys = items.map((item) => item.key);
   const sceneIds = room ? getSceneIds(room.entityIds) : [];
   const alerts = rooms.filter((candidate) => candidate.alert);
@@ -285,21 +286,29 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
     />
   );
 
-  const renderColumn = (column) => {
-    if (column.kind === 'device') return <div key={column.key} className="tm-rooms-col">{renderDevice(column.items[0])}</div>;
-    const tiles = column.items.map((item) => item.tile);
-    return (
-      <div
-        key={column.key}
-        className={`tm-rooms-tile-col${column.tall ? ' tall' : ''}`}
-        style={{ width: `${tileColumnWidth(tiles)}px` }}
-      >
-        {tiles.map((tile, index) => (
-          <TileView key={tile.id} tile={tile} hass={hass} getEntity={getEntity} onOpenPopup={onOpenPopup} onUpdateTile={onUpdateTile} index={index} />
-        ))}
-      </div>
-    );
-  };
+  const renderItem = (item, index, interactive = true) => (item.kind === 'device'
+    ? <div key={item.key} className="tm-rooms-tile tm-rooms-device-slot">{renderDevice(item)}</div>
+    : (
+      <TileView
+        key={item.key}
+        tile={item.tile}
+        hass={hass}
+        getEntity={getEntity}
+        onOpenPopup={interactive ? onOpenPopup : () => {}}
+        onUpdateTile={interactive ? onUpdateTile : () => {}}
+        index={index}
+      />
+    ));
+
+  const renderColumn = (column) => (
+    <div
+      key={column.key}
+      className={`tm-rooms-tile-col${column.tall ? ' tall' : ''}`}
+      style={{ width: `${columnWidth(column.items)}px` }}
+    >
+      {column.items.map((item, index) => renderItem(item, index))}
+    </div>
+  );
 
   const renderEditItem = (item) => {
     const dragged = strip.drag?.key === item.key;
@@ -311,17 +320,15 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
         data-reorder-key={item.key}
         className={`tm-rooms-edit-item${dragged ? ' dragging' : ''}${strip.lifted === item.key && !dragged ? ' lifted' : ''}${isTile ? ' tile' : ''}`}
         style={{
-          ...(isTile ? { width: `${tileColumnWidth([item.tile])}px` } : {}),
+          width: `${columnWidth([item])}px`,
           ...(dragged ? { transform: `translateX(${strip.drag.dx}px)` } : {}),
         }}
         {...strip.bind(item.key)}
       >
         <div className="tm-rooms-edit-content" inert="">
-          {isTile ? (
-            <div className={`tm-rooms-tile-col${(item.tile.h || 1) >= 3 ? ' tall' : ''}`} style={{ width: '100%' }}>
-              <TileView tile={item.tile} hass={hass} getEntity={getEntity} onOpenPopup={() => {}} onUpdateTile={() => {}} index={0} />
-            </div>
-          ) : renderDevice(item)}
+          <div className={`tm-rooms-tile-col${(item.size?.h || 1) >= 3 ? ' tall' : ''}`} style={{ width: '100%' }}>
+            {renderItem(item, 0, false)}
+          </div>
         </div>
         <EditOverlay
           label={label}
@@ -512,6 +519,8 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
           entityId={panel.entityId}
           label={labels[panel.entityId] || ''}
           group={groups[panel.entityId] || []}
+          size={sizes[panel.entityId] || items.find((item) => item.key === `d:${panel.entityId}`)?.size}
+          onSize={(preset) => apply((c) => setDeviceSize(c, room.id, subpage.id, panel.entityId, preset))}
           onGroup={(members) => apply((c) => setDeviceGroup(c, room.id, subpage.id, panel.entityId, members))}
           onReplace={(newId) => {
             apply((c) => replaceDevice(c, room.id, subpage.id, panel.entityId, newId, itemKeys));

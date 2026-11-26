@@ -504,4 +504,28 @@ export const roomsStyles = `
   padding: 0 0.3rem 0 0.9rem; border-radius: 14px; background: rgba(255, 255, 255, 0.06);
 }
 .tm-rooms-panel-members small { opacity: 0.55; padding-right: 0.6rem; }
+
+/* Device cards placed in strip columns (sizes like tiles) */
+.tm-rooms-tile-col .tm-rc { width: 100%; height: 100%; max-height: none; container-type: size; }
+.tm-rooms-device-slot { display: flex; min-width: 0; }
+.tm-rooms-tile-col.tall .tm-rooms-device-slot { flex: 1 1 auto; }
+@container (max-height: 340px) {
+  .tm-rc-climate-dial svg, .tm-rc-cover-art { display: none; }
+  .tm-rc-climate-dial { padding-top: 0; }
+  .tm-rc-climate-now { position: static; }
+  .tm-rc-climate-now strong { font-size: 2.2rem; }
+  .tm-rc-status { gap: 0.4rem; }
+  .tm-rc-status strong { font-size: 1.7rem; }
+  .tm-rc-light-pct { font-size: 1.9rem; top: 0.7rem; right: 1rem; }
+  .tm-rc-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tm-rc-head-text { flex: 1; }
+  .tm-rc--wide .tm-rc-chips, .tm-rc-window { display: none; }
+  .tm-rc-chips { margin-top: auto; }
+  .tm-rc-light-icon { left: 1rem; bottom: 0.8rem; }
+}
+@container (max-width: 300px) {
+  .tm-rc-chip { padding: 0 0.45rem; font-size: 0.82rem; gap: 0.3rem; }
+  .tm-rc-dot { display: none; }
+  .tm-rc-light-pct { font-size: 2.6rem; }
+}
 `;

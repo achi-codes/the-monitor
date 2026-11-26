@@ -188,3 +188,10 @@ export function setDeviceGroup(config, roomId, subId, entityId, members) {
     return { ...sub, groups: next.length ? { ...groups, [entityId]: next } : groups };
   });
 }
+
+export function setDeviceSize(config, roomId, subId, entityId, size) {
+  return withSubpage(config, roomId, subId, (sub) => ({
+    ...sub,
+    sizes: { ...(sub.sizes || {}), [entityId]: { w: size.w, h: size.h } },
+  }));
+}

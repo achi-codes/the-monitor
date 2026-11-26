@@ -50,6 +50,7 @@ export const WIDGET_TYPES = {
   ev: { label: 'E-Auto', icon: 'mdi:car-electric', domains: [] },
   chargePrice: { label: 'Dynamische Ladepreise', icon: 'mdi:chart-bell-curve', domains: [] },
   vacuum: { label: 'Saugroboter', icon: 'mdi:robot-vacuum', domains: ['vacuum'] },
+  appliance: { label: 'Haushaltsgerät', icon: 'mdi:dishwasher', domains: ['sensor', 'binary_sensor', 'select', 'switch'] },
   haCard: { label: 'HA-Karte', icon: 'mdi:card-bulleted', domains: [] },
 };
 
@@ -82,6 +83,7 @@ const DEFAULT_SIZE_BY_TYPE = {
   ev: 'L',
   chargePrice: 'XL',
   vacuum: 'L',
+  appliance: 'tall',
   thermostat: 'XL',
   today: 'XL',
   waste: 'XL',
@@ -529,6 +531,11 @@ export function normalizeLayout(rawLayout, legacyConfig = null) {
           normalized.area_name = typeof widget.area_name === 'string' ? widget.area_name : '';
           if (typeof widget.accent === 'string' && widget.accent) normalized.accent = widget.accent;
           if (typeof widget.image === 'string' && widget.image) normalized.image = widget.image;
+        }
+        if (widget.type === 'appliance') {
+          ['progress_entity', 'remaining_entity', 'program_entity'].forEach((key) => {
+            normalized[key] = typeof widget[key] === 'string' ? widget[key] : '';
+          });
         }
         if (widget.type === 'thermostat') {
           normalized.modeKind = widget.modeKind === 'preset' || widget.modeKind === 'hvac' ? widget.modeKind : 'auto';

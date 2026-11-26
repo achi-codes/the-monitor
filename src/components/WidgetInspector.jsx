@@ -102,6 +102,7 @@ export default function WidgetInspector({
   const isChargePrice = widget.type === 'chargePrice';
   const isRoom = widget.type === 'room';
   const isVacuum = widget.type === 'vacuum';
+  const isAppliance = widget.type === 'appliance';
   const isMedia = widget.type === 'media';
   const isToday = widget.type === 'today';
   const isWaste = widget.type === 'waste';
@@ -584,6 +585,30 @@ export default function WidgetInspector({
               ))}
             </div>
           </div>
+        </div>
+      )}
+
+      {isAppliance && (
+        <div className="tm-widget-inspector-section">
+          <label className="tm-widget-inspector-label">Haushaltsgerät</label>
+          <p className="tm-text-sm tm-opacity-70" style={{ margin: 0, lineHeight: 1.4 }}>
+            Oben eine Entität des Geräts wählen (z. B. Betriebszustand). Sensoren desselben Geräts werden automatisch gefunden; hier kannst du sie überschreiben.
+          </p>
+          {[
+            ['progress_entity', 'Fortschritt (%)', ['sensor', 'number']],
+            ['remaining_entity', 'Restzeit', ['sensor']],
+            ['program_entity', 'Programm', ['sensor', 'select']],
+          ].map(([key, title, domains]) => (
+            <div key={key} className="tm-widget-inspector-field">
+              <span className="tm-widget-inspector-field-label">{title}</span>
+              <EntityPicker
+                value={widget[key] || ''}
+                onChange={(value) => onUpdate(pageIndex, widget.id, { [key]: value })}
+                domains={domains}
+                placeholder="Automatisch"
+              />
+            </div>
+          ))}
         </div>
       )}
 

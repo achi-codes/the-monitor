@@ -256,7 +256,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
   } else if (isOverview) {
     subtitle = `${rooms.length} Räume & Seiten · ${rooms.reduce((sum, r) => sum + r.summary.activeDevices, 0)} Geräte aktiv`;
   } else if (isEditing) {
-    subtitle = 'Karten ziehen zum Sortieren · × entfernt · + fügt hinzu';
+    subtitle = 'Karte gedrückt halten und ziehen · × entfernt · ✎ bearbeitet · + fügt hinzu';
   } else if (hasDevices) {
     subtitle = [`${room.summary.activeDevices} aktiv`, ...roomLine(room.summary)].join(' · ');
   } else {
@@ -307,7 +307,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
       <div
         key={item.key}
         data-reorder-key={item.key}
-        className={`tm-rooms-edit-item${dragged ? ' dragging' : ''}${isTile ? ' tile' : ''}`}
+        className={`tm-rooms-edit-item${dragged ? ' dragging' : ''}${strip.lifted === item.key && !dragged ? ' lifted' : ''}${isTile ? ' tile' : ''}`}
         style={{
           ...(isTile ? { width: `${tileColumnWidth([item.tile])}px` } : {}),
           ...(dragged ? { transform: `translateX(${strip.drag.dx}px)` } : {}),
@@ -461,7 +461,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
                 key={item.id}
                 type="button"
                 data-reorder-key={isEditing ? item.id : undefined}
-                className={`tm-rooms-dock-btn${active ? ' active' : ''}${dragged ? ' dragging' : ''}`}
+                className={`tm-rooms-dock-btn${active ? ' active' : ''}${dragged ? ' dragging' : ''}${dock.lifted === item.id && !dragged ? ' lifted' : ''}`}
                 style={dragged ? { transform: `translateX(${dock.drag.dx}px)` } : undefined}
                 onClick={() => {
                   if (isEditing && active) setPanel({ type: 'sub', subId: item.id });

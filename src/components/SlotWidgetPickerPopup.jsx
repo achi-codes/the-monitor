@@ -22,6 +22,7 @@ import {
   Thermometer,
   Trash2,
   Blinds,
+  WashingMachine,
   Zap,
   X,
 } from 'lucide-react';
@@ -47,6 +48,7 @@ export const WIDGET_ICONS = {
   ev: CarFront,
   chargePrice: BadgeEuro,
   vacuum: Bot,
+  appliance: WashingMachine,
   thermostat: Thermometer,
   today: CalendarDays,
   waste: Trash2,

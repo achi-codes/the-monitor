@@ -383,7 +383,8 @@ export const roomsStyles = `
 }
 .tm-rooms-edit-item {
   position: relative; flex: none; height: 100%; max-height: 560px; border-radius: 34px;
-  touch-action: none; cursor: grab; transition: transform 0.15s ease; scroll-snap-align: start;
+  touch-action: pan-x; cursor: grab; transition: transform 0.15s ease; scroll-snap-align: start;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
 }
 .tm-rooms-edit-item.dragging { z-index: 5; opacity: 0.88; transition: none; cursor: grabbing; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); }
 .tm-rooms-edit-content { position: relative; z-index: 0; isolation: isolate; height: 100%; pointer-events: none; display: flex; }
@@ -414,7 +415,8 @@ export const roomsStyles = `
 .tm-rooms-drop-marker--dock { top: 10px; bottom: 10px; }
 .tm-rooms--editing .tm-rooms-dock { outline: 2px dashed rgba(255, 255, 255, 0.25); outline-offset: 3px; }
 .tm-rooms-dock-btn.dragging { opacity: 0.85; z-index: 2; transition: none; }
-.tm-rooms--editing .tm-rooms-dock-btn { touch-action: none; }
+.tm-rooms--editing .tm-rooms-dock-btn { touch-action: pan-x; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.tm-rooms-edit-item.lifted, .tm-rooms-dock-btn.lifted { transform: scale(1.03); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45); z-index: 4; }
 .tm-rooms-dock-edit { opacity: 0.6; }
 .tm-rooms-dock-add { padding: 0 1rem; }
 .tm-rooms-panel {
@@ -456,4 +458,31 @@ export const roomsStyles = `
 }
 .tm-rooms-panel-list { display: flex; flex-direction: column; gap: 4px; margin-top: 0.6rem; }
 .tm-rooms-panel-hint { margin: 0.35rem 0 0; font-size: 0.8rem; opacity: 0.5; overflow-wrap: anywhere; }
+
+/* Appliance tile (washer, dryer, dishwasher) */
+.tm-appliance {
+  container-type: size; box-sizing: border-box; width: 100%; height: 100%;
+  display: flex; flex-direction: column; gap: 4cqh; padding: clamp(0.9rem, 7cqmin, 1.6rem);
+  border-radius: var(--tm-radius-xl, 1.5rem); color: #f1f1ef; background: rgba(32, 33, 33, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.08); font: inherit; text-align: left;
+}
+.tm-appliance--running { background: #5ccf85; color: #0d2716; border-color: transparent; }
+.tm-appliance--done { background: rgba(92, 207, 133, 0.22); }
+.tm-appliance--empty { align-items: center; justify-content: center; gap: 0.6rem; cursor: pointer; opacity: 0.75; }
+.tm-appliance-title { margin: 0; font-size: clamp(1rem, 8cqmin, 1.5rem); font-weight: 600; line-height: 1.15; }
+.tm-appliance-sub { margin: 0.2rem 0 0; font-size: clamp(0.8rem, 5cqmin, 0.95rem); opacity: 0.7; }
+.tm-appliance-ring { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; }
+.tm-appliance-ring svg { height: 100%; max-width: 100%; aspect-ratio: 1; }
+.tm-appliance-track, .tm-appliance-bar { fill: none; stroke-width: 18; }
+.tm-appliance-track { stroke: color-mix(in srgb, currentColor 14%, transparent); }
+.tm-appliance-bar { stroke: currentColor; stroke-linecap: round; transition: stroke-dasharray 0.6s ease; }
+.tm-appliance-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.tm-appliance-center strong { font-size: clamp(1.4rem, 14cqmin, 3rem); line-height: 1; }
+.tm-appliance-center span { margin-top: 0.3rem; font-size: clamp(0.75rem, 5cqmin, 0.95rem); opacity: 0.75; }
+.tm-appliance-check { width: clamp(2rem, 18cqmin, 4rem); height: auto; }
+.tm-appliance-foot {
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem; min-height: 44px; border-radius: 999px;
+  font-size: clamp(0.85rem, 5cqmin, 1rem); font-weight: 500; background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.tm-appliance--running .tm-appliance-foot { background: rgba(255, 255, 255, 0.38); }
 `;

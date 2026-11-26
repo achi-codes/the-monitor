@@ -1,18 +1,34 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const DRAG_THRESHOLD = 6;
+const TOUCH_SLOP = 10;
+const LONG_PRESS_MS = 350;
 const EDGE = 70;
 
 /**
  * Pointer-based drag & drop for a horizontal row. Items carry
  * `data-reorder-key`; the container must be position: relative.
- * Returns the drag state (for the dragged item's offset and the drop marker)
- * and `bind(key)` handlers for each item.
+ * Mouse drags start right away; touch and pen need a long press, so a plain
+ * swipe still scrolls the row. Returns the drag state (offset, drop marker),
+ * the key of a lifted item and `bind(key)` handlers for each item.
  */
 export default function useHorizontalReorder({ containerRef, keys, onReorder, autoScroll = false }) {
   const [drag, setDrag] = useState(null);
+  const [lifted, setLifted] = useState(null);
   const dragRef = useRef(null);
+  const timerRef = useRef(null);
   const suppressClick = useRef(false);
+
+  // Once an item is lifted, stop the browser from turning the touch into a scroll.
+  useEffect(() => {
+    const onTouchMove = (event) => {
+      if (dragRef.current?.armed && event.cancelable) event.preventDefault();
+    };
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    return () => document.removeEventListener('touchmove', onTouchMove);
+  }, []);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
 
   const measure = useCallback((clientX, key) => {
     const container = containerRef.current;
@@ -34,24 +50,58 @@ export default function useHorizontalReorder({ containerRef, keys, onReorder, au
     return { over, markerX };
   }, [containerRef]);
 
-  const update = (next) => {
-    dragRef.current = next;
-    setDrag(next);
+  const reset = () => {
+    clearTimeout(timerRef.current);
+    dragRef.current = null;
+    setDrag(null);
+    setLifted(null);
+  };
+
+  const arm = (current, element, pointerId) => {
+    current.armed = true;
+    try { element.setPointerCapture(pointerId); } catch { /* pointer already gone */ }
+    if (current.touch) {
+      navigator.vibrate?.(12);
+      setLifted(current.key);
+    }
   };
 
   const bind = (key) => ({
     onPointerDown: (event) => {
       const interactive = event.target.closest('button, input, select');
       if (event.button !== 0 || (interactive && interactive !== event.currentTarget)) return;
-      event.currentTarget.setPointerCapture(event.pointerId);
       const container = containerRef.current;
-      dragRef.current = {
-        key, startX: event.clientX, startScroll: container?.scrollLeft || 0, dx: 0, moved: false, over: 0, markerX: 0,
+      const element = event.currentTarget;
+      const current = {
+        key,
+        touch: event.pointerType !== 'mouse',
+        startX: event.clientX,
+        startY: event.clientY,
+        startScroll: container?.scrollLeft || 0,
+        dx: 0,
+        moved: false,
+        armed: false,
+        over: 0,
+        markerX: 0,
       };
+      dragRef.current = current;
+      if (!current.touch) {
+        arm(current, element, event.pointerId);
+        return;
+      }
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        if (dragRef.current === current) arm(current, element, event.pointerId);
+      }, LONG_PRESS_MS);
     },
     onPointerMove: (event) => {
       const current = dragRef.current;
       if (!current || current.key !== key) return;
+      if (!current.armed) {
+        // Finger moved before the long press: it's a scroll, let the browser have it.
+        if (Math.hypot(event.clientX - current.startX, event.clientY - current.startY) > TOUCH_SLOP) reset();
+        return;
+      }
       const container = containerRef.current;
       if (autoScroll && container) {
         const box = container.getBoundingClientRect();
@@ -61,13 +111,21 @@ export default function useHorizontalReorder({ containerRef, keys, onReorder, au
       const dx = event.clientX - current.startX + ((container?.scrollLeft || 0) - current.startScroll);
       const moved = current.moved || Math.abs(event.clientX - current.startX) > DRAG_THRESHOLD;
       if (!moved) return;
-      update({ ...current, dx, moved, ...measure(event.clientX, key) });
+      const next = { ...current, dx, moved, ...measure(event.clientX, key) };
+      dragRef.current = next;
+      setDrag(next);
     },
     onPointerUp: () => {
       const current = dragRef.current;
-      dragRef.current = null;
-      setDrag(null);
-      if (!current?.moved) return;
+      reset();
+      if (!current?.moved) {
+        // A long press without moving still swallows the click that follows.
+        if (current?.armed && current.touch) {
+          suppressClick.current = true;
+          setTimeout(() => { suppressClick.current = false; }, 0);
+        }
+        return;
+      }
       suppressClick.current = true;
       setTimeout(() => { suppressClick.current = false; }, 0);
       const rest = keys.filter((k) => k !== current.key);
@@ -79,11 +137,11 @@ export default function useHorizontalReorder({ containerRef, keys, onReorder, au
       event.preventDefault();
       event.stopPropagation();
     },
-    onPointerCancel: () => {
-      dragRef.current = null;
-      setDrag(null);
+    onContextMenu: (event) => {
+      if (dragRef.current) event.preventDefault();
     },
+    onPointerCancel: reset,
   });
 
-  return { drag: drag?.moved ? drag : null, bind };
+  return { drag: drag?.moved ? drag : null, lifted, bind };
 }

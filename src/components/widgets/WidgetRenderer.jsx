@@ -23,6 +23,7 @@ import SensorWidget from '../SensorWidget';
 import SensorStatusWidget from '../SensorStatusWidget';
 import HaCardWidget from '../HaCardWidget';
 import VacuumWidget from '../VacuumWidget';
+import ApplianceWidget from '../ApplianceWidget';
 import RoomWidget from '../RoomWidget';
 import TodayWidget from '../TodayWidget';
 import WasteWidget from '../WasteWidget';
@@ -177,6 +178,15 @@ export function renderDashboardWidget({
       return <EvWidget widget={widget} hass={hass} />;
     case 'chargePrice':
       return <ChargePriceWidget widget={widget} hass={hass} editMode={editMode} />;
+    case 'appliance':
+      return (
+        <ApplianceWidget
+          widget={widget}
+          hass={hass}
+          editMode={editMode}
+          onConfigure={editMode ? handleConfigure : undefined}
+        />
+      );
     case 'vacuum':
       return (
         <VacuumWidget

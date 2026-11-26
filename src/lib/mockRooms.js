@@ -28,6 +28,18 @@ export const MOCK_ROOM_STATES = {
   'sensor.kueche_temperatur': createState('sensor.kueche_temperatur', '22.1', {
     friendly_name: 'Temperatur', unit_of_measurement: '°C', device_class: 'temperature',
   }),
+  'sensor.geschirrspueler_status': createState('sensor.geschirrspueler_status', 'run', {
+    friendly_name: 'Geschirrspüler Status',
+  }),
+  'sensor.geschirrspueler_fortschritt': createState('sensor.geschirrspueler_fortschritt', '62', {
+    friendly_name: 'Geschirrspüler Fortschritt', unit_of_measurement: '%',
+  }),
+  'sensor.geschirrspueler_restzeit': createState('sensor.geschirrspueler_restzeit', '38', {
+    friendly_name: 'Geschirrspüler Restzeit', unit_of_measurement: 'min', device_class: 'duration',
+  }),
+  'sensor.geschirrspueler_programm': createState('sensor.geschirrspueler_programm', 'eco_50', {
+    friendly_name: 'Geschirrspüler Programm',
+  }),
   'sensor.wohnzimmer_co2': createState('sensor.wohnzimmer_co2', '620', {
     friendly_name: 'Luftqualität', unit_of_measurement: 'ppm', device_class: 'carbon_dioxide',
   }),
@@ -54,4 +66,7 @@ export function attachMockRegistries(hass) {
   hass.entities = Object.fromEntries(Object.entries(MOCK_ENTITY_AREAS).flatMap(
     ([areaId, entityIds]) => entityIds.map((entityId) => [entityId, { area_id: areaId }]),
   ));
+  ['status', 'fortschritt', 'restzeit', 'programm'].forEach((key) => {
+    hass.entities[`sensor.geschirrspueler_${key}`] = { area_id: 'kueche', device_id: 'mock-geschirrspueler' };
+  });
 }

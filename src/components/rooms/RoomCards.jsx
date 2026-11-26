@@ -104,7 +104,9 @@ function LightPanel({ hass, entityId, run, label, compact = false }) {
   );
 }
 
-function LightCard({ hass, entityId, run, head, name: nameOverride, group = [] }) {
+function LightCard({
+  hass, entityId, run, head, name: nameOverride, group = [], showColors = true,
+}) {
   const entity = getEntity(hass, entityId);
   const name = nameOverride || entity.name;
   const members = [entityId, ...group.filter((id) => id !== entityId && hass?.states?.[id])].slice(0, 4);
@@ -136,7 +138,7 @@ function LightCard({ hass, entityId, run, head, name: nameOverride, group = [] }
       ) : (
         <LightPanel hass={hass} entityId={entityId} run={run} label={name} />
       )}
-      {colorIds.length > 0 && (
+      {showColors && colorIds.length > 0 && (
         <div className="tm-rc-chips">
           {LIGHT_PRESETS.map((preset) => (
             <button
@@ -307,10 +309,12 @@ const CARDS = {
   toggle: ToggleCard,
 };
 
-export function RoomCard({ hass, entityId, roomName, favorite, onToggleFavorite, run, name, group }) {
+export function RoomCard({
+  hass, entityId, roomName, favorite, onToggleFavorite, run, name, group, showColors = true,
+}) {
   const Card = CARDS[getCardKind(entityId)] || ToggleCard;
   const head = { subtitle: roomName, favorite, onToggleFavorite };
-  return <Card hass={hass} entityId={entityId} run={run} head={head} name={name || ''} group={group || []} />;
+  return <Card hass={hass} entityId={entityId} run={run} head={head} name={name || ''} group={group || []} showColors={showColors} />;
 }
 
 export function SceneRow({ hass, sceneIds, run }) {

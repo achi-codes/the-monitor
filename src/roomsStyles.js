@@ -519,7 +519,11 @@ export const roomsStyles = `
   .tm-rc-light-pct { font-size: 1.9rem; top: 0.7rem; right: 1rem; }
   .tm-rc-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tm-rc-head-text { flex: 1; }
-  .tm-rc--wide .tm-rc-chips, .tm-rc-window { display: none; }
+  .tm-rc-window { display: none; }
+  .tm-rc-chip { height: 38px; font-size: 0.85rem; }
+  .tm-rc-light-group--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-rows: minmax(0, 1fr); }
+  .tm-rc-light-panel.compact .tm-rc-light-pct { font-size: 1.15rem; top: 0.55rem; right: 0.7rem; }
+  .tm-rc-light-name { font-size: 0.8rem; left: 0.7rem; right: 0.7rem; bottom: 0.55rem; }
   .tm-rc-chips { margin-top: auto; }
   .tm-rc-light-icon { left: 1rem; bottom: 0.8rem; }
 }
@@ -528,4 +532,5 @@ export const roomsStyles = `
   .tm-rc-dot { display: none; }
   .tm-rc-light-pct { font-size: 2.6rem; }
 }
+.tm-rooms-panel-check { margin-top: 1rem; }
 `;

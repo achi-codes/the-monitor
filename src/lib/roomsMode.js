@@ -112,6 +112,7 @@ export function getSubpageContent(hass, config, room, subpage) {
   const hiddenIds = auto.filter((id) => hidden.has(id));
   return {
     items, hiddenIds, favorites, labels: subpage.labels || {}, groups: subpage.groups || {}, sizes: subpage.sizes || {},
+    noColors: subpage.noColors || [],
   };
 }
 

@@ -195,3 +195,10 @@ export function setDeviceSize(config, roomId, subId, entityId, size) {
     sizes: { ...(sub.sizes || {}), [entityId]: { w: size.w, h: size.h } },
   }));
 }
+
+export function setDeviceColors(config, roomId, subId, entityId, show) {
+  return withSubpage(config, roomId, subId, (sub) => {
+    const rest = (sub.noColors || []).filter((id) => id !== entityId);
+    return { ...sub, noColors: show ? rest : [...rest, entityId] };
+  });
+}

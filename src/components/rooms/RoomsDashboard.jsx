@@ -14,7 +14,7 @@ import {
   columnWidth, packItems,
 } from '../../lib/roomsMode';
 import {
-  addSubpage, addSubpageDevice, addTile, removeItem, removeSubpage, replaceDevice, setDeviceGroup, setDeviceLabel, setDeviceSize, setItemOrder,
+  addSubpage, addSubpageDevice, addTile, removeItem, removeSubpage, replaceDevice, setDeviceColors, setDeviceGroup, setDeviceLabel, setDeviceSize, setItemOrder,
   setSubpageOrder, updateSubpage, updateTile,
 } from '../../lib/roomsModeConfig';
 import useHorizontalReorder from './useHorizontalReorder';
@@ -217,6 +217,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
   const labels = content.labels || {};
   const groups = content.groups || {};
   const sizes = content.sizes || {};
+  const noColors = content.noColors || [];
   const itemKeys = items.map((item) => item.key);
   const sceneIds = room ? getSceneIds(room.entityIds) : [];
   const alerts = rooms.filter((candidate) => candidate.alert);
@@ -283,6 +284,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
       run={run}
       name={labels[item.entityId]}
       group={groups[item.entityId]}
+      showColors={!noColors.includes(item.entityId)}
     />
   );
 
@@ -520,6 +522,8 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup,
           label={labels[panel.entityId] || ''}
           group={groups[panel.entityId] || []}
           size={sizes[panel.entityId] || items.find((item) => item.key === `d:${panel.entityId}`)?.size}
+          showColors={!noColors.includes(panel.entityId)}
+          onColors={(show) => apply((c) => setDeviceColors(c, room.id, subpage.id, panel.entityId, show))}
           onSize={(preset) => apply((c) => setDeviceSize(c, room.id, subpage.id, panel.entityId, preset))}
           onGroup={(members) => apply((c) => setDeviceGroup(c, room.id, subpage.id, panel.entityId, members))}
           onReplace={(newId) => {

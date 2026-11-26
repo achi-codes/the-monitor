@@ -156,7 +156,8 @@ export function AddSubpagePopover({ presets, onAdd, onClose }) {
 }
 
 export function DevicePanel({
-  hass, entityId, label, group = [], onGroup, size, onSize, onReplace, onLabel, onRemove, onClose,
+  hass, entityId, label, group = [], onGroup, size, onSize, showColors = true, onColors,
+  onReplace, onLabel, onRemove, onClose,
 }) {
   const ref = useDismiss(onClose);
   const [name, setName] = useState(label);
@@ -194,6 +195,12 @@ export function DevicePanel({
             ))}
           </div>
         </>
+      )}
+      {entityId.startsWith('light.') && onColors && (
+        <label className="tm-setting-toggle tm-rooms-panel-check">
+          <input type="checkbox" checked={showColors} onChange={(e) => onColors(e.target.checked)} />
+          <span>Farbauswahl anzeigen (Warm · Neutral · Kühl)</span>
+        </label>
       )}
       {entityId.startsWith('light.') && onGroup && (
         <>

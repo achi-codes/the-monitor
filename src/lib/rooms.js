@@ -46,6 +46,7 @@ export function normalizeSubpages(rawSubpages) {
         hidden: stringList(sub.hidden),
         devices: stringList(sub.devices),
         order: stringList(sub.order),
+        noColors: stringList(sub.noColors),
         groups: sub.groups && typeof sub.groups === 'object' && !Array.isArray(sub.groups)
           ? Object.fromEntries(Object.entries(sub.groups)
             .map(([id, members]) => [id, stringList(members).filter((m) => m !== id).slice(0, 3)])

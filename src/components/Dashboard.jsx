@@ -14,6 +14,7 @@ import RoomSelector from './RoomSelector';
 import { QuickActionPopup, CoverPopup } from './widgets/ActionWidgets';
 import { RoomPopup } from './RoomWidget';
 import ContextStage from './ContextStage';
+import RoomsDashboard from './rooms/RoomsDashboard';
 
 export default function Dashboard({ user, onSettings, onScreensaver, idleStage = false, onWake }) {
   const [time, setTime] = useState(new Date());
@@ -116,6 +117,15 @@ export default function Dashboard({ user, onSettings, onScreensaver, idleStage =
   const exitEditMode = () => setEditMode(false);
   const roomSelectorDisabled = pageManageOpen || slotPickerOpen;
   const useRoomSidebar = config.roomSidebar && config.rooms.length > 1;
+
+  if (config.dashboardMode === 'rooms') {
+    return (
+      <>
+        <RoomsDashboard onSettings={onSettings} onScreensaver={onScreensaver} />
+        <ContextStage suspended={false} idle={idleStage} onWake={onWake} />
+      </>
+    );
+  }
 
   return (
     <div className={`tm-dashboard${editMode ? ' tm-dashboard--edit' : ''}${useRoomSidebar ? ' tm-dashboard--room-sidebar' : ''}${qaPopup || pageManageOpen || slotPickerOpen ? ' tm-dashboard--modal-open' : ''}`}>

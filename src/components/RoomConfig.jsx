@@ -54,6 +54,15 @@ export default function RoomConfig() {
           Jeder Raum hat ein eigenes Dashboard-Layout. Im Dashboard wechselst du zwischen den Räumen — per Dropdown oben oder als feste Sidebar links.
         </p>
 
+        <label className="tm-setting-toggle">
+          <input
+            type="checkbox"
+            checked={config.dashboardMode === 'rooms'}
+            onChange={(e) => updateDisplay({ dashboardMode: e.target.checked ? 'rooms' : 'grid' })}
+          />
+          <span>Raum-Modus (Prototyp): Räume links, Geräte-Karten nebeneinander</span>
+        </label>
+
         {config.rooms.length > 1 && (
           <label className="tm-setting-toggle">
             <input

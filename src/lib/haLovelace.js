@@ -23,6 +23,8 @@ function setupToYaml(setup) {
     appearance: config.appearance,
     hideHaSidebar: config.hideHaSidebar,
     roomSidebar: config.roomSidebar,
+    dashboardMode: config.dashboardMode,
+    roomFavorites: config.roomFavorites,
   };
 }
 

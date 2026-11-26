@@ -1,3 +1,4 @@
+import { normalizeRoomFavorites } from './roomsMode';
 import embeddedHaConfig from '../../deploy/the-monitor-config.json';
 import {
   GRID_COLS,
@@ -56,6 +57,8 @@ export const DEFAULT_CONFIG = {
   appearance: { ...DEFAULT_APPEARANCE },
   hideHaSidebar: false,
   roomSidebar: false,
+  dashboardMode: 'grid',
+  roomFavorites: {},
 };
 
 function syncLegacyEntityFields(config, roomIndex = 0) {
@@ -134,6 +137,9 @@ export function normalizeConfig(raw = {}) {
   if (typeof raw.roomSidebar === 'boolean') {
     config.roomSidebar = raw.roomSidebar;
   }
+
+  config.dashboardMode = raw.dashboardMode === 'rooms' ? 'rooms' : 'grid';
+  config.roomFavorites = normalizeRoomFavorites(raw.roomFavorites);
 
   const hasLayout = raw.layout?.pages?.length;
   const hasLegacy = raw.quickActions?.length || raw.scenes?.length || raw.weather?.entity_id;

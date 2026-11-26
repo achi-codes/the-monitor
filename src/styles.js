@@ -1,3 +1,5 @@
+import { roomsStyles } from './roomsStyles';
+
 export const styles = `
 :host {
   display: block;
@@ -10070,7 +10072,7 @@ export const styles = `
   .tm-stage-live::before { animation: none; }
 }
 
-`;
+` + roomsStyles;
 
 export const haShellStyles = `
 the-monitor-dashboard {

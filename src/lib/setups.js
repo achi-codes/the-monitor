@@ -21,6 +21,8 @@ function configFieldsFrom(raw = {}) {
     appearance: normalized.appearance,
     hideHaSidebar: normalized.hideHaSidebar,
     roomSidebar: normalized.roomSidebar,
+    dashboardMode: normalized.dashboardMode,
+    roomFavorites: normalized.roomFavorites,
   };
 }
 

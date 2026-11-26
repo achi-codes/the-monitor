@@ -386,10 +386,10 @@ export const roomsStyles = `
   touch-action: none; cursor: grab; transition: transform 0.15s ease; scroll-snap-align: start;
 }
 .tm-rooms-edit-item.dragging { z-index: 5; opacity: 0.88; transition: none; cursor: grabbing; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); }
-.tm-rooms-edit-content { height: 100%; pointer-events: none; display: flex; }
+.tm-rooms-edit-content { position: relative; z-index: 0; isolation: isolate; height: 100%; pointer-events: none; display: flex; }
 .tm-rooms-edit-content > * { height: 100%; }
 .tm-rooms-edit-overlay {
-  position: absolute; inset: 0; border-radius: 34px; pointer-events: none;
+  position: absolute; inset: 0; z-index: 10; border-radius: 34px; pointer-events: none;
   outline: 2px dashed rgba(255, 255, 255, 0.35); outline-offset: -2px; background: rgba(0, 0, 0, 0.14);
 }
 .tm-rooms-edit-grip {

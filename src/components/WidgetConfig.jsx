@@ -1,5 +1,6 @@
 import EntityPicker from './EntityPicker';
 import RoomConfig from './RoomConfig';
+import RoomsModeConfig from './rooms/RoomsModeConfig';
 import EvEntityFields from './EvEntityFields';
 import { SLOT_LIMITS } from '../lib/config';
 import { useConfig } from '../context/ConfigContext';
@@ -36,22 +37,26 @@ export default function WidgetConfig() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <RoomConfig />
+      {config.dashboardMode === 'rooms' ? <RoomsModeConfig /> : (
+        <>
+          <RoomConfig />
 
-      <section>
-        <h3 style={{ fontSize: '1.25rem', fontWeight: 500, opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-          Dashboard-Layout
-        </h3>
-        <div className="tm-setting-group">
-          <p className="tm-text-sm tm-opacity-70" style={{ lineHeight: 1.5 }}>
-            Widgets, Größen und Positionen bearbeitest du direkt im Dashboard über den
-            {' '}
-            <strong>Stift-Button</strong>
-            {' '}
-            oben rechts. Dort findest du auch Layout-Vorlagen.
-          </p>
-        </div>
-      </section>
+          <section>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 500, opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
+              Dashboard-Layout
+            </h3>
+            <div className="tm-setting-group">
+              <p className="tm-text-sm tm-opacity-70" style={{ lineHeight: 1.5 }}>
+                Widgets, Größen und Positionen bearbeitest du direkt im Dashboard über den
+                {' '}
+                <strong>Stift-Button</strong>
+                {' '}
+                oben rechts. Dort findest du auch Layout-Vorlagen.
+              </p>
+            </div>
+          </section>
+        </>
+      )}
 
       <section>
         <h3 style={{ fontSize: '1.25rem', fontWeight: 500, opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>

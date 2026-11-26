@@ -1,4 +1,4 @@
-import { normalizeRoomFavorites } from './roomsMode';
+import { normalizeRailRoomIds, normalizeRoomFavorites } from './roomsMode';
 import embeddedHaConfig from '../../deploy/the-monitor-config.json';
 import {
   GRID_COLS,
@@ -59,6 +59,7 @@ export const DEFAULT_CONFIG = {
   roomSidebar: false,
   dashboardMode: 'grid',
   roomFavorites: {},
+  railRoomIds: null,
 };
 
 function syncLegacyEntityFields(config, roomIndex = 0) {
@@ -157,6 +158,7 @@ export function normalizeConfig(raw = {}) {
   }
 
   config.rooms = migrateConfigToRooms(config, raw);
+  config.railRoomIds = normalizeRailRoomIds(raw.railRoomIds, config.rooms);
 
   delete config.layout;
   delete config.layoutPreset;

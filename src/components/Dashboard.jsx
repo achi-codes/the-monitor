@@ -118,11 +118,20 @@ export default function Dashboard({ user, onSettings, onScreensaver, idleStage =
   const roomSelectorDisabled = pageManageOpen || slotPickerOpen;
   const useRoomSidebar = config.roomSidebar && config.rooms.length > 1;
 
+  const popup = qaPopup && !editMode && (
+    qaPopup.variant === 'room'
+      ? <RoomPopup data={qaPopup} hass={hass} onClose={closeQaPopup} />
+      : qaPopup.variant === 'cover'
+        ? <CoverPopup data={qaPopup} hass={hass} getEntity={getEntity} onClose={closeQaPopup} />
+        : <QuickActionPopup data={qaPopup} hass={hass} onClose={closeQaPopup} />
+  );
+
   if (config.dashboardMode === 'rooms') {
     return (
       <>
-        <RoomsDashboard onSettings={onSettings} onScreensaver={onScreensaver} />
-        <ContextStage suspended={false} idle={idleStage} onWake={onWake} />
+        <RoomsDashboard onSettings={onSettings} onScreensaver={onScreensaver} onOpenPopup={setQaPopup} />
+        <ContextStage suspended={Boolean(qaPopup)} idle={idleStage} onWake={onWake} />
+        {popup}
       </>
     );
   }
@@ -274,13 +283,7 @@ export default function Dashboard({ user, onSettings, onScreensaver, idleStage =
         onWake={onWake}
       />
 
-      {qaPopup && !editMode && (
-        qaPopup.variant === 'room'
-          ? <RoomPopup data={qaPopup} hass={hass} onClose={closeQaPopup} />
-          : qaPopup.variant === 'cover'
-            ? <CoverPopup data={qaPopup} hass={hass} getEntity={getEntity} onClose={closeQaPopup} />
-            : <QuickActionPopup data={qaPopup} hass={hass} onClose={closeQaPopup} />
-      )}
+      {popup}
       </div>
     </div>
   );

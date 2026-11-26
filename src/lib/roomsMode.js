@@ -2,6 +2,7 @@ import { getDomain } from './entities';
 import { getRoomKind, getRoomSummary, resolveRoomEntityIds } from './roomWidget';
 
 export const ROOMS_OVERVIEW_ID = '__overview__';
+export const RAIL_LIMIT = 6;
 
 export const ROOM_FILTERS = [
   { id: 'fav', label: 'Favoriten' },
@@ -42,22 +43,44 @@ const CARD_KIND_BY_DOMAIN = {
   vacuum: 'toggle',
 };
 
-/**
- * Rooms shown in the rooms mode. Configured rooms linked to an HA area win;
- * without any, every HA area that has at least one usable entity is listed.
- */
-export function buildModeRooms(hass, config) {
-  const linked = (config.rooms || []).filter((room) => room.areaId);
-  const source = linked.length
-    ? linked.map((room) => ({ id: room.areaId, name: room.name, areaId: room.areaId }))
-    : Object.values(hass?.areas || {}).map((area) => ({ id: area.area_id, name: area.name, areaId: area.area_id }));
+/** The widgets a room shows as tiles: its own tile list, else its grid widgets in reading order. */
+export function getRoomTiles(room) {
+  if (Array.isArray(room?.tiles)) return room.tiles;
+  return (room?.layout?.pages || []).flatMap((page) => [...(page.widgets || [])]
+    .sort((a, b) => (a.y - b.y) || (a.x - b.x)));
+}
 
-  return source
-    .map((room) => {
-      const entityIds = resolveRoomEntityIds(hass, { area_id: room.areaId });
-      return { ...room, kind: getRoomKind(room.name), entityIds };
-    })
-    .filter((room) => room.entityIds.length > 0);
+export function normalizeRailRoomIds(raw, rooms = []) {
+  if (!Array.isArray(raw)) return null;
+  const known = new Set(rooms.map((room) => room.id));
+  return [...new Set(raw.filter((id) => known.has(id)))].slice(0, RAIL_LIMIT);
+}
+
+/** Pinned rooms in config order; without a stored choice the first six. */
+export function getRailRoomIds(config) {
+  const rooms = config.rooms || [];
+  if (!Array.isArray(config.railRoomIds)) return rooms.slice(0, RAIL_LIMIT).map((room) => room.id);
+  const pinned = new Set(config.railRoomIds);
+  return rooms.filter((room) => pinned.has(room.id)).map((room) => room.id).slice(0, RAIL_LIMIT);
+}
+
+/** Every configured room or page, with its HA devices and tiles resolved. */
+export function buildModeRooms(hass, config) {
+  return (config.rooms || []).map((room) => {
+    const entityIds = room.areaId ? resolveRoomEntityIds(hass, { area_id: room.areaId }) : [];
+    const summary = getRoomSummary(hass, entityIds);
+    return {
+      id: room.id,
+      name: room.name,
+      areaId: room.areaId || '',
+      isPage: !room.areaId,
+      kind: room.areaId ? getRoomKind(room.name) : 'page',
+      entityIds,
+      tiles: getRoomTiles(room),
+      summary,
+      alert: getRoomAlert(summary),
+    };
+  });
 }
 
 export function getRoomAlert(summary) {
@@ -67,11 +90,6 @@ export function getRoomAlert(summary) {
   if (summary.humidity != null && summary.humidity >= 65) return 'Luftfeuchte hoch';
   if (summary.carbonDioxide != null && summary.carbonDioxide >= 1000) return 'Lüften empfohlen';
   return '';
-}
-
-export function describeRoom(hass, room) {
-  const summary = getRoomSummary(hass, room.entityIds);
-  return { ...room, summary, alert: getRoomAlert(summary) };
 }
 
 /** Entities that get their own card (header sensors and scenes are shown elsewhere). */
@@ -105,7 +123,7 @@ export function defaultFavorites(cardIds) {
 }
 
 export function getFavorites(config, room, cardIds) {
-  const stored = config.roomFavorites?.[room.areaId];
+  const stored = config.roomFavorites?.[room.id];
   if (Array.isArray(stored)) return stored.filter((id) => cardIds.includes(id));
   return defaultFavorites(cardIds);
 }
@@ -116,9 +134,42 @@ export function filterCardIds(cardIds, filter, favorites) {
   return cardIds.filter((id) => CATEGORY_BY_DOMAIN[getDomain(id)] === filter);
 }
 
+/** Tiles show with favourites and under "Alle"; the type filters only list devices. */
+export function tilesVisible(filter) {
+  return filter === 'fav' || filter === 'all';
+}
+
 export function normalizeRoomFavorites(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
   return Object.fromEntries(Object.entries(raw)
     .filter(([key, ids]) => key && Array.isArray(ids))
     .map(([key, ids]) => [key, ids.filter((id) => typeof id === 'string')]));
+}
+
+/**
+ * Packs tiles into strip columns: tall tiles (3+ rows) fill a column,
+ * smaller ones stack two to a column.
+ */
+export function packTileColumns(tiles) {
+  const columns = [];
+  let pending = null;
+  tiles.forEach((tile) => {
+    if ((tile.h || 1) >= 3) {
+      columns.push({ id: tile.id, tiles: [tile], tall: true });
+      return;
+    }
+    if (pending) {
+      pending.tiles.push(tile);
+      pending = null;
+      return;
+    }
+    pending = { id: tile.id, tiles: [tile], tall: false };
+    columns.push(pending);
+  });
+  return columns;
+}
+
+export function tileColumnWidth(column) {
+  const cols = Math.max(...column.tiles.map((tile) => tile.w || 3));
+  return Math.min(720, Math.max(260, cols * 105));
 }

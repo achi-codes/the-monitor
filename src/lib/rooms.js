@@ -2,20 +2,33 @@ import { buildLayoutFromPreset } from './layoutPresets';
 import { createDefaultLayout, layoutHasWidgetEntities, normalizeLayout } from './layout';
 
 export const ROOM_LIMIT = 12;
+export const TILE_LIMIT = 24;
 export const ACTIVE_ROOM_KEY = 'the-monitor-active-room';
 
 export function createRoomId() {
   return `room-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-export function createRoom(name, { areaId = '', layout = null, layoutPreset = 'classic' } = {}) {
+export function createRoom(name, {
+  areaId = '', layout = null, layoutPreset = 'classic', tiles = null,
+} = {}) {
   return {
     id: createRoomId(),
     name: (name || 'Raum').trim() || 'Raum',
     areaId: areaId || '',
     layoutPreset,
     layout: layout || buildLayoutFromPreset(layoutPreset),
+    tiles,
   };
+}
+
+/** Tiles of the rooms mode: one widget list in display order, no grid positions. */
+export function normalizeTiles(rawTiles) {
+  if (!Array.isArray(rawTiles)) return null;
+  return rawTiles
+    .filter((tile) => tile && typeof tile.type === 'string')
+    .slice(0, TILE_LIMIT)
+    .map((tile) => normalizeLayout({ pages: [{ widgets: [tile] }] }).pages[0].widgets[0]);
 }
 
 export function normalizeRoom(raw = {}) {
@@ -30,6 +43,7 @@ export function normalizeRoom(raw = {}) {
     areaId: raw.areaId || '',
     layoutPreset,
     layout,
+    tiles: normalizeTiles(raw.tiles),
   };
 }
 

@@ -25,6 +25,7 @@ function setupToYaml(setup) {
     roomSidebar: config.roomSidebar,
     dashboardMode: config.dashboardMode,
     roomFavorites: config.roomFavorites,
+    railRoomIds: config.railRoomIds,
   };
 }
 

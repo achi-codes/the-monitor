@@ -23,6 +23,7 @@ function configFieldsFrom(raw = {}) {
     roomSidebar: normalized.roomSidebar,
     dashboardMode: normalized.dashboardMode,
     roomFavorites: normalized.roomFavorites,
+    railRoomIds: normalized.railRoomIds,
   };
 }
 

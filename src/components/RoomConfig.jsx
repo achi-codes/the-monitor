@@ -60,7 +60,7 @@ export default function RoomConfig() {
             checked={config.dashboardMode === 'rooms'}
             onChange={(e) => updateDisplay({ dashboardMode: e.target.checked ? 'rooms' : 'grid' })}
           />
-          <span>Raum-Modus (Prototyp): Räume links, Geräte-Karten nebeneinander</span>
+          <span>Raum-Modus verwenden: Räume links, Geräte und Kacheln nebeneinander</span>
         </label>
 
         {config.rooms.length > 1 && (

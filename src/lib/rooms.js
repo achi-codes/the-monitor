@@ -45,6 +45,7 @@ export function normalizeSubpages(rawSubpages) {
         preset,
         hidden: stringList(sub.hidden),
         devices: stringList(sub.devices),
+        order: stringList(sub.order),
         tiles: normalizeTiles(sub.tiles) || [],
       };
     });

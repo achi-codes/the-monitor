@@ -67,9 +67,9 @@ export function toggleRailRoom(config, roomId) {
   return { ...config, railRoomIds: [...pinned, roomId] };
 }
 
-export function addSubpage(config, roomId, preset = null) {
+export function addSubpage(config, roomId, preset = null, subpage = createSubpage({ preset })) {
   return withSubpages(config, roomId, (subs) => (
-    subs.length >= SUBPAGE_LIMIT ? subs : [...subs, createSubpage({ preset })]
+    subs.length >= SUBPAGE_LIMIT ? subs : [...subs, subpage]
   ));
 }
 
@@ -118,4 +118,28 @@ export function removeTile(config, roomId, subId, tileId) {
 
 export function moveTile(config, roomId, subId, tileId, delta) {
   return withTiles(config, roomId, subId, (tiles) => move(tiles, tiles.findIndex((tile) => tile.id === tileId), delta));
+}
+
+export function setItemOrder(config, roomId, subId, keys) {
+  return withSubpage(config, roomId, subId, (sub) => ({ ...sub, order: keys }));
+}
+
+/** Removes a card: a tile is deleted, a picked device dropped, a preset device hidden. */
+export function removeItem(config, roomId, subId, key) {
+  return withSubpage(config, roomId, subId, (sub) => {
+    const order = (sub.order || []).filter((k) => k !== key);
+    if (key.startsWith('t:')) {
+      const tileId = key.slice(2);
+      return { ...sub, order, tiles: sub.tiles.filter((tile) => tile.id !== tileId) };
+    }
+    const entityId = key.slice(2);
+    if (sub.devices.includes(entityId)) {
+      return { ...sub, order, devices: sub.devices.filter((id) => id !== entityId) };
+    }
+    return { ...sub, order, hidden: [...new Set([...sub.hidden, entityId])] };
+  });
+}
+
+export function setSubpageOrder(config, roomId, ids) {
+  return withSubpages(config, roomId, (subs) => ids.map((id) => subs.find((sub) => sub.id === id)).filter(Boolean));
 }

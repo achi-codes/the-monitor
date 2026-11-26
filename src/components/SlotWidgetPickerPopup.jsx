@@ -28,7 +28,7 @@ import {
 import { getOverlayRoot, useOverlayLock } from '../lib/overlayPortal';
 import { WIDGET_TYPES } from '../lib/layout';
 
-const WIDGET_ICONS = {
+export const WIDGET_ICONS = {
   weather: CloudSun,
   media: PlayCircle,
   camera: Camera,

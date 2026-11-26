@@ -67,6 +67,7 @@ export function createSubpage({ preset = null, name = '', tiles = [] } = {}) {
     preset,
     hidden: [],
     devices: [],
+    order: [],
     tiles,
   };
 }
@@ -86,10 +87,11 @@ export function getRoomSubpages(room) {
       preset: item.id,
       hidden: [],
       devices: [],
+      order: [],
       tiles: item.id === 'fav' ? tiles : [],
     }));
   }
-  return [{ id: 'sp-start', name: 'Start', icon: 'home', preset: null, hidden: [], devices: [], tiles }];
+  return [{ id: 'sp-start', name: 'Start', icon: 'home', preset: null, hidden: [], devices: [], order: [], tiles }];
 }
 
 /** Device cards and tiles of one sub page. */
@@ -100,7 +102,39 @@ export function getSubpageContent(hass, config, room, subpage) {
   const hidden = new Set(subpage.hidden);
   const picked = subpage.devices.filter((id) => hass?.states?.[id]);
   const deviceIds = [...new Set([...auto.filter((id) => !hidden.has(id)), ...picked])];
-  return { deviceIds, autoIds: auto, favorites, tiles: subpage.tiles };
+  const rank = new Map((subpage.order || []).map((key, index) => [key, index]));
+  const items = [
+    ...deviceIds.map((entityId) => ({ key: `d:${entityId}`, kind: 'device', entityId })),
+    ...subpage.tiles.map((tile) => ({ key: `t:${tile.id}`, kind: 'tile', tile })),
+  ].sort((a, b) => (rank.get(a.key) ?? 1e9) - (rank.get(b.key) ?? 1e9));
+  const hiddenIds = auto.filter((id) => hidden.has(id));
+  return { items, hiddenIds, favorites };
+}
+
+/**
+ * Strip columns in display order: devices take a column each, tall tiles too,
+ * smaller tiles stack two to a column (unless `pair` is off, as in edit mode).
+ */
+export function packItems(items, { pair = true } = {}) {
+  const columns = [];
+  let open = null;
+  items.forEach((item) => {
+    if (item.kind === 'device') {
+      open = null;
+      columns.push({ key: item.key, items: [item], kind: 'device' });
+      return;
+    }
+    const tall = (item.tile.h || 1) >= 3;
+    if (!tall && pair && open) {
+      open.items.push(item);
+      open = null;
+      return;
+    }
+    const column = { key: item.key, items: [item], kind: 'tiles', tall };
+    columns.push(column);
+    open = !tall && pair ? column : null;
+  });
+  return columns;
 }
 
 export function normalizeRailRoomIds(raw, rooms = []) {
@@ -194,30 +228,7 @@ export function normalizeRoomFavorites(raw) {
     .map(([key, ids]) => [key, ids.filter((id) => typeof id === 'string')]));
 }
 
-/**
- * Packs tiles into strip columns: tall tiles (3+ rows) fill a column,
- * smaller ones stack two to a column.
- */
-export function packTileColumns(tiles) {
-  const columns = [];
-  let pending = null;
-  tiles.forEach((tile) => {
-    if ((tile.h || 1) >= 3) {
-      columns.push({ id: tile.id, tiles: [tile], tall: true });
-      return;
-    }
-    if (pending) {
-      pending.tiles.push(tile);
-      pending = null;
-      return;
-    }
-    pending = { id: tile.id, tiles: [tile], tall: false };
-    columns.push(pending);
-  });
-  return columns;
-}
-
-export function tileColumnWidth(column) {
-  const cols = Math.max(...column.tiles.map((tile) => tile.w || 3));
+export function tileColumnWidth(tiles) {
+  const cols = Math.max(...tiles.map((tile) => tile.w || 3));
   return Math.min(720, Math.max(260, cols * 105));
 }

@@ -6,6 +6,7 @@ import {
   Settings, Monitor, Pencil, Plus, X, Check,
 } from 'lucide-react';
 import { useHass } from '../../context/HassContext';
+import { readUiSession, saveUiSession, setEditingActive } from '../../lib/uiSession';
 import { useConfig } from '../../context/ConfigContext';
 import { describeRoomSummary, formatRoomNumber } from '../../lib/roomWidget';
 import {
@@ -157,18 +158,31 @@ function EditOverlay({ label, onRemove, onEdit }) {
   );
 }
 
-export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup }) {
+export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup, onEditingChange }) {
+  const [restored] = useState(readUiSession);
   const { hass, revision, getEntity } = useHass();
   const { config, updateDisplay, setConfig } = useConfig();
-  const [roomId, setRoomId] = useState(ROOMS_OVERVIEW_ID);
-  const [subId, setSubId] = useState(null);
+  const [roomId, setRoomId] = useState(() => restored.roomsRoomId || ROOMS_OVERVIEW_ID);
+  const [subId, setSubId] = useState(() => restored.roomsSubId || null);
   const [moreOpen, setMoreOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(() => Boolean(restored.roomsEditing));
   const [panel, setPanel] = useState(null);
   const [tick, setTick] = useState(0);
   const [time, setTime] = useState(new Date());
   const stripRef = useRef(null);
   const dockRef = useRef(null);
+
+  // HA re-creates the card after every saved change; keep the view and edit mode across that.
+  useEffect(() => {
+    saveUiSession({ roomsRoomId: roomId, roomsSubId: subId, roomsEditing: editing });
+  }, [roomId, subId, editing]);
+
+  useEffect(() => {
+    setEditingActive(editing);
+    onEditingChange?.(editing);
+  }, [editing, onEditingChange]);
+
+  useEffect(() => () => setEditingActive(false), []);
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 15000);
@@ -232,12 +246,13 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup 
     setSubId(null);
     setMoreOpen(false);
     setPanel(null);
-    if (id === ROOMS_OVERVIEW_ID) setEditing(false);
   };
 
   const title = room ? room.name : 'Übersicht';
   let subtitle;
-  if (isOverview) {
+  if (isOverview && editing) {
+    subtitle = 'Wähle links einen Raum, um ihn zu bearbeiten';
+  } else if (isOverview) {
     subtitle = `${rooms.length} Räume & Seiten · ${rooms.reduce((sum, r) => sum + r.summary.activeDevices, 0)} Geräte aktiv`;
   } else if (isEditing) {
     subtitle = 'Karten ziehen zum Sortieren · × entfernt · + fügt hinzu';
@@ -358,7 +373,7 @@ export default function RoomsDashboard({ onSettings, onScreensaver, onOpenPopup 
           <div className="tm-rooms-header-right">
             {!isEditing && alertText && <span className="tm-rooms-alert"><span />{alertText}</span>}
             {!isEditing && <span className="tm-rooms-clock">{format(time, 'HH:mm')}</span>}
-            {isEditing ? (
+            {editing ? (
               <button type="button" className="tm-rooms-done" onClick={() => { setEditing(false); setPanel(null); }}>
                 <Check size={20} />
                 Fertig

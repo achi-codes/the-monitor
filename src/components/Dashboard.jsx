@@ -5,7 +5,7 @@ import { Settings, Monitor, Pencil } from 'lucide-react';
 import { useHass } from '../context/HassContext';
 import { useConfig } from '../context/ConfigContext';
 import { resolveHassUrl } from '../lib/hass';
-import { readUiSession, saveUiSession } from '../lib/uiSession';
+import { readUiSession, saveUiSession, setEditingActive } from '../lib/uiSession';
 import PagePager from './PagePager';
 import PageManagePopup from './PageManagePopup';
 import DashboardGrid from './DashboardGrid';
@@ -26,6 +26,7 @@ export default function Dashboard({ user, onSettings, onScreensaver, idleStage =
   const previousRoomIdRef = useRef(null);
   const [pageManageOpen, setPageManageOpen] = useState(false);
   const [slotPickerOpen, setSlotPickerOpen] = useState(false);
+  const [roomsEditing, setRoomsEditing] = useState(false);
 
   const { hass, getEntity } = useHass();
   const {
@@ -57,6 +58,10 @@ export default function Dashboard({ user, onSettings, onScreensaver, idleStage =
     }
     previousRoomIdRef.current = activeRoomId;
   }, [activeRoomId]);
+
+  useEffect(() => {
+    if (config.dashboardMode !== 'rooms') setEditingActive(editMode);
+  }, [editMode, config.dashboardMode]);
 
   useEffect(() => {
     saveUiSession({ editMode, activePageIndex, selectedWidgetId });
@@ -129,8 +134,8 @@ export default function Dashboard({ user, onSettings, onScreensaver, idleStage =
   if (config.dashboardMode === 'rooms') {
     return (
       <>
-        <RoomsDashboard onSettings={onSettings} onScreensaver={onScreensaver} onOpenPopup={setQaPopup} />
-        <ContextStage suspended={Boolean(qaPopup)} idle={idleStage} onWake={onWake} />
+        <RoomsDashboard onSettings={onSettings} onScreensaver={onScreensaver} onOpenPopup={setQaPopup} onEditingChange={setRoomsEditing} />
+        <ContextStage suspended={Boolean(qaPopup) || roomsEditing} idle={idleStage && !roomsEditing} onWake={onWake} />
         {popup}
       </>
     );

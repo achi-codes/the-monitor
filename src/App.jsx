@@ -5,7 +5,7 @@ import Settings from './components/Settings';
 import StatusIsland from './components/StatusIsland';
 import { useConfig } from './context/ConfigContext';
 import { getThemeAttributes, isGlassMode } from './lib/colorThemes';
-import { readUiSession, saveUiSession } from './lib/uiSession';
+import { isEditingActive, readUiSession, saveUiSession } from './lib/uiSession';
 
 const DEFAULT_PROFILE = { id: 0, name: 'Zuhause', color: '#6366f1' };
 
@@ -64,7 +64,7 @@ function App() {
     window.addEventListener('keydown', handleActivity);
 
     const interval = setInterval(() => {
-      if (Date.now() - lastActivity <= idleTimeoutMs || view === 'settings') return;
+      if (Date.now() - lastActivity <= idleTimeoutMs || view === 'settings' || isEditingActive()) return;
       if (stageScreensaver) {
         if (view !== 'screensaver') setIdleStage(true);
         return;

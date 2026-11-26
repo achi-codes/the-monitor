@@ -17,3 +17,14 @@ export function readUiSession() {
   if (!lastPersistAt || Date.now() - lastPersistAt > RESTORE_WINDOW_MS) return {};
   return snapshot;
 }
+
+// Set while the user edits the dashboard so idle timers don't end the session.
+let editingActive = false;
+
+export function setEditingActive(active) {
+  editingActive = Boolean(active);
+}
+
+export function isEditingActive() {
+  return editingActive;
+}
